@@ -59,6 +59,15 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   mockito: ^5.6.3
   sqflite_common_ffi: ^2.4.0+2
+  flutter_native_splash: ^2.4.0
+
+flutter_native_splash:
+  color: "#000000"
+  image: assets/images/splash_screen_image.jpg
+  fullscreen: true
+  android_12:
+    image: assets/images/splash_screen_image.jpg
+    color: "#000000"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

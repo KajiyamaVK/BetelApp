@@ -3,6 +3,8 @@ import 'package:betelsas/presentation/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:betelsas/presentation/screens/splash_screen.dart';
+
 void main() {
   runApp(
     const ProviderScope(
@@ -20,7 +22,7 @@ class BetelApp extends StatelessWidget {
       title: 'Betel Catecismo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const MainScaffold(),
+      home: const SplashScreen(),
     );
   }
 }
