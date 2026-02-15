@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "cd src/mobile && flutter test",
-    "test:integration": "cd src/mobile && flutter test integration_test",
+    "test:integration": "cd src/mobile && ./scripts/run_integration_tests.sh",
     "test:all": "npm run test && npm run test:integration",
     "prepare": "husky"
   },
