@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:betelsas/core/theme/app_theme.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('AppTheme', () {
     test('BottomNavigationBarTheme should have correct selected item styling', () {
       final theme = AppTheme.lightTheme;

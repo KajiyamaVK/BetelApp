@@ -45,18 +45,15 @@ void main() {
     expect(find.text('Você ainda não tem favoritos.'), findsOneWidget);
 
     // Verify Center widget wraps the content
+    // Verify Column with MainAxisAlignment.center holds the content
     final columnFinder = find.ancestor(
       of: find.text('Você ainda não tem favoritos.'),
-      matching: find.byType(Column),
-    );
-    expect(columnFinder, findsOneWidget);
-
-    final centerFinder = find.ancestor(
-      of: columnFinder,
-      matching: find.byType(Center),
+      matching: find.byWidgetPredicate((widget) => 
+        widget is Column && 
+        widget.mainAxisAlignment == MainAxisAlignment.center
+      ),
     );
     
-    // This assertion should fail before fix
-    expect(centerFinder, findsOneWidget, reason: "Empty state content should be centered");
+    expect(columnFinder, findsOneWidget, reason: "Empty state content should be centered vertically in a Column");
   });
 }

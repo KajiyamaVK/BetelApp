@@ -29,6 +29,10 @@ void main() {
     final containerFinder = find.byType(Container);
     final Container container = tester.widget(containerFinder);
     expect(container.color, Colors.white);
-    expect(container.alignment, Alignment.centerLeft);
+    // Verify that the Align widget is present and has correct alignment
+    final alignFinder = find.byType(Align);
+    expect(alignFinder, findsOneWidget);
+    final Align align = tester.widget(alignFinder);
+    expect(align.alignment, Alignment.centerLeft);
   });
 }

@@ -18,3 +18,10 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Git Hooks
+
+This project uses Husky to enforce code quality.
+
+- **Pre-commit**: Runs unit and widget tests (`flutter test`).
+- **Pre-push**: Runs integration tests (`flutter test integration_test`).

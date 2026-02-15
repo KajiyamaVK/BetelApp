@@ -17,8 +17,9 @@ class MockAudioNotifier extends AudioNotifier {
 void main() {
   testWidgets('AudioPlayerWidget should NOT show Next button by default', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
+      ProviderScope(
         child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
           home: Scaffold(
             body: AudioPlayerWidget(),
           ),
@@ -26,7 +27,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.skip_next), findsNothing);
+    expect(find.byIcon(Icons.skip_next_rounded), findsNothing);
   });
 
   testWidgets('AudioPlayerWidget should show Next button when onNext is provided', (WidgetTester tester) async {
@@ -41,6 +42,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
           home: Scaffold(
             body: AudioPlayerWidget(
               onNext: () {
@@ -52,9 +54,9 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.skip_next), findsOneWidget);
+    expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
     
-    await tester.tap(find.byIcon(Icons.skip_next));
+    await tester.tap(find.byIcon(Icons.skip_next_rounded));
     expect(nextCalled, isTrue);
   });
 }

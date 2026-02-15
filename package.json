@@ -1,0 +1,26 @@
+{
+  "name": "betelsas",
+  "version": "1.0.0",
+  "description": "A new Flutter project.",
+  "main": "index.js",
+  "scripts": {
+    "test": "cd src/mobile && flutter test",
+    "test:integration": "cd src/mobile && flutter test integration_test",
+    "test:all": "npm run test && npm run test:integration",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KajiyamaVK/BetelSAS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KajiyamaVK/BetelSAS/issues"
+  },
+  "homepage": "https://github.com/KajiyamaVK/BetelSAS#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

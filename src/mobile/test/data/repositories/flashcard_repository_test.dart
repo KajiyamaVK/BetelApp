@@ -7,6 +7,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:betelsas/data/repositories/content_repository.dart';
 import 'package:betelsas/core/database_helper.dart';
+import 'package:sqflite/sqflite.dart';
 
 import 'flashcard_repository_test.mocks.dart';
 
@@ -35,12 +36,14 @@ void main() {
     final testLesson = Lesson(
       id: 1,
       title: 'Test Lesson',
+      imageUrl: 'http://placeholder.com',
+      scriptureReference: 'Ref',
       content: 'Content',
       flashcards: [
         Flashcard(id: '1', question: 'Q1', answer: 'A1'),
         Flashcard(id: '2', question: 'Q2', answer: 'A2'),
         Flashcard(id: '3', question: 'Q3', answer: 'A3'),
-      ], category: '',
+      ],
     );
 
     test('should return all flashcards with correct status', () async {

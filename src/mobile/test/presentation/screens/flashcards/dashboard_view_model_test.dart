@@ -18,7 +18,6 @@ void main() {
   setUp(() {
     mockRepository = MockFlashcardRepository();
     container = ProviderContainer();
-    viewModel = FlashcardDashboardViewModel(mockRepository);
   });
 
   tearDown(() {
@@ -37,12 +36,21 @@ void main() {
         status: FlashcardStatus.learned);
 
     test('initial state should be loading', () {
+      // Stub to return a pending future (or just a future that won't complete immediately in the sync execution)
+      // Actually, since we check immediately after construction, even a finished future would require a microtask pump to update state.
+      // But to be safe, we can use a Completer.
+      // However, for simplicity:
+      when(mockRepository.getAllFlashcardsWithStatus()).thenAnswer((_) async => []);
+      
+      viewModel = FlashcardDashboardViewModel(mockRepository);
+      
       expect(viewModel.state, const AsyncValue<FlashcardDashboardState>.loading());
     });
 
     test('loadCards should fetch cards and update state', () async {
       // Arrange
       when(mockRepository.getAllFlashcardsWithStatus()).thenAnswer((_) async => [card1, card2, card3]);
+      viewModel = FlashcardDashboardViewModel(mockRepository);
 
       // Act
       await viewModel.loadCards();
@@ -57,6 +65,7 @@ void main() {
     test('setFilter should update filteredCards', () async {
       // Arrange
       when(mockRepository.getAllFlashcardsWithStatus()).thenAnswer((_) async => [card1, card2, card3]);
+      viewModel = FlashcardDashboardViewModel(mockRepository);
       await viewModel.loadCards();
 
       // Act - Filter by New
@@ -83,6 +92,7 @@ void main() {
       // Arrange
       when(mockRepository.resetProgress()).thenAnswer((_) async {});
       when(mockRepository.getAllFlashcardsWithStatus()).thenAnswer((_) async => []); // Empty after reset
+      viewModel = FlashcardDashboardViewModel(mockRepository);
 
       // Act
       await viewModel.resetAllCards();
