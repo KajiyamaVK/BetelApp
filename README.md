@@ -4,7 +4,7 @@ A new Flutter project.
 
 ## Design Compliance
 
-All screen design images are located in the `guidelines/0-screens-designs` directory. The project must strictly adhere to these designs regarding colors, components, and layout. While text labels may be subject to change, the visual structure and style are definitive.
+All screen design images are located in the `src/mobile/guidelines/0-screens-designs` directory. The project must strictly adhere to these designs regarding colors, components, and layout. While text labels may be subject to change, the visual structure and style are definitive.
 
 ## Getting Started
 
