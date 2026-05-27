@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:betelsas/core/theme/app_theme.dart';
 import 'package:betelsas/data/models/lesson.dart';
+import 'package:betelsas/data/models/song.dart';
 import 'package:betelsas/presentation/providers/audio_provider.dart';
 import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:betelsas/presentation/screens/favorites/favorites_view_model.dart';
-import 'package:betelsas/data/models/lesson.dart';
 
 class LessonDetailScreen extends ConsumerStatefulWidget {
   final Lesson lesson;
@@ -114,7 +114,7 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
           if (widget.lesson.song != null)
             Align(
               alignment: Alignment.bottomCenter,
-              child: _buildAudioControl(ref),
+              child: _LessonAudioPlayer(song: widget.lesson.song!),
             ),
         ],
       ),
@@ -222,92 +222,9 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
           if (widget.lesson.song != null)
             Align(
               alignment: Alignment.bottomCenter,
-              child: _buildAudioControl(ref),
+              child: _LessonAudioPlayer(song: widget.lesson.song!),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAudioControl(WidgetRef ref) {
-    final audioState = ref.watch(audioProvider);
-    final isPlayingThis = audioState.currentUrl == widget.lesson.song!.audioUrl;
-
-    if (isPlayingThis) {
-      return const AudioPlayerWidget();
-    }
-
-    // "Start Playing" Placeholder that matches AudioPlayerWidget style
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.music_note_rounded, color: AppTheme.primaryColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.lesson.song!.title, 
-                    style: AppTheme.heading2.copyWith(fontSize: 16),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    widget.lesson.song!.artist, 
-                    style: AppTheme.caption,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryColor,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: () {
-                  ref.read(audioProvider.notifier).play(
-                    widget.lesson.song!.audioUrl,
-                    title: widget.lesson.song!.title,
-                    artist: widget.lesson.song!.artist,
-                  );
-                },
-                icon: const Icon(
-                  Icons.play_arrow_rounded,
-                  size: 32,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -332,5 +249,29 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
         ],
       ),
     );
+  }
+}
+
+class _LessonAudioPlayer extends ConsumerWidget {
+  final Song song;
+
+  const _LessonAudioPlayer({required this.song});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final audioState = ref.watch(audioProvider);
+    final isLoaded = audioState.currentUrl == song.audioUrl;
+
+    if (!isLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(audioProvider.notifier).load(
+          song.audioUrl,
+          title: song.title,
+          artist: song.artist,
+        );
+      });
+    }
+
+    return const AudioPlayerWidget(showRestartButton: false);
   }
 }
