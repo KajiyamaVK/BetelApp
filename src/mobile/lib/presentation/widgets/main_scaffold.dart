@@ -5,6 +5,7 @@ import 'package:betelsas/presentation/screens/music/music_screen.dart';
 import 'package:betelsas/presentation/screens/flashcards/dashboard.dart';
 import 'package:betelsas/presentation/screens/flashcards/dashboard_view_model.dart';
 import 'package:betelsas/presentation/screens/favorites/favorites_screen.dart';
+import 'package:betelsas/presentation/providers/audio_provider.dart';
 
 
 class MainScaffold extends ConsumerStatefulWidget {
@@ -34,6 +35,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (_currentIndex == 1 && index != 1) {
+            ref.read(audioProvider.notifier).stop();
+          }
           if (index == 2) {
              // Reset the flashcards state (filter back to All) when tapping the tab
              ref.invalidate(flashcardDashboardProvider);
