@@ -1,32 +1,129 @@
+import 'package:betelsas/core/connectivity_service.dart';
+import 'package:betelsas/core/database_helper.dart';
+import 'package:betelsas/core/providers.dart';
+import 'package:betelsas/data/services/content_sync_service.dart';
+import 'package:betelsas/data/services/remote_content_service.dart';
 import 'package:betelsas/presentation/screens/splash_screen.dart';
 import 'package:betelsas/presentation/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+// ---------------------------------------------------------------------------
+// Stubs
+// ---------------------------------------------------------------------------
+
+class _FakeConnectivity extends ConnectivityService {
+  final bool mobile;
+  _FakeConnectivity({this.mobile = false});
+
+  @override
+  Future<bool> isConnected() async => true;
+
+  @override
+  Future<bool> isMobileData() async => mobile;
+}
+
+class _FakeSyncService extends ContentSyncService {
+  final SyncResult _result;
+
+  _FakeSyncService(this._result)
+      : super(
+          remote: RemoteContentService(),
+          connectivity: ConnectivityService(),
+          dbHelper: DatabaseHelper(),
+        );
+
+  @override
+  Future<SyncResult> sync({void Function(SyncProgress)? onProgress}) async =>
+      _result;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+Widget _buildApp({
+  SyncResult syncResult = SyncResult.upToDate,
+  bool onMobile = false,
+}) {
+  return ProviderScope(
+    overrides: [
+      connectivityServiceProvider
+          .overrideWithValue(_FakeConnectivity(mobile: onMobile)),
+      contentSyncServiceProvider
+          .overrideWithValue(_FakeSyncService(syncResult)),
+    ],
+    child: const MaterialApp(home: SplashScreen()),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 void main() {
-  testWidgets('SplashScreen displays image and navigates to MainScaffold',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: SplashScreen(),
-        ),
-      ),
-    );
+  testWidgets('SplashScreen displays splash image', (tester) async {
+    await tester.pumpWidget(_buildApp());
+    await tester.pump();
 
-    // Verify Image is displayed
     expect(find.byType(Image), findsOneWidget);
-    
-    // Verify specific image asset is used
     final image = tester.widget<Image>(find.byType(Image));
-    final imageProvider = image.image as AssetImage;
-    expect(imageProvider.assetName, 'assets/images/splash_screen_image.jpg');
+    final provider = image.image as AssetImage;
+    expect(provider.assetName, 'assets/images/splash_screen_image.jpg');
+  });
 
-    // Wait for the timer to complete (adjust duration as needed based on implementation)
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+  testWidgets('SplashScreen navigates to MainScaffold after sync',
+      (tester) async {
+    await tester.pumpWidget(_buildApp(syncResult: SyncResult.upToDate));
+    // Allow the async sync future to complete and navigation to run.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
-    // Verify navigation to MainScaffold
+    expect(find.byType(MainScaffold), findsOneWidget);
+  });
+
+  testWidgets(
+      'SplashScreen shows mobile-data dialog when on mobile',
+      (tester) async {
+    await tester.pumpWidget(
+        _buildApp(syncResult: SyncResult.updated, onMobile: true));
+    await tester.pump(); // initState fires _runSync, isMobileData awaited
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Dialog should appear
+    expect(find.text('Dados Móveis'), findsOneWidget);
+    expect(find.text('Agora não'), findsOneWidget);
+    expect(find.text('Baixar'), findsOneWidget);
+  });
+
+  testWidgets(
+      'SplashScreen navigates to MainScaffold after confirming mobile-data dialog',
+      (tester) async {
+    await tester.pumpWidget(
+        _buildApp(syncResult: SyncResult.updated, onMobile: true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.text('Baixar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(MainScaffold), findsOneWidget);
+  });
+
+  testWidgets(
+      'SplashScreen navigates to MainScaffold after dismissing mobile-data dialog',
+      (tester) async {
+    await tester.pumpWidget(
+        _buildApp(syncResult: SyncResult.updated, onMobile: true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.text('Agora não'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
     expect(find.byType(MainScaffold), findsOneWidget);
   });
 }

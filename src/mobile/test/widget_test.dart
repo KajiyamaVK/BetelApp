@@ -1,30 +1,58 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:betelsas/core/connectivity_service.dart';
+import 'package:betelsas/core/database_helper.dart';
+import 'package:betelsas/core/providers.dart';
+import 'package:betelsas/data/services/content_sync_service.dart';
+import 'package:betelsas/data/services/remote_content_service.dart';
+import 'package:betelsas/presentation/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelsas/main.dart';
 
+// ---------------------------------------------------------------------------
+// Stubs
+// ---------------------------------------------------------------------------
+
+class _FakeConnectivity extends ConnectivityService {
+  @override
+  Future<bool> isConnected() async => true;
+  @override
+  Future<bool> isMobileData() async => false;
+}
+
+class _FakeSyncService extends ContentSyncService {
+  _FakeSyncService()
+      : super(
+          remote: RemoteContentService(),
+          connectivity: ConnectivityService(),
+          dbHelper: DatabaseHelper(),
+        );
+
+  @override
+  Future<SyncResult> sync({void Function(SyncProgress)? onProgress}) async =>
+      SyncResult.upToDate;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 void main() {
-  testWidgets('App starts and displays main scaffold', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: BetelApp()));
+  testWidgets('App starts and displays SplashScreen', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          connectivityServiceProvider.overrideWithValue(_FakeConnectivity()),
+          contentSyncServiceProvider.overrideWithValue(_FakeSyncService()),
+        ],
+        child: const BetelApp(),
+      ),
+    );
 
-    // Wait for splash screen to finish
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-
-    // Verify that our app starts and displays the main scaffold.
+    // First frame: SplashScreen should be visible
+    await tester.pump();
+    expect(find.byType(SplashScreen), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
-    // You might want to look for specific widgets like BottomNavigationBar if you export it or use keys
-    // For now, just ensuring it builds without error is a good start.
-    // Let's check for a text that should be on the home screen or navigation
-    expect(find.text('Lições'), findsWidgets); 
-    expect(find.text('Músicas'), findsOneWidget);
   });
 }

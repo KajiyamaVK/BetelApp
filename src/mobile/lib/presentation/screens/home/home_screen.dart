@@ -109,7 +109,7 @@ class HomeScreen extends ConsumerWidget {
                 return SliverList(
                   delegate: SliverChildListDelegate([
                     const SizedBox(height: 10),
-                    ...lessons.map((lesson) => _buildLessonTile(context, lesson)).toList(),
+                    ...lessons.map((lesson) => _buildLessonTile(context, lesson)),
                     const SizedBox(height: 20),
                   ]),
                 );
