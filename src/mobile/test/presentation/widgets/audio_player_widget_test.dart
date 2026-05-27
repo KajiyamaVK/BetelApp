@@ -32,13 +32,7 @@ void main() {
 
   testWidgets('AudioPlayerWidget should show Next button when onNext is provided', (WidgetTester tester) async {
     bool nextCalled = false;
-    
-    // We need to modify AudioPlayerWidget constructor first to accept onNext, 
-    // but TDD says write test first. This test will fail compilation until we update the widget.
-    // However, for "Vibe Coding", I can write the test assuming the interface exists, 
-    // and then fix the code.
-    
-    // checks for the button
+
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
