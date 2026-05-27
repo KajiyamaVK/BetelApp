@@ -66,11 +66,11 @@ class MusicScreen extends ConsumerWidget {
                                   isPlayingThis ? Icons.pause_rounded : Icons.play_arrow_rounded,
                                   color: Colors.black,
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   if (isPlayingThis) {
-                                    audioNotifier.pause();
+                                    await audioNotifier.pause();
                                   } else {
-                                    audioNotifier.setQueue(songs, startIndex: index);
+                                    await audioNotifier.setQueue(songs, startIndex: index);
                                   }
                                 },
                               ),
