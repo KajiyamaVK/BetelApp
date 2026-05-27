@@ -70,11 +70,7 @@ class MusicScreen extends ConsumerWidget {
                                   if (isPlayingThis) {
                                     audioNotifier.pause();
                                   } else {
-                                    audioNotifier.play(
-                                      song.audioUrl,
-                                      title: song.title,
-                                      artist: song.artist,
-                                    );
+                                    audioNotifier.setQueue(songs, startIndex: index);
                                   }
                                 },
                               ),
