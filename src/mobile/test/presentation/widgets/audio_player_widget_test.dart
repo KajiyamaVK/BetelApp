@@ -55,8 +55,40 @@ void main() {
     );
 
     expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
-    
+
     await tester.tap(find.byIcon(Icons.skip_next_rounded));
     expect(nextCalled, isTrue);
+  });
+
+  testWidgets('AudioPlayerWidget hides restart button when showRestartButton is false',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(
+            body: AudioPlayerWidget(showRestartButton: false),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.skip_previous_rounded), findsNothing);
+  });
+
+  testWidgets('AudioPlayerWidget shows restart button by default',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(
+            body: AudioPlayerWidget(),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.skip_previous_rounded), findsOneWidget);
   });
 }

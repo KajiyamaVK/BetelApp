@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AudioPlayerWidget extends ConsumerStatefulWidget {
   final VoidCallback? onNext;
+  final bool showRestartButton;
 
   const AudioPlayerWidget({
     super.key,
     this.onNext,
+    this.showRestartButton = true,
   });
 
   @override
@@ -89,23 +91,25 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     ],
                   ),
                 ),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      notifier.seek(Duration.zero);
-                    },
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                      size: 24,
-                      color: Colors.black,
+                if (widget.showRestartButton) ...[
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        notifier.seek(Duration.zero);
+                      },
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        size: 24,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Container(
                   decoration: const BoxDecoration(
                     color: AppTheme.primaryColor,
