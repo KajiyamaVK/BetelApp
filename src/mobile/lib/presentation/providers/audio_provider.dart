@@ -98,6 +98,27 @@ class AudioNotifier extends StateNotifier<AudioState> {
     );
   }
 
+  Future<void> load(String url, {required String title, required String artist}) async {
+    if (url == state.currentUrl) return;
+
+    await _player.stop();
+
+    if (url.startsWith('assets/')) {
+      final path = url.replaceFirst('assets/', '');
+      await _player.setSource(AssetSource(path));
+    } else {
+      await _player.setSource(UrlSource(url));
+    }
+
+    state = state.copyWith(
+      currentUrl: url,
+      currentTitle: title,
+      currentArtist: artist,
+      isPlaying: false,
+      position: Duration.zero,
+    );
+  }
+
   Future<void> pause() async {
     await _player.pause();
     state = state.copyWith(isPlaying: false);

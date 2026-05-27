@@ -80,11 +80,28 @@ void main() {
     test('resume() updates state and calls player.resume', () async {
       await notifier.play('url', title: 't', artist: 'a');
       await notifier.pause();
-      
+
       await notifier.resume();
 
       expect(notifier.state.isPlaying, true);
       verify(mockAudioPlayer.resume()).called(2); // Once for play, once for resume
+    });
+
+    test('load() sets metadata and source without playing', () async {
+      const url = 'assets/audio/lesson_4.mp3';
+      const title = 'Quem é Deus?';
+      const artist = 'Betel Kids';
+
+      await notifier.load(url, title: title, artist: artist);
+
+      expect(notifier.state.isPlaying, false);
+      expect(notifier.state.currentUrl, url);
+      expect(notifier.state.currentTitle, title);
+      expect(notifier.state.currentArtist, artist);
+      expect(notifier.state.position, Duration.zero);
+
+      verify(mockAudioPlayer.setSource(any)).called(1);
+      verifyNever(mockAudioPlayer.resume());
     });
   });
 }
