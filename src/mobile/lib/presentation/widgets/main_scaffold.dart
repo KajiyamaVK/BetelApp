@@ -1,3 +1,4 @@
+import 'package:betelsas/data/services/content_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelsas/presentation/screens/home/home_screen.dart';
@@ -9,7 +10,8 @@ import 'package:betelsas/presentation/providers/audio_provider.dart';
 
 
 class MainScaffold extends ConsumerStatefulWidget {
-  const MainScaffold({super.key});
+  final SyncResult? syncResult;
+  const MainScaffold({super.key, this.syncResult});
 
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
@@ -17,13 +19,18 @@ class MainScaffold extends ConsumerStatefulWidget {
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
   int _currentIndex = 0;
+  late final List<Widget> _screens;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const MusicScreen(),
-    const FlashcardDashboard(),
-    const FavoritesScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(syncResult: widget.syncResult),
+      const MusicScreen(),
+      const FlashcardDashboard(),
+      const FavoritesScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
