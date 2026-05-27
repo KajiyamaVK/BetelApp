@@ -280,6 +280,6 @@ class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return const AudioPlayerWidget(showRestartButton: false);
+    return const AudioPlayerWidget();
   }
 }

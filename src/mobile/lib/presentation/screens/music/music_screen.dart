@@ -88,10 +88,13 @@ class MusicScreen extends ConsumerWidget {
           ),
           
           if (audioState.currentUrl != null)
-             const Align(
-               alignment: Alignment.bottomCenter,
-               child: AudioPlayerWidget(),
-             ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AudioPlayerWidget(
+                onPrevious: () => audioNotifier.playPrevious(),
+                onNext: () => audioNotifier.playNext(),
+              ),
+            ),
         ],
       ),
     );
