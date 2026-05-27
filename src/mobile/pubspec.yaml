@@ -44,6 +44,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   sqflite: ^2.3.0
   pdfrx: ^2.2.24
+  dio: ^5.4.3
+  connectivity_plus: ^6.0.3
 
 dev_dependencies:
   integration_test:
