@@ -92,22 +92,19 @@ class AudioNotifier extends StateNotifier<AudioState> {
       return;
     }
 
-    // If different song or first play
-    // Stop current if any (though setSource/resume usually handles it, good to be explicit for state)
-    await _player.stop();
-
-    await _player.setSource(_resolveSource(url));
-
-    await _player.resume();
-
+    // Reset state before starting player to avoid race with onDurationChanged/onPositionChanged listeners
     state = state.copyWith(
       currentUrl: url,
       currentTitle: title,
       currentArtist: artist,
-      isPlaying: true,
+      isPlaying: false,
       position: Duration.zero,
       duration: Duration.zero,
     );
+
+    await _player.stop();
+    await _player.setSource(_resolveSource(url));
+    await _player.resume();
   }
 
   Future<void> load(String url, {required String title, required String artist}) async {
@@ -170,6 +167,27 @@ class AudioNotifier extends StateNotifier<AudioState> {
     final nextIndex = index + 1;
     final song = queue[nextIndex];
     state = state.copyWith(currentIndex: nextIndex);
+    await play(song.audioUrl, title: song.title, artist: song.artist);
+  }
+
+  Future<void> playPrevious() async {
+    final queue = state.queue;
+    final index = state.currentIndex;
+    final position = state.position;
+
+    if (position.inSeconds >= 2) {
+      await seek(Duration.zero);
+      return;
+    }
+
+    if (queue.isEmpty || index == null || index <= 0) {
+      await seek(Duration.zero);
+      return;
+    }
+
+    final prevIndex = index - 1;
+    final song = queue[prevIndex];
+    state = state.copyWith(currentIndex: prevIndex);
     await play(song.audioUrl, title: song.title, artist: song.artist);
   }
 }

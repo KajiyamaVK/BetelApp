@@ -60,6 +60,9 @@ void main() {
       const artist = 'Test Artist';
 
       await notifier.play(url, title: title, artist: artist);
+      // isPlaying is driven by onPlayerStateChanged listener, not set directly by play()
+      playerStateController.add(PlayerState.playing);
+      await Future.delayed(Duration.zero);
 
       expect(notifier.state.isPlaying, true);
       expect(notifier.state.currentUrl, url);
@@ -215,6 +218,70 @@ void main() {
       await Future.delayed(Duration.zero);
 
       expect(notifier.state.currentIndex, 1);
+      verifyNever(mockAudioPlayer.setSource(any));
+    });
+  });
+
+  group('playPrevious', () {
+    test('seeks to zero when position >= 2s', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 1);
+      positionController.add(const Duration(seconds: 3));
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playPrevious();
+
+      verify(mockAudioPlayer.seek(Duration.zero)).called(1);
+      verifyNever(mockAudioPlayer.setSource(any));
+      expect(notifier.state.currentIndex, 1); // index unchanged
+    });
+
+    test('goes to previous song when position < 2s and not first song', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 1);
+      positionController.add(const Duration(seconds: 1));
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playPrevious();
+
+      expect(notifier.state.currentIndex, 0);
+      expect(notifier.state.currentUrl, 'url_a');
+      verify(mockAudioPlayer.setSource(any)).called(1);
+    });
+
+    test('seeks to zero when position < 2s and is first song', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 0);
+      positionController.add(const Duration(seconds: 1));
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playPrevious();
+
+      verify(mockAudioPlayer.seek(Duration.zero)).called(1);
+      verifyNever(mockAudioPlayer.setSource(any));
+      expect(notifier.state.currentIndex, 0);
+    });
+
+    test('seeks to zero when position < 2s and queue is empty', () async {
+      positionController.add(const Duration(seconds: 1));
+      await Future.delayed(Duration.zero);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playPrevious();
+
+      verify(mockAudioPlayer.seek(Duration.zero)).called(1);
       verifyNever(mockAudioPlayer.setSource(any));
     });
   });
