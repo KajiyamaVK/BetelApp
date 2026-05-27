@@ -10,7 +10,9 @@ import 'package:betelsas/domain/repositories/favorites_repository.dart';
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) => DatabaseHelper());
 
 // Repositories
-final contentRepositoryProvider = Provider<ContentRepository>((ref) => ContentRepository());
+final contentRepositoryProvider = Provider<ContentRepository>((ref) {
+  return ContentRepository(dbHelper: ref.watch(databaseHelperProvider));
+});
 
 final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   final dbHelper = ref.watch(databaseHelperProvider);

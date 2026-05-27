@@ -1,6 +1,5 @@
 
 import 'package:betelsas/data/repositories/flashcard_repository.dart';
-import 'package:betelsas/data/models/flashcard.dart';
 import 'package:betelsas/data/models/lesson.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -18,11 +17,6 @@ void main() {
   late MockDatabaseHelper mockDatabaseHelper;
   late MockDatabase mockDatabase;
 
-  // setUpAll(() {
-  //   sqfliteFfiInit();
-  //   databaseFactory = databaseFactoryFfi;
-  // });
-
   setUp(() {
     mockContentRepository = MockContentRepository();
     mockDatabaseHelper = MockDatabaseHelper();
@@ -33,52 +27,25 @@ void main() {
   });
 
   group('getAllFlashcardsWithStatus', () {
+    // After the SQLite migration, lessons no longer carry flashcards. Until a
+    // future task reintroduces a flashcards source, the repository returns an
+    // empty list. This test pins that behaviour explicitly.
     final testLesson = Lesson(
       id: 1,
       title: 'Test Lesson',
-      imageUrl: 'http://placeholder.com',
-      scriptureReference: 'Ref',
-      content: 'Content',
-      flashcards: [
-        Flashcard(id: '1', question: 'Q1', answer: 'A1'),
-        Flashcard(id: '2', question: 'Q2', answer: 'A2'),
-        Flashcard(id: '3', question: 'Q3', answer: 'A3'),
-      ],
+      localPdfPath: 'betelsas/lessons/1/lesson.pdf',
     );
 
-    test('should return all flashcards with correct status', () async {
+    test('should return an empty list while flashcards source is missing', () async {
       // Arrange
       when(mockContentRepository.loadLessons()).thenAnswer((_) async => [testLesson]);
-      
-      final now = DateTime.now();
-      final reviewTime = now.subtract(const Duration(days: 1)).millisecondsSinceEpoch; // Past
-      final futureTime = now.add(const Duration(days: 1)).millisecondsSinceEpoch; // Future
-
-      // Mock DB query
-      when(mockDatabase.query('flashcard_progress')).thenAnswer((_) async => [
-        // Card 2: Review (next_review in past)
-        {'flashcard_id': '2', 'next_review': reviewTime, 'box': 1, 'last_reviewed': 0},
-        // Card 3: Learned (next_review in future)
-        {'flashcard_id': '3', 'next_review': futureTime, 'box': 2, 'last_reviewed': 0},
-      ]);
+      when(mockDatabase.query('flashcard_progress')).thenAnswer((_) async => []);
 
       // Act
       final result = await repository.getAllFlashcardsWithStatus();
 
       // Assert
-      expect(result.length, 3);
-      
-      // Card 1: New (no record in DB)
-      expect(result[0].flashcard.id, '1');
-      expect(result[0].status, FlashcardStatus.newCard);
-
-      // Card 2: Review
-      expect(result[1].flashcard.id, '2');
-      expect(result[1].status, FlashcardStatus.review);
-
-      // Card 3: Learned
-      expect(result[2].flashcard.id, '3');
-      expect(result[2].status, FlashcardStatus.learned);
+      expect(result, isEmpty);
     });
   });
 

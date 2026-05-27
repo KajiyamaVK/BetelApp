@@ -1,6 +1,7 @@
 import 'package:betelsas/core/providers.dart';
 import 'package:betelsas/data/models/song.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 final musicViewModelProvider = StateNotifierProvider<MusicViewModel, AsyncValue<List<Song>>>((ref) {
   return MusicViewModel(ref);
@@ -16,13 +17,18 @@ class MusicViewModel extends StateNotifier<AsyncValue<List<Song>>> {
   Future<void> loadSongs() async {
     try {
       final repository = _ref.read(contentRepositoryProvider);
-      final lessons = await repository.loadLessons();
-      // Extract songs from lessons
+      final dir = await getApplicationDocumentsDirectory();
+      final lessons = await repository.loadLessonsWithAudio();
       final songs = lessons
-          .where((l) => l.song != null)
-          .map((l) => l.song!)
+          .map((l) => Song(
+                id: l.id.toString(),
+                title: l.title,
+                artist: 'Betel',
+                audioUrl: '${dir.path}/${l.localAudioPath!}',
+                durationIds: 0,
+              ))
           .toList();
-      
+
       state = AsyncValue.data(songs);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

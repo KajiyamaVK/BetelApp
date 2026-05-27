@@ -1,17 +1,24 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'package:betelsas/core/database_helper.dart';
 import 'package:betelsas/data/models/lesson.dart';
 
 class ContentRepository {
+  final DatabaseHelper _dbHelper;
+
+  ContentRepository({required DatabaseHelper dbHelper}) : _dbHelper = dbHelper;
+
   Future<List<Lesson>> loadLessons() async {
-    try {
-      final String response = await rootBundle.loadString('assets/data/lessons.json');
-      final List<dynamic> data = json.decode(response);
-      return data.map((json) => Lesson.fromJson(json)).toList();
-    } catch (e) {
-      // In a real app, log this error
-      print('Error loading lessons: $e');
-      return [];
-    }
+    final db = await _dbHelper.database;
+    final rows = await db.query('lessons', orderBy: 'id ASC');
+    return rows.map(Lesson.fromMap).toList();
+  }
+
+  Future<List<Lesson>> loadLessonsWithAudio() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'lessons',
+      where: 'audio_local_path IS NOT NULL',
+      orderBy: 'id ASC',
+    );
+    return rows.map(Lesson.fromMap).toList();
   }
 }

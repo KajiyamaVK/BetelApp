@@ -12,8 +12,10 @@ class FlashcardRepository {
 
   Future<List<Flashcard>> getDueFlashcards() async {
     // 1. Load all static flashcards
-    final lessons = await _contentRepository.loadLessons();
-    final allFlashcards = lessons.expand((l) => l.flashcards).toList();
+    // TODO: Flashcards no longer live on the Lesson model after the SQLite
+    // migration. A future task will reintroduce a flashcards source.
+    await _contentRepository.loadLessons();
+    final List<Flashcard> allFlashcards = [];
 
     // 2. Load progress from SQLite
     final db = await _databaseHelper.database;
@@ -48,8 +50,10 @@ class FlashcardRepository {
 
   Future<List<FlashcardWithStatus>> getAllFlashcardsWithStatus() async {
     // 1. Load all static flashcards
-    final lessons = await _contentRepository.loadLessons();
-    final allFlashcards = lessons.expand((l) => l.flashcards).toList();
+    // TODO: Flashcards no longer live on the Lesson model after the SQLite
+    // migration. A future task will reintroduce a flashcards source.
+    await _contentRepository.loadLessons();
+    final List<Flashcard> allFlashcards = [];
 
     // 2. Load progress from SQLite
     final db = await _databaseHelper.database;

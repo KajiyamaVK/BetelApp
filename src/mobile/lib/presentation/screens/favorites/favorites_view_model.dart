@@ -1,8 +1,8 @@
 import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/models/lesson.dart';
 import 'package:betelsas/data/models/song.dart';
-import 'package:betelsas/domain/repositories/favorites_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 final favoritesViewModelProvider = StateNotifierProvider<FavoritesViewModel, AsyncValue<List<dynamic>>>((ref) {
   return FavoritesViewModel(ref);
@@ -21,8 +21,18 @@ class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
       final favorites = await repo.getFavorites();
 
       final contentRepo = _ref.read(contentRepositoryProvider);
-      final lessons = await contentRepo.loadLessons();
-      final songs = lessons.where((l) => l.song != null).map((l) => l.song!).toList();
+      final lessons = await contentRepo.loadLessonsWithAudio();
+      final dir = await getApplicationDocumentsDirectory();
+      final songs = lessons
+          .where((l) => l.localAudioPath != null)
+          .map((l) => Song(
+                id: l.id.toString(),
+                title: l.title,
+                artist: 'Betel',
+                audioUrl: '${dir.path}/${l.localAudioPath!}',
+                durationIds: 0,
+              ))
+          .toList();
 
       final List<dynamic> favoriteItems = [];
 
@@ -42,7 +52,7 @@ class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
            } catch (_) {}
         }
       }
-      
+
       state = AsyncValue.data(favoriteItems);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -53,18 +63,18 @@ class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
     try {
       final repo = _ref.read(favoritesRepositoryProvider);
       final isFav = await repo.isFavorite(type, itemId);
-      
+
       if (isFav) {
         await repo.removeFavorite(type, itemId);
       } else {
         await repo.addFavorite(type, itemId);
       }
-      
+
       // Reload favorites to update the list
       await loadFavorites();
     } catch (e) {
       // Handle error or show snackbar via a provider/listener
-      print('Error toggling favorite: $e');
+      debugPrint('Error toggling favorite: $e');
     }
   }
 
@@ -73,3 +83,4 @@ class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
     return await repo.isFavorite(type, itemId);
   }
 }
+

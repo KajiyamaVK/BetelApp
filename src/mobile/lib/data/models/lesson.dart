@@ -1,33 +1,25 @@
-import 'package:json_annotation/json_annotation.dart';
-import 'package:betelsas/data/models/song.dart';
-import 'package:betelsas/data/models/flashcard.dart';
-
-part 'lesson.g.dart';
-
-@JsonSerializable()
 class Lesson {
   final int id;
   final String title;
-
-  final String imageUrl;
-  final String content;
-  final String scriptureReference;
-  final String? pdfUrl;
-  final Song? song;
-  final List<Flashcard> flashcards;
+  final String localPdfPath;
+  final String? localAudioPath;
+  final String? audioExt;
 
   Lesson({
     required this.id,
     required this.title,
-
-    required this.imageUrl,
-    required this.content,
-    required this.scriptureReference,
-    this.pdfUrl,
-    this.song,
-    required this.flashcards,
+    required this.localPdfPath,
+    this.localAudioPath,
+    this.audioExt,
   });
 
-  factory Lesson.fromJson(Map<String, dynamic> json) => _$LessonFromJson(json);
-  Map<String, dynamic> toJson() => _$LessonToJson(this);
+  factory Lesson.fromMap(Map<String, dynamic> map) {
+    return Lesson(
+      id: map['id'] as int,
+      title: map['title'] as String,
+      localPdfPath: map['pdf_local_path'] as String,
+      localAudioPath: map['audio_local_path'] as String?,
+      audioExt: map['audio_ext'] as String?,
+    );
+  }
 }
