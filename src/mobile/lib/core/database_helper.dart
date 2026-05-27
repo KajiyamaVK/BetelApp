@@ -2,12 +2,16 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  static DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
   factory DatabaseHelper() => _instance;
-
   DatabaseHelper._internal();
+
+  static void resetForTesting() {
+    _database = null;
+    _instance = DatabaseHelper._internal();
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -18,16 +22,26 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'betel.db');
-
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // Lesson Progress Table
+    await _createOriginalTables(db);
+    await _createSyncTables(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createSyncTables(db);
+    }
+  }
+
+  Future<void> _createOriginalTables(Database db) async {
     await db.execute('''
       CREATE TABLE lesson_progress (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,27 +51,43 @@ class DatabaseHelper {
         last_accessed INTEGER
       )
     ''');
-
-    // Favorites Table
     await db.execute('''
       CREATE TABLE favorites (
         id TEXT PRIMARY KEY,
-        type TEXT NOT NULL, -- 'lesson' or 'song'
+        type TEXT NOT NULL,
         item_id TEXT NOT NULL,
         added_at INTEGER NOT NULL
       )
     ''');
-
-    // Flashcard Progress Table (for SM-2 or similar)
     await db.execute('''
       CREATE TABLE flashcard_progress (
         flashcard_id TEXT PRIMARY KEY,
-        box INTEGER NOT NULL DEFAULT 0, -- Leitner box or interval
-        next_review INTEGER NOT NULL, -- Timestamp
+        box INTEGER NOT NULL DEFAULT 0,
+        next_review INTEGER NOT NULL,
         last_reviewed INTEGER
       )
     ''');
   }
 
-  // Helper methods could be added here or in repositories
+  Future<void> _createSyncTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lessons (
+        id               INTEGER PRIMARY KEY,
+        title            TEXT NOT NULL,
+        audio_local_path TEXT,
+        audio_ext        TEXT,
+        audio_checksum   TEXT,
+        pdf_local_path   TEXT NOT NULL,
+        pdf_checksum     TEXT NOT NULL,
+        synced_at        INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sync_meta (
+        id               INTEGER PRIMARY KEY DEFAULT 1,
+        manifest_version INTEGER NOT NULL,
+        last_sync_at     INTEGER NOT NULL
+      )
+    ''');
+  }
 }
