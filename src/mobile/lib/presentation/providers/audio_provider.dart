@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart'; // We need this for Duration/PlayerState potentially, or just use Dart's Duration
+import 'package:betelsas/data/models/song.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AudioState {
@@ -8,6 +9,8 @@ class AudioState {
   final String? currentArtist;
   final Duration duration;
   final Duration position;
+  final List<Song> queue;
+  final int? currentIndex;
 
   const AudioState({
     this.isPlaying = false,
@@ -16,6 +19,8 @@ class AudioState {
     this.currentArtist,
     this.duration = Duration.zero,
     this.position = Duration.zero,
+    this.queue = const [],
+    this.currentIndex,
   });
 
   AudioState copyWith({
@@ -25,6 +30,8 @@ class AudioState {
     String? currentArtist,
     Duration? duration,
     Duration? position,
+    List<Song>? queue,
+    int? currentIndex,
   }) {
     return AudioState(
       isPlaying: isPlaying ?? this.isPlaying,
@@ -33,6 +40,8 @@ class AudioState {
       currentArtist: currentArtist ?? this.currentArtist,
       duration: duration ?? this.duration,
       position: position ?? this.position,
+      queue: queue ?? this.queue,
+      currentIndex: currentIndex ?? this.currentIndex,
     );
   }
 }
@@ -62,6 +71,10 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
     _player.onPositionChanged.listen((p) {
       state = state.copyWith(position: p);
+    });
+
+    _player.onPlayerComplete.listen((_) {
+      playNext();
     });
   }
 
@@ -136,5 +149,26 @@ class AudioNotifier extends StateNotifier<AudioState> {
     await _player.seek(position);
     // State update for position will happen via listener, but good to optimistically update
     state = state.copyWith(position: position);
+  }
+
+  Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
+    state = state.copyWith(
+      queue: songs,
+      currentIndex: startIndex,
+    );
+    final song = songs[startIndex];
+    await play(song.audioUrl, title: song.title, artist: song.artist);
+  }
+
+  Future<void> playNext() async {
+    final queue = state.queue;
+    final index = state.currentIndex;
+    if (queue.isEmpty || index == null) return;
+    if (index >= queue.length - 1) return;
+
+    final nextIndex = index + 1;
+    final song = queue[nextIndex];
+    state = state.copyWith(currentIndex: nextIndex);
+    await play(song.audioUrl, title: song.title, artist: song.artist);
   }
 }
