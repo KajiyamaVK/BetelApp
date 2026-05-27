@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AudioPlayerWidget extends ConsumerStatefulWidget {
+  final VoidCallback? onPrevious;
   final VoidCallback? onNext;
-  final bool showRestartButton;
 
   const AudioPlayerWidget({
     super.key,
+    this.onPrevious,
     this.onNext,
-    this.showRestartButton = true,
   });
 
   @override
@@ -18,7 +18,6 @@ class AudioPlayerWidget extends ConsumerStatefulWidget {
 }
 
 class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
-  // Local state for smooth slider dragging
   bool _isDragging = false;
   double? _dragValue;
 
@@ -32,14 +31,15 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     final audioState = ref.watch(audioProvider);
-    final notifier = ref.read(audioProvider.notifier);
 
-    final currentPosition = _isDragging 
-        ? Duration(seconds: _dragValue?.toInt() ?? 0) 
+    final currentPosition = _isDragging
+        ? Duration(seconds: _dragValue?.toInt() ?? 0)
         : audioState.position;
-    
+
     final maxDuration = audioState.duration.inSeconds.toDouble();
-    final value = currentPosition.inSeconds.toDouble().clamp(0.0, maxDuration > 0 ? maxDuration : 0.0);
+    final value = currentPosition.inSeconds
+        .toDouble()
+        .clamp(0.0, maxDuration > 0 ? maxDuration : 0.0);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -69,7 +69,8 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     color: AppTheme.primaryColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.music_note_rounded, color: AppTheme.primaryColor),
+                  child: const Icon(Icons.music_note_rounded,
+                      color: AppTheme.primaryColor),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -77,13 +78,13 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        audioState.currentTitle ?? 'Desconhecido', 
+                        audioState.currentTitle ?? 'Desconhecido',
                         style: AppTheme.heading2.copyWith(fontSize: 16),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        audioState.currentArtist ?? 'Desconhecido', 
+                        audioState.currentArtist ?? 'Desconhecido',
                         style: AppTheme.caption,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -91,62 +92,43 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     ],
                   ),
                 ),
-                if (widget.showRestartButton) ...[
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.onPrevious != null) ...[
+                      _CircleButton(
+                        size: 34,
+                        onPressed: widget.onPrevious!,
+                        icon: Icons.skip_previous_rounded,
+                        iconSize: 20,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    _CircleButton(
+                      size: 42,
                       onPressed: () {
-                        notifier.seek(Duration.zero);
+                        if (audioState.isPlaying) {
+                          ref.read(audioProvider.notifier).pause();
+                        } else {
+                          ref.read(audioProvider.notifier).resume();
+                        }
                       },
-                      icon: const Icon(
-                        Icons.skip_previous_rounded,
-                        size: 24,
-                        color: Colors.black,
+                      icon: audioState.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      iconSize: 26,
+                    ),
+                    if (widget.onNext != null) ...[
+                      const SizedBox(width: 6),
+                      _CircleButton(
+                        size: 34,
+                        onPressed: widget.onNext!,
+                        icon: Icons.skip_next_rounded,
+                        iconSize: 20,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      if (audioState.isPlaying) {
-                        notifier.pause();
-                      } else {
-                        notifier.resume();
-                      }
-                    },
-                    icon: Icon(
-                      audioState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      size: 32,
-                      color: Colors.black,
-                    ),
-                  ),
+                    ],
+                  ],
                 ),
-                if (widget.onNext != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: widget.onNext,
-                      icon: const Icon(
-                        Icons.skip_next_rounded,
-                        size: 24,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -162,11 +144,11 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     inactiveColor: Colors.grey.withValues(alpha: 0.3),
                     onChangeStart: (_) => setState(() => _isDragging = true),
                     onChangeEnd: (val) {
+                      ref.read(audioProvider.notifier).seek(Duration(seconds: val.toInt()));
                       setState(() {
-                         _isDragging = false;
-                         _dragValue = null;
+                        _isDragging = false;
+                        _dragValue = null;
                       });
-                      notifier.seek(Duration(seconds: val.toInt()));
                     },
                     onChanged: (val) {
                       setState(() => _dragValue = val);
@@ -175,9 +157,40 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                 ),
                 Text(_formatTime(audioState.duration), style: AppTheme.caption),
               ],
-            )
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final double size;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final double iconSize;
+
+  const _CircleButton({
+    required this.size,
+    required this.onPressed,
+    required this.icon,
+    required this.iconSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: AppTheme.primaryColor,
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
+        icon: Icon(icon, size: iconSize, color: Colors.black),
       ),
     );
   }
