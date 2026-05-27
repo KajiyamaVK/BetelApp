@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:betelsas/data/models/song.dart';
 import 'package:betelsas/presentation/providers/audio_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -15,18 +16,21 @@ void main() {
   late StreamController<PlayerState> playerStateController;
   late StreamController<Duration> durationController;
   late StreamController<Duration> positionController;
+  late StreamController<void> playerCompleteController;
 
   setUp(() {
     mockAudioPlayer = MockAudioPlayer();
-    
+
     playerStateController = StreamController<PlayerState>.broadcast();
     durationController = StreamController<Duration>.broadcast();
     positionController = StreamController<Duration>.broadcast();
+    playerCompleteController = StreamController<void>.broadcast();
 
     when(mockAudioPlayer.onPlayerStateChanged).thenAnswer((_) => playerStateController.stream);
     when(mockAudioPlayer.onDurationChanged).thenAnswer((_) => durationController.stream);
     when(mockAudioPlayer.onPositionChanged).thenAnswer((_) => positionController.stream);
-    
+    when(mockAudioPlayer.onPlayerComplete).thenAnswer((_) => playerCompleteController.stream);
+
     // We also need to mock setSource, play, pause etc to return Futures
     when(mockAudioPlayer.setSource(any)).thenAnswer((_) async {});
     when(mockAudioPlayer.resume()).thenAnswer((_) async {});
@@ -41,6 +45,7 @@ void main() {
     playerStateController.close();
     durationController.close();
     positionController.close();
+    playerCompleteController.close();
   });
 
   group('AudioNotifier', () {
@@ -102,6 +107,115 @@ void main() {
 
       verify(mockAudioPlayer.setSource(any)).called(1);
       verifyNever(mockAudioPlayer.resume());
+    });
+  });
+
+  group('setQueue', () {
+    test('stores queue in state and sets currentIndex to startIndex', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+        Song(id: '3', title: 'Song C', artist: 'Artist', audioUrl: 'url_c', durationIds: 150),
+      ];
+
+      await notifier.setQueue(songs, startIndex: 1);
+
+      expect(notifier.state.queue, songs);
+      expect(notifier.state.currentIndex, 1);
+    });
+
+    test('plays the song at startIndex', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+
+      await notifier.setQueue(songs, startIndex: 0);
+
+      expect(notifier.state.currentUrl, 'url_a');
+      expect(notifier.state.currentTitle, 'Song A');
+    });
+
+    test('defaults to startIndex 0 when not provided', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+
+      await notifier.setQueue(songs);
+
+      expect(notifier.state.currentIndex, 0);
+      expect(notifier.state.currentUrl, 'url_a');
+    });
+  });
+
+  group('playNext', () {
+    test('advances to the next song in the queue', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 0);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playNext();
+
+      expect(notifier.state.currentIndex, 1);
+      expect(notifier.state.currentUrl, 'url_b');
+      verify(mockAudioPlayer.setSource(any)).called(1);
+    });
+
+    test('does nothing when already on the last song', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 1);
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.playNext();
+
+      expect(notifier.state.currentIndex, 1);
+      verifyNever(mockAudioPlayer.setSource(any));
+      verifyNever(mockAudioPlayer.resume());
+    });
+
+    test('does nothing when queue is empty', () async {
+      await notifier.playNext();
+
+      verifyNever(mockAudioPlayer.setSource(any));
+    });
+  });
+
+  group('auto-play on complete', () {
+    test('calls playNext when onPlayerComplete fires', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 0);
+      clearInteractions(mockAudioPlayer);
+
+      playerCompleteController.add(null);
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.state.currentIndex, 1);
+      expect(notifier.state.currentUrl, 'url_b');
+    });
+
+    test('stops on last song when onPlayerComplete fires', () async {
+      final songs = [
+        Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
+        Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
+      ];
+      await notifier.setQueue(songs, startIndex: 1);
+      clearInteractions(mockAudioPlayer);
+
+      playerCompleteController.add(null);
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.state.currentIndex, 1);
+      verifyNever(mockAudioPlayer.setSource(any));
     });
   });
 }

@@ -74,7 +74,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
     });
 
     _player.onPlayerComplete.listen((_) {
-      playNext();
+      playNext().catchError((_) {});
     });
   }
 
@@ -152,6 +152,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
   }
 
   Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
+    if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) return;
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
