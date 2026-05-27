@@ -4,7 +4,7 @@ set -e
 # Get the first available mobile device (Android/iOS)
 # Filter out Web and Desktop (Linux, Windows, macOS) devices if possible, or just pick the first valid mobile one.
 # flutter devices output format: Name • ID • ...
-DEVICE_ID=$(flutter devices | grep "•" | grep -v "Web" | grep -v "Linux" | grep -v "macOS" | grep -v "Windows" | head -n 1 | awk -F " • " '{print $2}')
+DEVICE_ID=$(flutter devices | grep "•" | grep -iv "web" | grep -iv "linux" | grep -iv "macos" | grep -iv "windows" | head -n 1 | awk -F " • " '{print $2}')
 
 if [ -z "$DEVICE_ID" ]; then
   echo "No suitable mobile device found for integration tests. Skipping."
