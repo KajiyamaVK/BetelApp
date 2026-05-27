@@ -65,36 +65,35 @@ class AudioNotifier extends StateNotifier<AudioState> {
     });
   }
 
+  Source _resolveSource(String url) {
+    if (url.startsWith('assets/')) {
+      return AssetSource(url.replaceFirst('assets/', ''));
+    }
+    return UrlSource(url);
+  }
+
   Future<void> play(String url, {required String title, required String artist}) async {
     // If same song and paused, resume
     if (url == state.currentUrl && !state.isPlaying) {
       await resume();
       return;
     }
-    
+
     // If different song or first play
     // Stop current if any (though setSource/resume usually handles it, good to be explicit for state)
     await _player.stop();
-    
-    // Check if asset or url
-    // Basic check for asset path
-    if (url.startsWith('assets/')) {
-       final path = url.replaceFirst('assets/', '');
-       await _player.setSource(AssetSource(path));
-    } else {
-       await _player.setSource(UrlSource(url));
-    }
+
+    await _player.setSource(_resolveSource(url));
 
     await _player.resume();
-    
+
     state = state.copyWith(
       currentUrl: url,
       currentTitle: title,
       currentArtist: artist,
       isPlaying: true,
-      // Reset position/duration for new song, or let listeners update it? 
-      // Listeners will update it shortly, but safer to reset position.
-      position: Duration.zero, 
+      position: Duration.zero,
+      duration: Duration.zero,
     );
   }
 
@@ -103,12 +102,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
     await _player.stop();
 
-    if (url.startsWith('assets/')) {
-      final path = url.replaceFirst('assets/', '');
-      await _player.setSource(AssetSource(path));
-    } else {
-      await _player.setSource(UrlSource(url));
-    }
+    await _player.setSource(_resolveSource(url));
 
     state = state.copyWith(
       currentUrl: url,
@@ -116,6 +110,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
       currentArtist: artist,
       isPlaying: false,
       position: Duration.zero,
+      duration: Duration.zero,
     );
   }
 
