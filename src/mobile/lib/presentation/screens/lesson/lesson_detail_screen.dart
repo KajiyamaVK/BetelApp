@@ -252,26 +252,34 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
   }
 }
 
-class _LessonAudioPlayer extends ConsumerWidget {
+class _LessonAudioPlayer extends ConsumerStatefulWidget {
   final Song song;
 
   const _LessonAudioPlayer({required this.song});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final audioState = ref.watch(audioProvider);
-    final isLoaded = audioState.currentUrl == song.audioUrl;
+  ConsumerState<_LessonAudioPlayer> createState() => _LessonAudioPlayerState();
+}
 
-    if (!isLoaded) {
+class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
+  @override
+  void initState() {
+    super.initState();
+    final audioState = ref.read(audioProvider);
+    if (audioState.currentUrl != widget.song.audioUrl) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         ref.read(audioProvider.notifier).load(
-          song.audioUrl,
-          title: song.title,
-          artist: song.artist,
+          widget.song.audioUrl,
+          title: widget.song.title,
+          artist: widget.song.artist,
         );
       });
     }
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return const AudioPlayerWidget(showRestartButton: false);
   }
 }
