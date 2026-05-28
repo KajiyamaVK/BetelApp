@@ -91,6 +91,7 @@ class MusicScreen extends ConsumerWidget {
             Align(
               alignment: Alignment.bottomCenter,
               child: AudioPlayerWidget(
+                key: const ValueKey('music-screen-player'),
                 onPrevious: () => audioNotifier.playPrevious(),
                 onNext: () => audioNotifier.playNext(),
               ),

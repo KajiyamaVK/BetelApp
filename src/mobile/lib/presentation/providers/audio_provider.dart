@@ -143,9 +143,9 @@ class AudioNotifier extends StateNotifier<AudioState> {
   }
 
   Future<void> seek(Duration position) async {
-    await _player.seek(position);
-    // State update for position will happen via listener, but good to optimistically update
+    // Optimistic update first so UI responds immediately (and tests can verify it)
     state = state.copyWith(position: position);
+    await _player.seek(position);
   }
 
   Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
