@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelsas/core/connectivity_service.dart';
 import 'package:betelsas/core/database_helper.dart';
 import 'package:betelsas/data/repositories/content_repository.dart';
-import 'package:betelsas/data/repositories/flashcard_repository.dart';
 import 'package:betelsas/data/repositories/favorites_repository_impl.dart';
 import 'package:betelsas/data/services/content_sync_service.dart';
 import 'package:betelsas/data/services/remote_content_service.dart';
@@ -34,10 +33,4 @@ final contentRepositoryProvider = Provider<ContentRepository>((ref) {
 final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   final dbHelper = ref.watch(databaseHelperProvider);
   return FavoritesRepositoryImpl(dbHelper);
-});
-
-final flashcardRepositoryProvider = Provider<FlashcardRepository>((ref) {
-  final contentRepo = ref.watch(contentRepositoryProvider);
-  final dbHelper = ref.watch(databaseHelperProvider);
-  return FlashcardRepository(contentRepo, dbHelper);
 });

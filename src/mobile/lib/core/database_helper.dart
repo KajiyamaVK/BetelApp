@@ -59,14 +59,6 @@ class DatabaseHelper {
         added_at INTEGER NOT NULL
       )
     ''');
-    await db.execute('''
-      CREATE TABLE flashcard_progress (
-        flashcard_id TEXT PRIMARY KEY,
-        box INTEGER NOT NULL DEFAULT 0,
-        next_review INTEGER NOT NULL,
-        last_reviewed INTEGER
-      )
-    ''');
   }
 
   Future<void> _createSyncTables(Database db) async {
