@@ -95,6 +95,13 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
   Future<void> load(String url, {required String title, required String artist}) async {
     if (url == state.currentUrl) return;
+    final song = Song(
+      id: url,
+      title: title,
+      artist: artist,
+      audioUrl: url,
+      durationIds: 0,
+    );
     state = state.copyWith(
       currentUrl: url,
       currentTitle: title,
@@ -102,7 +109,10 @@ class AudioNotifier extends StateNotifier<AudioState> {
       isPlaying: false,
       position: Duration.zero,
       duration: Duration.zero,
+      queue: [song],
+      currentIndex: 0,
     );
+    await _handler.setQueue([song], startIndex: 0, autoPlay: false);
   }
 
   /// Plays or resumes audio for the given [url].

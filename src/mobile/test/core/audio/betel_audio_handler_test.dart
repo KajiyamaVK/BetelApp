@@ -150,18 +150,38 @@ void main() {
       verify(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition'))).called(1);
     });
 
-    test('emits loading playbackState before audio loads to prevent ANR', () async {
-      // Regression: foreground service must receive a playbackState with controls
-      // before setAudioSource() completes, otherwise Android kills the service (ANR).
+    test('emits playing:true loading state before setAudioSource to prevent ANR', () async {
+      // Regression: audio_service only calls startForeground() on the false→true
+      // transition of playbackState.playing. Android kills the foreground service
+      // with ANR if startForeground() is not called within 5 seconds of service
+      // start. We must emit playing:true before setAudioSource() (which can be slow).
       final states = <PlaybackState>[];
       handler.playbackState.listen(states.add);
 
-      await handler.setQueue(songs, startIndex: 0);
+      await handler.setQueue(songs, startIndex: 0, autoPlay: true);
 
-      // The loading state must have been emitted (before play was called)
-      expect(states.any((s) => s.processingState == AudioProcessingState.loading), isTrue,
-          reason: 'A loading state with controls must be emitted before setAudioSource() '
-              'so the Android foreground service can call startForeground() in time');
+      expect(
+        states.any((s) => s.processingState == AudioProcessingState.loading && s.playing),
+        isTrue,
+        reason: 'A loading state with playing:true must be emitted before setAudioSource() '
+            'to trigger enterPlayingState() and startForeground() in time',
+      );
+    });
+
+    test('does not emit playing:true when autoPlay is false (load-only)', () async {
+      // When load() pre-loads audio without playing, no playing:true state should
+      // be emitted — the foreground service must not start until the user taps Play.
+      final states = <PlaybackState>[];
+      handler.playbackState.listen(states.add);
+
+      await handler.setQueue(songs, startIndex: 0, autoPlay: false);
+
+      expect(
+        states.any((s) => s.playing),
+        isFalse,
+        reason: 'autoPlay:false must not emit playing:true or start the foreground service',
+      );
+      verifyNever(mockPlayer.play());
     });
 
     test('emits idle playbackState when setAudioSource throws to avoid service limbo', () async {
@@ -170,7 +190,7 @@ void main() {
       when(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition')))
           .thenThrow(Exception('file not found'));
 
-      await handler.setQueue(songs, startIndex: 0);
+      await handler.setQueue(songs, startIndex: 0, autoPlay: true);
 
       expect(handler.playbackState.value.playing, isFalse);
       expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
