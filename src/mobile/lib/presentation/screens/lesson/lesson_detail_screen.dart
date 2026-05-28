@@ -123,6 +123,14 @@ class _LessonAudioPlayer extends ConsumerStatefulWidget {
 }
 
 class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
+  AudioNotifier? _audioNotifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _audioNotifier ??= ref.read(audioProvider.notifier);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -130,6 +138,12 @@ class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
       if (!mounted) return;
       _initAudio();
     });
+  }
+
+  @override
+  void dispose() {
+    _audioNotifier?.stop();
+    super.dispose();
   }
 
   Future<void> _initAudio() async {
