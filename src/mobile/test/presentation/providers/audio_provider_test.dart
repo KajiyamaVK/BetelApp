@@ -41,6 +41,7 @@ void main() {
     when(mockHandler.skipToPrevious()).thenAnswer((_) async {});
     when(mockHandler.songList).thenReturn([]);
     when(mockHandler.currentIndex).thenReturn(0);
+    when(mockHandler.setRepeatOne(any)).thenReturn(null);
 
     notifier = AudioNotifier(handler: mockHandler);
   });
@@ -128,6 +129,70 @@ void main() {
       await notifier.playPrevious();
 
       verify(mockHandler.skipToPrevious()).called(1);
+    });
+  });
+
+  group('toggleRepeat', () {
+    test('initial repeatMode is off', () {
+      expect(notifier.state.repeatMode, AudioRepeatMode.off);
+    });
+
+    test('toggleRepeat cycles off -> all -> one -> off', () async {
+      await notifier.toggleRepeat();
+      expect(notifier.state.repeatMode, AudioRepeatMode.all);
+
+      await notifier.toggleRepeat();
+      expect(notifier.state.repeatMode, AudioRepeatMode.one);
+
+      await notifier.toggleRepeat();
+      expect(notifier.state.repeatMode, AudioRepeatMode.off);
+    });
+  });
+
+  group('toggleShuffle', () {
+    test('initial shuffleMode is off', () {
+      expect(notifier.state.shuffleMode, AudioShuffleMode.off);
+    });
+
+    test('toggleShuffle flips off -> on -> off', () async {
+      await notifier.toggleShuffle();
+      expect(notifier.state.shuffleMode, AudioShuffleMode.on);
+
+      await notifier.toggleShuffle();
+      expect(notifier.state.shuffleMode, AudioShuffleMode.off);
+    });
+  });
+
+  group('playNext with repeat', () {
+    test('wraps to first song when repeatMode is all and on last track', () async {
+      await notifier.setQueue(songs, startIndex: 2);
+      await notifier.toggleRepeat(); // off -> all
+
+      await notifier.playNext();
+
+      verify(mockHandler.skipToNext()).called(1);
+      expect(notifier.state.currentIndex, 0);
+    });
+
+    test('does nothing on last song when repeatMode is off', () async {
+      await notifier.setQueue(songs, startIndex: 2);
+
+      await notifier.playNext();
+
+      verifyNever(mockHandler.skipToNext());
+    });
+  });
+
+  group('playNext with shuffle', () {
+    test('calls skipToIndex (not skipToNext) when shuffle is on', () async {
+      when(mockHandler.skipToIndex(any)).thenAnswer((_) async {});
+      await notifier.setQueue(songs, startIndex: 0);
+      await notifier.toggleShuffle();
+
+      await notifier.playNext();
+
+      verify(mockHandler.skipToIndex(any)).called(1);
+      verifyNever(mockHandler.skipToNext());
     });
   });
 }

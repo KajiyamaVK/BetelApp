@@ -184,6 +184,30 @@ void main() {
       verifyNever(mockPlayer.play());
     });
 
+    test('skipToIndex() jumps to the specified index in the queue', () async {
+      await handler.setQueue(songs, startIndex: 0);
+      clearInteractions(mockPlayer);
+
+      await handler.skipToIndex(2);
+
+      expect(handler.mediaItem.value?.title, 'Song C');
+      verify(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition'))).called(1);
+    });
+
+    test('repeatOne: restarts current track on completion instead of skipping', () async {
+      await handler.setQueue(songs, startIndex: 0);
+      handler.setRepeatOne(true);
+      clearInteractions(mockPlayer);
+
+      playerStateController.add(PlayerState(false, ProcessingState.completed));
+      await Future.delayed(Duration.zero);
+
+      // Should seek to zero and play again, NOT advance to Song B
+      verify(mockPlayer.seek(Duration.zero)).called(1);
+      verify(mockPlayer.play()).called(greaterThanOrEqualTo(1));
+      expect(handler.mediaItem.value?.title, 'Song A');
+    });
+
     test('emits idle playbackState when setAudioSource throws to avoid service limbo', () async {
       // Regression: if audio source fails to load, the foreground service must not
       // be left in limbo (which causes ANR). We must emit an idle stopped state.

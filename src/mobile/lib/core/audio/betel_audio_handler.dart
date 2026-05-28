@@ -6,6 +6,9 @@ class BetelAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player;
   List<Song> _queue = [];
   int _currentIndex = 0;
+  bool _repeatOne = false;
+
+  void setRepeatOne(bool value) => _repeatOne = value;
 
   BetelAudioHandler({AudioPlayer? player}) : _player = player ?? AudioPlayer() {
     _initListeners();
@@ -39,7 +42,11 @@ class BetelAudioHandler extends BaseAudioHandler with SeekHandler {
       ));
 
       if (state.processingState == ProcessingState.completed) {
-        skipToNext();
+        if (_repeatOne) {
+          _player.seek(Duration.zero).then((_) => _player.play());
+        } else {
+          skipToNext();
+        }
       }
     });
 
@@ -146,6 +153,11 @@ class BetelAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToNext() async {
     if (_queue.isEmpty || _currentIndex >= _queue.length - 1) return;
     await _loadAndPlay(_currentIndex + 1);
+  }
+
+  Future<void> skipToIndex(int index) async {
+    if (_queue.isEmpty || index < 0 || index >= _queue.length) return;
+    await _loadAndPlay(index);
   }
 
   @override

@@ -190,6 +190,12 @@ class MockBetelAudioHandler extends _i1.Mock implements _i3.BetelAudioHandler {
           as _i2.BehaviorSubject<dynamic>);
 
   @override
+  void setRepeatOne(bool? value) => super.noSuchMethod(
+    Invocation.method(#setRepeatOne, [value]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i6.Future<void> setQueue(
     List<_i4.Song>? songs, {
     int? startIndex = 0,
@@ -246,6 +252,15 @@ class MockBetelAudioHandler extends _i1.Mock implements _i3.BetelAudioHandler {
   _i6.Future<void> skipToNext() =>
       (super.noSuchMethod(
             Invocation.method(#skipToNext, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> skipToIndex(int? index) =>
+      (super.noSuchMethod(
+            Invocation.method(#skipToIndex, [index]),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )

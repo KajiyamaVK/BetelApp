@@ -162,7 +162,10 @@ class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return const AudioPlayerWidget(key: ValueKey('lesson-screen-player'));
+    return const AudioPlayerWidget(
+      key: ValueKey('lesson-screen-player'),
+      showShuffle: false,
+    );
   }
 }
 
