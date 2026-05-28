@@ -95,6 +95,24 @@ void main() {
       verify(mockAudioPlayer.resume()).called(2); // Once for play, once for resume
     });
 
+    // Regression: after stop(), playing the same URL must call setSource()+resume()
+    // not just resume(). The audioplayers library ignores resume() on a stopped player,
+    // so the audio never starts.
+    test('play() calls setSource after stop() even when URL is the same', () async {
+      const url = 'assets/audio/lesson_4.mp3';
+
+      await notifier.play(url, title: 'T', artist: 'A');
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.stop();
+      clearInteractions(mockAudioPlayer);
+
+      await notifier.play(url, title: 'T', artist: 'A');
+
+      verify(mockAudioPlayer.setSource(any)).called(1);
+      verify(mockAudioPlayer.resume()).called(1);
+    });
+
     test('load() sets metadata and source without playing', () async {
       const url = 'assets/audio/lesson_4.mp3';
       const title = 'Quem é Deus?';
