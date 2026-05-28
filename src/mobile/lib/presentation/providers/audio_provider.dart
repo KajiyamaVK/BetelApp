@@ -112,8 +112,6 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
     await _player.stop();
 
-    await _player.setSource(_resolveSource(url));
-
     state = state.copyWith(
       currentUrl: url,
       currentTitle: title,
@@ -122,6 +120,8 @@ class AudioNotifier extends StateNotifier<AudioState> {
       position: Duration.zero,
       duration: Duration.zero,
     );
+
+    await _player.setSource(_resolveSource(url));
   }
 
   Future<void> pause() async {
