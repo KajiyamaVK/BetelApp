@@ -1,3 +1,5 @@
+import 'package:audio_service/audio_service.dart';
+import 'package:betelsas/core/audio/betel_audio_handler.dart';
 import 'package:betelsas/core/connectivity_service.dart';
 import 'package:betelsas/core/database_helper.dart';
 import 'package:betelsas/core/providers.dart';
@@ -8,10 +10,30 @@ import 'package:betelsas/presentation/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:rxdart/rxdart.dart';
+
+import '../providers/audio_provider_test.mocks.dart';
 
 // ---------------------------------------------------------------------------
 // Stubs
 // ---------------------------------------------------------------------------
+
+BetelAudioHandler _makeStubHandler() {
+  final handler = MockBetelAudioHandler();
+  when(handler.playbackState).thenAnswer((_) => BehaviorSubject.seeded(PlaybackState()));
+  when(handler.mediaItem).thenAnswer((_) => BehaviorSubject.seeded(null));
+  when(handler.play()).thenAnswer((_) async {});
+  when(handler.pause()).thenAnswer((_) async {});
+  when(handler.stop()).thenAnswer((_) async {});
+  when(handler.seek(any)).thenAnswer((_) async {});
+  when(handler.skipToNext()).thenAnswer((_) async {});
+  when(handler.skipToPrevious()).thenAnswer((_) async {});
+  when(handler.setQueue(any, startIndex: anyNamed('startIndex'))).thenAnswer((_) async {});
+  when(handler.songList).thenReturn([]);
+  when(handler.currentIndex).thenReturn(0);
+  return handler;
+}
 
 class _FakeConnectivity extends ConnectivityService {
   final bool mobile;
@@ -53,6 +75,7 @@ Widget _buildApp({
           .overrideWithValue(_FakeConnectivity(mobile: onMobile)),
       contentSyncServiceProvider
           .overrideWithValue(_FakeSyncService(syncResult)),
+      betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
     ],
     child: const MaterialApp(home: SplashScreen()),
   );

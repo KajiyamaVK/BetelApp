@@ -1,8 +1,15 @@
+import 'package:audio_service/audio_service.dart';
+import 'package:betelsas/core/audio/betel_audio_handler.dart';
+import 'package:betelsas/core/providers.dart';
 import 'package:betelsas/presentation/providers/audio_provider.dart';
 import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:rxdart/rxdart.dart';
+
+import '../providers/audio_provider_test.mocks.dart';
 
 // Wraps AudioPlayerWidget in a parent that can be forced to rebuild,
 // simulating what happens in MusicScreen (ConsumerWidget) when the
@@ -22,11 +29,29 @@ class _RebuildableParentState extends State<_RebuildableParent> {
   Widget build(BuildContext context) => widget.child;
 }
 
+BetelAudioHandler _makeStubHandler() {
+  final handler = MockBetelAudioHandler();
+  when(handler.playbackState).thenAnswer((_) => BehaviorSubject.seeded(PlaybackState()));
+  when(handler.mediaItem).thenAnswer((_) => BehaviorSubject.seeded(null));
+  when(handler.play()).thenAnswer((_) async {});
+  when(handler.pause()).thenAnswer((_) async {});
+  when(handler.stop()).thenAnswer((_) async {});
+  when(handler.seek(any)).thenAnswer((_) async {});
+  when(handler.skipToNext()).thenAnswer((_) async {});
+  when(handler.skipToPrevious()).thenAnswer((_) async {});
+  when(handler.songList).thenReturn([]);
+  when(handler.currentIndex).thenReturn(0);
+  return handler;
+}
+
 void main() {
   testWidgets('AudioPlayerWidget does NOT show Previous button by default',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
           home: const Scaffold(body: AudioPlayerWidget()),
@@ -43,6 +68,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
           home: Scaffold(
@@ -65,6 +93,9 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
           home: const Scaffold(body: AudioPlayerWidget()),
@@ -81,6 +112,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
           home: Scaffold(
@@ -109,7 +143,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioProvider.overrideWith(
-          (ref) => AudioNotifier()
+          (ref) => AudioNotifier(handler: _makeStubHandler())
             ..state = const AudioState(
               currentUrl: 'test.mp3',
               currentTitle: 'Test',
@@ -182,7 +216,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioProvider.overrideWith((ref) {
-          final notifier = AudioNotifier();
+          final notifier = AudioNotifier(handler: _makeStubHandler());
           notifier.state = const AudioState(
             currentUrl: 'test.mp3',
             currentTitle: 'Test',

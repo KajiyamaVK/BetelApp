@@ -1,4 +1,6 @@
-import 'package:audioplayers/audioplayers.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:betelsas/core/audio/betel_audio_handler.dart';
+import 'package:betelsas/core/providers.dart';
 import 'package:betelsas/data/models/lesson.dart';
 import 'package:betelsas/presentation/providers/audio_provider.dart';
 import 'package:betelsas/presentation/screens/lesson/lesson_detail_screen.dart';
@@ -6,7 +8,10 @@ import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'dart:async';
+import 'package:mockito/mockito.dart';
+import 'package:rxdart/rxdart.dart';
+
+import '../../../presentation/providers/audio_provider_test.mocks.dart';
 
 Lesson _lessonWithAudio() => Lesson(
       id: 4,
@@ -22,19 +27,27 @@ Lesson _lessonWithoutAudio() => Lesson(
       localPdfPath: 'betelsas/lessons/1/lesson.pdf',
     );
 
+BetelAudioHandler _makeStubHandler() {
+  final handler = MockBetelAudioHandler();
+  when(handler.playbackState).thenAnswer((_) => BehaviorSubject.seeded(PlaybackState()));
+  when(handler.mediaItem).thenAnswer((_) => BehaviorSubject.seeded(null));
+  when(handler.play()).thenAnswer((_) async {});
+  when(handler.pause()).thenAnswer((_) async {});
+  when(handler.stop()).thenAnswer((_) async {});
+  when(handler.seek(any)).thenAnswer((_) async {});
+  when(handler.skipToNext()).thenAnswer((_) async {});
+  when(handler.skipToPrevious()).thenAnswer((_) async {});
+  when(handler.setQueue(any, startIndex: anyNamed('startIndex'))).thenAnswer((_) async {});
+  when(handler.songList).thenReturn([]);
+  when(handler.currentIndex).thenReturn(0);
+  return handler;
+}
+
 // Spy notifier that records whether stop() was called.
 class _SpyAudioNotifier extends AudioNotifier {
   bool stopCalled = false;
 
-  _SpyAudioNotifier()
-      : super(
-          player: _silentPlayer(),
-        );
-
-  static AudioPlayer _silentPlayer() {
-    final player = AudioPlayer();
-    return player;
-  }
+  _SpyAudioNotifier() : super(handler: _makeStubHandler());
 
   @override
   Future<void> stop() async {
@@ -44,6 +57,9 @@ class _SpyAudioNotifier extends AudioNotifier {
 }
 
 Widget _wrap(Widget child) => ProviderScope(
+      overrides: [
+        betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+      ],
       child: MaterialApp(
         theme: ThemeData(useMaterial3: false),
         home: child,
