@@ -37,3 +37,24 @@ We follow "Vibe Coding" principles where the AI acts as an Orchestrator and TDD 
 ## Project Structure
 
 - **Mobile App**: The source code for the mobile application is located in `src/mobile`. tests related to the mobile app should be run from this directory (e.g., `flutter test` inside `src/mobile`).
+
+## Android Build & Install Notes
+
+### Always install RELEASE builds for manual testing on device
+
+**Never install debug APKs for manual testing.** Debug APKs have no AOT compilation, which triggers Samsung's background JIT optimizer (`dex2oat` via `IpmAdcpController`/`adcp`) on first launch. This grabs system resources mid-startup and causes a permanent black screen — the app is running but cannot draw.
+
+Release APKs are pre-compiled (AOT) and do not trigger this optimizer.
+
+**To build and install a release APK:**
+```bash
+cd src/mobile
+flutter build apk --release
+adb install build/app/outputs/flutter-apk/app-release.apk
+```
+
+The signing key is at `android/key.properties` (credentials in Bitwarden if needed).
+
+### The push hook installs debug — ignore it for device testing
+
+The pre-push hook runs `flutter drive` / integration tests using a debug build. This is fine for CI. For real device testing, always do a manual `flutter build apk --release` + `adb install` afterward.
