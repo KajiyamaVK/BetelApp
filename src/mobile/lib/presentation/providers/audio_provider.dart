@@ -91,10 +91,15 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
     _mediaItemSub = _handler.mediaItem.listen((item) {
       if (item != null) {
+        // Sync currentUrl/currentIndex when the handler advances tracks
+        // autonomously (autoplay, media notification). MediaItem.id == song.id.
+        final matchIndex = state.queue.indexWhere((s) => s.id == item.id);
         state = state.copyWith(
           currentTitle: item.title,
           currentArtist: item.artist,
           duration: item.duration ?? Duration.zero,
+          currentUrl: matchIndex >= 0 ? state.queue[matchIndex].audioUrl : null,
+          currentIndex: matchIndex >= 0 ? matchIndex : null,
         );
       }
     });

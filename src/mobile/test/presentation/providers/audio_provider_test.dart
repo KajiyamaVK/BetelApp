@@ -13,6 +13,8 @@ import 'audio_provider_test.mocks.dart';
 void main() {
   late MockBetelAudioHandler mockHandler;
   late AudioNotifier notifier;
+  late BehaviorSubject<PlaybackState> playbackSubject;
+  late BehaviorSubject<MediaItem?> mediaItemSubject;
 
   final songs = [
     Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
@@ -27,8 +29,8 @@ void main() {
     // multiple accesses. Using thenAnswer with a closure that returns the
     // same pre-created subject avoids creating a new BehaviorSubject on
     // every property access (which was the bug with the previous approach).
-    final playbackSubject = BehaviorSubject<PlaybackState>.seeded(PlaybackState());
-    final mediaItemSubject = BehaviorSubject<MediaItem?>.seeded(null);
+    playbackSubject = BehaviorSubject<PlaybackState>.seeded(PlaybackState());
+    mediaItemSubject = BehaviorSubject<MediaItem?>.seeded(null);
 
     when(mockHandler.playbackState).thenAnswer((_) => playbackSubject);
     when(mockHandler.mediaItem).thenAnswer((_) => mediaItemSubject);
@@ -193,6 +195,33 @@ void main() {
 
       verify(mockHandler.skipToIndex(any)).called(1);
       verifyNever(mockHandler.skipToNext());
+    });
+  });
+
+  group('currentUrl sync from mediaItem stream', () {
+    test('currentUrl and currentIndex update when handler emits a new mediaItem (e.g. autoplay advance)', () async {
+      await notifier.setQueue(songs, startIndex: 0);
+      expect(notifier.state.currentUrl, 'url_a');
+      expect(notifier.state.currentIndex, 0);
+
+      // Simulate handler advancing to track index 1 autonomously (autoplay/notification)
+      mediaItemSubject.add(MediaItem(id: '2', title: 'Song B', artist: 'Artist'));
+      await Future.microtask(() {}); // let stream listeners run
+
+      expect(notifier.state.currentUrl, 'url_b',
+          reason: 'currentUrl must reflect the new track emitted by the handler');
+      expect(notifier.state.currentIndex, 1,
+          reason: 'currentIndex must point to the new track in the queue');
+    });
+
+    test('currentUrl does not change when mediaItem emits a song not in the queue', () async {
+      await notifier.setQueue(songs, startIndex: 0);
+
+      mediaItemSubject.add(MediaItem(id: 'unknown', title: 'Unknown', artist: 'X'));
+      await Future.microtask(() {});
+
+      // Should not crash and should leave currentUrl unchanged
+      expect(notifier.state.currentUrl, 'url_a');
     });
   });
 }

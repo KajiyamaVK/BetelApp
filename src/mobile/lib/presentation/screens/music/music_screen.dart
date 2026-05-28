@@ -48,10 +48,10 @@ class MusicScreen extends ConsumerWidget {
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             leading: CircleAvatar(
-                              backgroundColor: isCurrent ? AppTheme.primaryColor : AppTheme.scaffoldBackgroundColor,
+                              backgroundColor: AppTheme.primaryColor,
                               child: Icon(
                                 isCurrent ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
-                                color: isCurrent ? Colors.white : Colors.grey,
+                                color: Colors.black,
                               ),
                             ),
                             title: Text(song.title, style: AppTheme.bodyText.copyWith(fontWeight: FontWeight.bold)),
