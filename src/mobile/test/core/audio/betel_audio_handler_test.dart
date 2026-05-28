@@ -149,5 +149,31 @@ void main() {
       expect(handler.mediaItem.value?.title, 'Song B');
       verify(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition'))).called(1);
     });
+
+    test('emits loading playbackState before audio loads to prevent ANR', () async {
+      // Regression: foreground service must receive a playbackState with controls
+      // before setAudioSource() completes, otherwise Android kills the service (ANR).
+      final states = <PlaybackState>[];
+      handler.playbackState.listen(states.add);
+
+      await handler.setQueue(songs, startIndex: 0);
+
+      // The loading state must have been emitted (before play was called)
+      expect(states.any((s) => s.processingState == AudioProcessingState.loading), isTrue,
+          reason: 'A loading state with controls must be emitted before setAudioSource() '
+              'so the Android foreground service can call startForeground() in time');
+    });
+
+    test('emits idle playbackState when setAudioSource throws to avoid service limbo', () async {
+      // Regression: if audio source fails to load, the foreground service must not
+      // be left in limbo (which causes ANR). We must emit an idle stopped state.
+      when(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition')))
+          .thenThrow(Exception('file not found'));
+
+      await handler.setQueue(songs, startIndex: 0);
+
+      expect(handler.playbackState.value.playing, isFalse);
+      expect(handler.playbackState.value.processingState, AudioProcessingState.idle);
+    });
   });
 }

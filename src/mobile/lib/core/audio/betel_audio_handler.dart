@@ -74,12 +74,44 @@ class BetelAudioHandler extends BaseAudioHandler with SeekHandler {
       artist: song.artist,
     ));
 
-    final uri = song.audioUrl.startsWith('http')
-        ? Uri.parse(song.audioUrl)
-        : Uri.file(song.audioUrl);
-    final source = AudioSource.uri(uri);
-    await _player.setAudioSource(source, initialPosition: Duration.zero);
-    await _player.play();
+    // Emit a loading state with controls immediately so the foreground service
+    // can call startForeground() before audio is ready. Without this, Android
+    // kills the service with ANR if setAudioSource() takes too long or throws.
+    playbackState.add(playbackState.value.copyWith(
+      playing: false,
+      processingState: AudioProcessingState.loading,
+      controls: [
+        MediaControl.skipToPrevious,
+        MediaControl.play,
+        MediaControl.skipToNext,
+      ],
+      systemActions: const {
+        MediaAction.seek,
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+      },
+      androidCompactActionIndices: const [0, 1, 2],
+    ));
+
+    try {
+      final uri = song.audioUrl.startsWith('http')
+          ? Uri.parse(song.audioUrl)
+          : Uri.file(song.audioUrl);
+      final source = AudioSource.uri(uri);
+      await _player.setAudioSource(source, initialPosition: Duration.zero);
+      await _player.play();
+    } catch (e) {
+      playbackState.add(playbackState.value.copyWith(
+        playing: false,
+        processingState: AudioProcessingState.idle,
+        controls: [
+          MediaControl.skipToPrevious,
+          MediaControl.play,
+          MediaControl.skipToNext,
+        ],
+        androidCompactActionIndices: const [0, 1, 2],
+      ));
+    }
   }
 
   @override
