@@ -75,7 +75,7 @@ Widget _buildApp({
           .overrideWithValue(_FakeConnectivity(mobile: onMobile)),
       contentSyncServiceProvider
           .overrideWithValue(_FakeSyncService(syncResult)),
-      betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+      betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
     ],
     child: const MaterialApp(home: SplashScreen()),
   );

@@ -51,7 +51,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -70,7 +70,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -95,7 +95,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -114,7 +114,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -214,7 +214,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -230,7 +230,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),
@@ -245,7 +245,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: MaterialApp(
           theme: ThemeData(useMaterial3: false),

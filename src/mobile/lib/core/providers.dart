@@ -1,4 +1,3 @@
-import 'package:betelsas/core/audio/audio_service_initializer.dart';
 import 'package:betelsas/core/audio/betel_audio_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +36,7 @@ final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   return FavoritesRepositoryImpl(dbHelper);
 });
 
-// Initializes the audio service with retry. Overridden in tests with a stub.
-final betelAudioHandlerProvider = FutureProvider<BetelAudioHandler>(
-  (ref) => initAudioService(),
+// Overridden in main() after AudioService.init()
+final betelAudioHandlerProvider = Provider<BetelAudioHandler>(
+  (ref) => throw UnimplementedError('betelAudioHandlerProvider must be overridden in main()'),
 );

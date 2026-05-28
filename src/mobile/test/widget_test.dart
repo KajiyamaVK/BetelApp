@@ -66,7 +66,7 @@ void main() {
         overrides: [
           connectivityServiceProvider.overrideWithValue(_FakeConnectivity()),
           contentSyncServiceProvider.overrideWithValue(_FakeSyncService()),
-          betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
         ],
         child: const BetelApp(),
       ),
