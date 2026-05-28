@@ -21,6 +21,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _runSync() async {
+    // Wait for AudioService to bind before proceeding — on fresh install the
+    // Android MediaBrowserService binding can take several seconds.
+    await ref.read(betelAudioHandlerProvider.future);
+
     final connectivity = ref.read(connectivityServiceProvider);
     final syncService = ref.read(contentSyncServiceProvider);
 

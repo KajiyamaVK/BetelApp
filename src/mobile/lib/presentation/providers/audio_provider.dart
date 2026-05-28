@@ -64,32 +64,37 @@ class AudioState {
 }
 
 final audioProvider = StateNotifierProvider<AudioNotifier, AudioState>((ref) {
-  final handler = ref.watch(betelAudioHandlerProvider);
+  // betelAudioHandlerProvider is a FutureProvider. When it resolves, Riverpod
+  // rebuilds this provider with the real handler. Until then, pass null so
+  // AudioNotifier stays in its idle initial state.
+  final handler = ref.watch(betelAudioHandlerProvider).valueOrNull;
   return AudioNotifier(handler: handler);
 });
 
 class AudioNotifier extends StateNotifier<AudioState> {
-  final BetelAudioHandler _handler;
+  // Nullable during the brief window while AudioService is still binding on
+  // first launch. All mutation methods guard on this being non-null.
+  final BetelAudioHandler? _handler;
   List<int> _shuffledIndices = [];
 
   StreamSubscription<PlaybackState>? _playbackSub;
   StreamSubscription<MediaItem?>? _mediaItemSub;
 
-  AudioNotifier({required BetelAudioHandler handler})
+  AudioNotifier({required BetelAudioHandler? handler})
       : _handler = handler,
         super(const AudioState()) {
-    _initListeners();
+    if (handler != null) _initListeners();
   }
 
   void _initListeners() {
-    _playbackSub = _handler.playbackState.listen((ps) {
+    _playbackSub = _handler!.playbackState.listen((ps) {
       state = state.copyWith(
         isPlaying: ps.playing,
         position: ps.position,
       );
     });
 
-    _mediaItemSub = _handler.mediaItem.listen((item) {
+    _mediaItemSub = _handler!.mediaItem.listen((item) {
       if (item != null) {
         // Sync currentUrl/currentIndex when the handler advances tracks
         // autonomously (autoplay, media notification). MediaItem.id == song.id.
@@ -131,7 +136,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
       queue: [song],
       currentIndex: 0,
     );
-    await _handler.setQueue([song], startIndex: 0, autoPlay: false);
+    await _handler?.setQueue([song], startIndex: 0, autoPlay: false);
   }
 
   /// Plays or resumes audio for the given [url].
@@ -160,21 +165,21 @@ class AudioNotifier extends StateNotifier<AudioState> {
       duration: Duration.zero,
     );
 
-    await _handler.play();
+    await _handler?.play();
   }
 
   Future<void> pause() async {
-    await _handler.pause();
+    await _handler?.pause();
     state = state.copyWith(isPlaying: false);
   }
 
   Future<void> resume() async {
-    await _handler.play();
+    await _handler?.play();
     state = state.copyWith(isPlaying: true);
   }
 
   Future<void> stop() async {
-    await _handler.stop();
+    await _handler?.stop();
     if (mounted) {
       state = const AudioState();
     }
@@ -182,7 +187,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
   Future<void> seek(Duration position) async {
     state = state.copyWith(position: position);
-    await _handler.seek(position);
+    await _handler?.seek(position);
   }
 
   Future<void> setQueue(List<Song> songs, {int startIndex = 0}) async {
@@ -192,7 +197,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
       currentIndex: startIndex,
       currentUrl: songs[startIndex].audioUrl,
     );
-    await _handler.setQueue(songs, startIndex: startIndex);
+    await _handler?.setQueue(songs, startIndex: startIndex);
   }
 
   Future<void> toggleRepeat() async {
@@ -202,7 +207,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
       AudioRepeatMode.one => AudioRepeatMode.off,
     };
     state = state.copyWith(repeatMode: next);
-    _handler.setRepeatOne(next == AudioRepeatMode.one);
+    _handler?.setRepeatOne(next == AudioRepeatMode.one);
   }
 
   Future<void> toggleShuffle() async {
@@ -232,7 +237,7 @@ class AudioNotifier extends StateNotifier<AudioState> {
       final nextPos = (pos + 1) % _shuffledIndices.length;
       final nextIndex = _shuffledIndices[nextPos];
       state = state.copyWith(currentIndex: nextIndex);
-      await _handler.skipToIndex(nextIndex);
+      await _handler?.skipToIndex(nextIndex);
       return;
     }
 
@@ -240,13 +245,13 @@ class AudioNotifier extends StateNotifier<AudioState> {
     if (isLast) {
       if (state.repeatMode == AudioRepeatMode.all) {
         state = state.copyWith(currentIndex: 0);
-        await _handler.skipToNext();
+        await _handler?.skipToNext();
       }
       return;
     }
 
     state = state.copyWith(currentIndex: index + 1);
-    await _handler.skipToNext();
+    await _handler?.skipToNext();
   }
 
   Future<void> playPrevious() async {
@@ -260,6 +265,6 @@ class AudioNotifier extends StateNotifier<AudioState> {
     // Calling the handler unconditionally here is intentional — the asymmetry
     // with playNext() (which returns early at the last song) is by design:
     // "Previous" on the first song restarts it rather than being a no-op.
-    await _handler.skipToPrevious();
+    await _handler?.skipToPrevious();
   }
 }

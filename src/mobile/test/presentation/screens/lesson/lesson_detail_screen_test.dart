@@ -58,7 +58,7 @@ class _SpyAudioNotifier extends AudioNotifier {
 
 Widget _wrap(Widget child) => ProviderScope(
       overrides: [
-        betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        betelAudioHandlerProvider.overrideWith((ref) => Future.value(_makeStubHandler())),
       ],
       child: MaterialApp(
         theme: ThemeData(useMaterial3: false),
