@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class AudioPlayerWidget extends ConsumerStatefulWidget {
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
+  final bool showShuffle;
 
   const AudioPlayerWidget({
     super.key,
     this.onPrevious,
     this.onNext,
+    this.showShuffle = true,
   });
 
   @override
@@ -92,6 +94,47 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     ],
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text(_formatTime(currentPosition), style: AppTheme.caption),
+                Expanded(
+                  child: Slider(
+                    min: 0,
+                    max: maxDuration > 0 ? maxDuration : 1.0,
+                    value: value,
+                    activeColor: AppTheme.primaryColor,
+                    inactiveColor: Colors.grey.withValues(alpha: 0.3),
+                    onChangeStart: (_) => setState(() => _isDragging = true),
+                    onChangeEnd: (val) {
+                      ref.read(audioProvider.notifier).seek(Duration(seconds: val.toInt()));
+                      setState(() {
+                        _isDragging = false;
+                        _dragValue = null;
+                      });
+                    },
+                    onChanged: (val) {
+                      setState(() => _dragValue = val);
+                    },
+                  ),
+                ),
+                Text(_formatTime(audioState.duration), style: AppTheme.caption),
+              ],
+            ),
+            // Controls + toggle row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (widget.showShuffle)
+                  _ToggleButton(
+                    icon: Icons.shuffle_rounded,
+                    active: audioState.shuffleMode == AudioShuffleMode.on,
+                    onPressed: () => ref.read(audioProvider.notifier).toggleShuffle(),
+                  )
+                else
+                  const SizedBox(width: 36),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -129,38 +172,63 @@ class _AudioPlayerWidgetState extends ConsumerState<AudioPlayerWidget> {
                     ],
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Text(_formatTime(currentPosition), style: AppTheme.caption),
-                Expanded(
-                  child: Slider(
-                    min: 0,
-                    max: maxDuration > 0 ? maxDuration : 1.0,
-                    value: value,
-                    activeColor: AppTheme.primaryColor,
-                    inactiveColor: Colors.grey.withValues(alpha: 0.3),
-                    onChangeStart: (_) => setState(() => _isDragging = true),
-                    onChangeEnd: (val) {
-                      ref.read(audioProvider.notifier).seek(Duration(seconds: val.toInt()));
-                      setState(() {
-                        _isDragging = false;
-                        _dragValue = null;
-                      });
-                    },
-                    onChanged: (val) {
-                      setState(() => _dragValue = val);
-                    },
-                  ),
+                _RepeatButton(
+                  mode: audioState.repeatMode,
+                  onPressed: () => ref.read(audioProvider.notifier).toggleRepeat(),
                 ),
-                Text(_formatTime(audioState.duration), style: AppTheme.caption),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ToggleButton extends StatelessWidget {
+  final IconData icon;
+  final bool active;
+  final VoidCallback onPressed;
+
+  const _ToggleButton({
+    required this.icon,
+    required this.active,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(
+        icon,
+        color: active ? Colors.grey[700] : Colors.grey[350],
+        size: 22,
+      ),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+    );
+  }
+}
+
+class _RepeatButton extends StatelessWidget {
+  final AudioRepeatMode mode;
+  final VoidCallback onPressed;
+
+  const _RepeatButton({required this.mode, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = mode != AudioRepeatMode.off;
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(
+        mode == AudioRepeatMode.one ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+        color: isActive ? Colors.grey[700] : Colors.grey[350],
+        size: 22,
+      ),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
     );
   }
 }

@@ -41,6 +41,7 @@ BetelAudioHandler _makeStubHandler() {
   when(handler.skipToPrevious()).thenAnswer((_) async {});
   when(handler.songList).thenReturn([]);
   when(handler.currentIndex).thenReturn(0);
+  when(handler.setRepeatOne(any)).thenReturn(null);
   return handler;
 }
 
@@ -206,6 +207,115 @@ void main() {
 
     await gesture.up();
     await tester.pump();
+  });
+
+  testWidgets('shuffle button is shown when showShuffle is true (default)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(body: AudioPlayerWidget()),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
+  });
+
+  testWidgets('shuffle button is hidden when showShuffle is false',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(body: AudioPlayerWidget(showShuffle: false)),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.shuffle_rounded), findsNothing);
+  });
+
+  testWidgets('repeat button is always shown', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(body: AudioPlayerWidget()),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+  });
+
+  testWidgets('tapping shuffle toggles shuffleMode in provider',
+      (WidgetTester tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        audioProvider.overrideWith((ref) => AudioNotifier(handler: _makeStubHandler())),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(body: AudioPlayerWidget()),
+        ),
+      ),
+    );
+
+    expect(container.read(audioProvider).shuffleMode, AudioShuffleMode.off);
+    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await tester.pump();
+    expect(container.read(audioProvider).shuffleMode, AudioShuffleMode.on);
+  });
+
+  testWidgets('tapping repeat cycles repeatMode through all three states',
+      (WidgetTester tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        audioProvider.overrideWith((ref) => AudioNotifier(handler: _makeStubHandler())),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: const Scaffold(body: AudioPlayerWidget()),
+        ),
+      ),
+    );
+
+    expect(container.read(audioProvider).repeatMode, AudioRepeatMode.off);
+
+    await tester.tap(find.byIcon(Icons.repeat_rounded));
+    await tester.pump();
+    expect(container.read(audioProvider).repeatMode, AudioRepeatMode.all);
+
+    await tester.tap(find.byIcon(Icons.repeat_rounded));
+    await tester.pump();
+    expect(container.read(audioProvider).repeatMode, AudioRepeatMode.one);
+
+    // repeat_one icon now shown
+    expect(find.byIcon(Icons.repeat_one_rounded), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.repeat_one_rounded));
+    await tester.pump();
+    expect(container.read(audioProvider).repeatMode, AudioRepeatMode.off);
   });
 
   // Regression: without a stable Key, _isDragging is reset when the parent

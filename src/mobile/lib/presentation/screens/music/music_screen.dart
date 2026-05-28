@@ -56,23 +56,29 @@ class MusicScreen extends ConsumerWidget {
                             ),
                             title: Text(song.title, style: AppTheme.bodyText.copyWith(fontWeight: FontWeight.bold)),
                             subtitle: Text(song.artist, style: AppTheme.caption),
-                            trailing: Container(
-                              decoration: const BoxDecoration(
-                                color: AppTheme.primaryColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  isPlayingThis ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                  color: Colors.black,
+                            trailing: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Material(
+                                color: isCurrent
+                                    ? AppTheme.primaryColor
+                                    : AppTheme.primaryColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: () async {
+                                    if (isPlayingThis) {
+                                      await audioNotifier.pause();
+                                    } else {
+                                      await audioNotifier.setQueue(songs, startIndex: index);
+                                    }
+                                  },
+                                  child: Icon(
+                                    isPlayingThis ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    color: isCurrent ? Colors.black : AppTheme.primaryColor,
+                                    size: 20,
+                                  ),
                                 ),
-                                onPressed: () async {
-                                  if (isPlayingThis) {
-                                    await audioNotifier.pause();
-                                  } else {
-                                    await audioNotifier.setQueue(songs, startIndex: index);
-                                  }
-                                },
                               ),
                             ),
                           ),

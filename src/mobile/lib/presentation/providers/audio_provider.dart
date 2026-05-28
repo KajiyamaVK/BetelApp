@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:betelsas/core/audio/betel_audio_handler.dart';
 import 'package:betelsas/core/providers.dart';
 import 'package:betelsas/data/models/song.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum AudioRepeatMode { off, all, one }
+
+enum AudioShuffleMode { off, on }
 
 class AudioState {
   final bool isPlaying;
@@ -15,6 +20,8 @@ class AudioState {
   final Duration position;
   final List<Song> queue;
   final int? currentIndex;
+  final AudioRepeatMode repeatMode;
+  final AudioShuffleMode shuffleMode;
 
   const AudioState({
     this.isPlaying = false,
@@ -25,6 +32,8 @@ class AudioState {
     this.position = Duration.zero,
     this.queue = const [],
     this.currentIndex,
+    this.repeatMode = AudioRepeatMode.off,
+    this.shuffleMode = AudioShuffleMode.off,
   });
 
   AudioState copyWith({
@@ -36,6 +45,8 @@ class AudioState {
     Duration? position,
     List<Song>? queue,
     int? currentIndex,
+    AudioRepeatMode? repeatMode,
+    AudioShuffleMode? shuffleMode,
   }) {
     return AudioState(
       isPlaying: isPlaying ?? this.isPlaying,
@@ -46,6 +57,8 @@ class AudioState {
       position: position ?? this.position,
       queue: queue ?? this.queue,
       currentIndex: currentIndex ?? this.currentIndex,
+      repeatMode: repeatMode ?? this.repeatMode,
+      shuffleMode: shuffleMode ?? this.shuffleMode,
     );
   }
 }
@@ -57,6 +70,7 @@ final audioProvider = StateNotifierProvider<AudioNotifier, AudioState>((ref) {
 
 class AudioNotifier extends StateNotifier<AudioState> {
   final BetelAudioHandler _handler;
+  List<int> _shuffledIndices = [];
 
   StreamSubscription<PlaybackState>? _playbackSub;
   StreamSubscription<MediaItem?>? _mediaItemSub;
@@ -176,10 +190,56 @@ class AudioNotifier extends StateNotifier<AudioState> {
     await _handler.setQueue(songs, startIndex: startIndex);
   }
 
+  Future<void> toggleRepeat() async {
+    final next = switch (state.repeatMode) {
+      AudioRepeatMode.off => AudioRepeatMode.all,
+      AudioRepeatMode.all => AudioRepeatMode.one,
+      AudioRepeatMode.one => AudioRepeatMode.off,
+    };
+    state = state.copyWith(repeatMode: next);
+    _handler.setRepeatOne(next == AudioRepeatMode.one);
+  }
+
+  Future<void> toggleShuffle() async {
+    final next = state.shuffleMode == AudioShuffleMode.off ? AudioShuffleMode.on : AudioShuffleMode.off;
+    state = state.copyWith(shuffleMode: next);
+    if (next == AudioShuffleMode.on) {
+      _rebuildShuffleIndices();
+    }
+  }
+
+  void _rebuildShuffleIndices() {
+    final queue = state.queue;
+    final current = state.currentIndex ?? 0;
+    final indices = List<int>.generate(queue.length, (i) => i)..remove(current);
+    indices.shuffle(Random());
+    // Current track stays at position 0 so "next" skips it
+    _shuffledIndices = [current, ...indices];
+  }
+
   Future<void> playNext() async {
     final queue = state.queue;
     final index = state.currentIndex;
-    if (queue.isEmpty || index == null || index >= queue.length - 1) return;
+    if (queue.isEmpty || index == null) return;
+
+    if (state.shuffleMode == AudioShuffleMode.on && _shuffledIndices.isNotEmpty) {
+      final pos = _shuffledIndices.indexOf(index);
+      final nextPos = (pos + 1) % _shuffledIndices.length;
+      final nextIndex = _shuffledIndices[nextPos];
+      state = state.copyWith(currentIndex: nextIndex);
+      await _handler.skipToIndex(nextIndex);
+      return;
+    }
+
+    final isLast = index >= queue.length - 1;
+    if (isLast) {
+      if (state.repeatMode == AudioRepeatMode.all) {
+        state = state.copyWith(currentIndex: 0);
+        await _handler.skipToNext();
+      }
+      return;
+    }
+
     state = state.copyWith(currentIndex: index + 1);
     await _handler.skipToNext();
   }
