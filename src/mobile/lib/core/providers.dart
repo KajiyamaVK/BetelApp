@@ -1,3 +1,4 @@
+import 'package:betelsas/core/audio/betel_audio_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelsas/core/connectivity_service.dart';
@@ -34,3 +35,8 @@ final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
   final dbHelper = ref.watch(databaseHelperProvider);
   return FavoritesRepositoryImpl(dbHelper);
 });
+
+// Overridden in main() after AudioService.init()
+final betelAudioHandlerProvider = Provider<BetelAudioHandler>(
+  (ref) => throw UnimplementedError('betelAudioHandlerProvider must be overridden in main()'),
+);
