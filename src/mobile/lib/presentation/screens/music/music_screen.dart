@@ -35,7 +35,7 @@ class MusicScreen extends ConsumerWidget {
                   ),
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100), // Adjusted top padding
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 220),
                       itemCount: songs.length,
                       itemBuilder: (context, index) {
                         final song = songs[index];
