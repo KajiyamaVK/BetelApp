@@ -111,6 +111,25 @@ void main() {
       verify(mockAudioPlayer.setSource(any)).called(1);
       verifyNever(mockAudioPlayer.resume());
     });
+
+    // Regression: duration showed 00:00 because state was written after
+    // setSource(), overwriting the real duration emitted by onDurationChanged.
+    test('load() preserves duration emitted by onDurationChanged during setSource', () async {
+      const realDuration = Duration(minutes: 3, seconds: 45);
+
+      // Emit duration from the listener as setSource would trigger on a real player
+      when(mockAudioPlayer.setSource(any)).thenAnswer((_) async {
+        durationController.add(realDuration);
+      });
+
+      await notifier.load('assets/audio/lesson.mp3', title: 'Test', artist: 'Betel');
+
+      expect(
+        notifier.state.duration,
+        realDuration,
+        reason: 'duration emitted by onDurationChanged must not be overwritten by load()',
+      );
+    });
   });
 
   group('setQueue', () {
