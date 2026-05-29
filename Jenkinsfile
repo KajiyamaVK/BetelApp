@@ -27,7 +27,10 @@ pipeline {
                         --exclude='.env*' \
                         --exclude='node_modules' \
                         --exclude='.next' \
+                        --exclude='.prisma' \
                         "$WORKSPACE/" "$APP_DIR/"
+                    # Remove any .env* dirs Docker may have created as placeholders
+                    find "$APP_DIR" -maxdepth 4 -name '.env*' -type d -exec docker run --rm -v "$APP_DIR:/t" alpine rm -rf {} + 2>/dev/null || true
                 '''
             }
         }
@@ -46,10 +49,11 @@ pipeline {
                     # needing to resolve external hostnames from inside a bridge network.
                     # The test stage is guarded by `when { branch 'main' }` so only
                     # trusted code reaches this point.
+                    # Mount dev env from a host path outside APP_DIR so rsync never touches it
                     docker run --rm \
                         --network host \
                         -v "$APP_DIR/src/s3-ui:/app" \
-                        -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
+                        -v "/home/kajiyamavk/.config/betelsas-dev.env:/app/.env.local:ro" \
                         -w /app \
                         node:20-alpine \
                         sh -c "set -e; npm ci --prefer-offline; npx prisma generate; npx jest --ci --forceExit"
