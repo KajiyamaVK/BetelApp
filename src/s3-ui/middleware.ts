@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, TOKEN_COOKIE } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 
 const PUBLIC_PATHS = new Set(['/login', '/api/auth/login'])
 
@@ -25,12 +24,9 @@ export async function middleware(req: NextRequest) {
     const payload = await verifyToken(token)
 
     if (pathname.startsWith('/users') || pathname.startsWith('/api/users')) {
-      // Re-fetch isAdmin from DB so revoked admin access takes effect immediately
-      const user = await prisma.user.findUnique({
-        where: { id: payload.id },
-        select: { isAdmin: true },
-      })
-      if (!user?.isAdmin) {
+      // Use isAdmin from the JWT payload — avoids importing Prisma/pg which are not Edge-compatible.
+      // If admin access is revoked, the user's token will expire within 7 days naturally.
+      if (!payload.isAdmin) {
         return pathname.startsWith('/api/')
           ? NextResponse.json({ error: 'Forbidden' }, { status: 403 })
           : NextResponse.redirect(new URL('/lessons', req.url))

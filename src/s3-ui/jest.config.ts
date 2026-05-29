@@ -9,6 +9,8 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  // Exclude Playwright E2E test files — they are run by `npx playwright test`, not Jest.
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/e2e/'],
 }
 
 // next/jest prepends '/node_modules/' which swallows any trailing exceptions.

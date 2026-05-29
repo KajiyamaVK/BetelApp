@@ -49,7 +49,8 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: 'victor' },
-    update: {},
+    // Always update the hash so re-running the seed picks up a changed SEED_VICTOR_PASSWORD
+    update: { passwordHash, isAdmin: true },
     create: { username: 'victor', passwordHash, isAdmin: true },
   })
 
