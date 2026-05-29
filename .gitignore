@@ -43,3 +43,6 @@ app.*.map.json
 /src/mobile/android/app/debug
 /src/mobile/android/app/profile
 /src/mobile/android/app/release
+
+# Superpowers
+.superpowers/
