@@ -12,6 +12,9 @@ pipeline {
 
     stages {
         stage('Update Source') {
+            // Only run the full pipeline on main — prevents any other branch or fork
+            // from executing deploy/migrate stages with prod credentials.
+            when { branch 'main' }
             steps {
                 // Sync Jenkins workspace to the host APP_DIR.
                 // .env* are host-managed secrets — never overwrite them.
@@ -28,14 +31,21 @@ pipeline {
         }
 
         stage('Test') {
+            when { branch 'main' }
             steps {
-                // Run Jest inside a temporary Node container that shares the host
-                // network so it can reach the dev PostgreSQL and MinIO on the homelab.
-                // The dev .env.local on the host is bind-mounted read-only.
+                // Run Jest inside a temporary Node container.
+                // Uses a dedicated docker bridge network with access to dev DB/MinIO
+                // via the homelab's internal hostname — never --network host,
+                // which would expose all host ports to attacker-controlled npm scripts.
                 sh '''
                     set -e
+                    docker network inspect betelsas-test 2>/dev/null || \
+                        docker network create betelsas-test
+
                     docker run --rm \
-                        --network host \
+                        --network betelsas-test \
+                        --add-host=homelab:$(getent hosts homelab | awk '{print $1}' | head -1) \
+                        --add-host=s3.kajiyama.com.br:$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1) \
                         -v "$APP_DIR/src/s3-ui:/app" \
                         -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
                         -w /app \
@@ -46,6 +56,7 @@ pipeline {
         }
 
         stage('Build & Deploy') {
+            when { branch 'main' }
             steps {
                 sh '''
                     set -e
@@ -56,6 +67,7 @@ pipeline {
         }
 
         stage('Migrate') {
+            when { branch 'main' }
             steps {
                 // Run Prisma migrate deploy against the production database.
                 // Uses the prod env file — never touches the dev database.
