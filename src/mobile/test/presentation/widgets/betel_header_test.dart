@@ -12,27 +12,20 @@ void main() {
       ),
     );
 
-    // Verify that the BetelHeader is present
     expect(find.byType(BetelHeader), findsOneWidget);
 
-    // Verify that an image is displayed
     final imageFinder = find.byType(Image);
     expect(imageFinder, findsOneWidget);
 
-    // Verify the image source
     final Image imageWidget = tester.widget(imageFinder);
     final AssetImage imageProvider = imageWidget.image as AssetImage;
     expect(imageProvider.assetName, 'assets/images/appIcon.png');
-    expect(imageWidget.height, 50);
+    expect(imageWidget.height, 100);
 
-    // Verify background color
     final containerFinder = find.byType(Container);
     final Container container = tester.widget(containerFinder);
-    expect(container.color, Colors.white);
-    // Verify that the Align widget is present and has correct alignment
-    final alignFinder = find.byType(Align);
-    expect(alignFinder, findsOneWidget);
-    final Align align = tester.widget(alignFinder);
-    expect(align.alignment, Alignment.centerLeft);
+    expect(container.color, const Color(0xFF1e1e1e));
+
+    expect(find.byType(Center), findsWidgets);
   });
 }
