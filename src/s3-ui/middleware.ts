@@ -6,7 +6,7 @@ const PUBLIC_PATHS = new Set(['/login', '/api/auth/login'])
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.has(pathname) ||
-    [...PUBLIC_PATHS].some((publicPath) => pathname.startsWith(publicPath + '/'))
+    Array.from(PUBLIC_PATHS).some((publicPath) => pathname.startsWith(publicPath + '/'))
 }
 
 export async function middleware(req: NextRequest) {
