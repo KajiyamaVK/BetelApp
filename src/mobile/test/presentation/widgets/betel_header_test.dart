@@ -1,5 +1,6 @@
 import 'package:betelsas/presentation/widgets/betel_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -14,13 +15,8 @@ void main() {
 
     expect(find.byType(BetelHeader), findsOneWidget);
 
-    final imageFinder = find.byType(Image);
-    expect(imageFinder, findsOneWidget);
-
-    final Image imageWidget = tester.widget(imageFinder);
-    final AssetImage imageProvider = imageWidget.image as AssetImage;
-    expect(imageProvider.assetName, 'assets/images/appIcon.png');
-    expect(imageWidget.height, 100);
+    final svgFinder = find.byType(SvgPicture);
+    expect(svgFinder, findsOneWidget);
 
     final containerFinder = find.byType(Container);
     final Container container = tester.widget(containerFinder);

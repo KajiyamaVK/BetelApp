@@ -8,6 +8,8 @@ services:
       - "3001:3000"
     env_file:
       - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   # Run with: docker compose --profile migrate run --rm migrator
@@ -18,5 +20,7 @@ services:
     image: s3-ui-migrator
     env_file:
       - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     profiles:
       - migrate
