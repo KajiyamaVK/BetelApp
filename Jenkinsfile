@@ -47,19 +47,19 @@ pipeline {
                     HOMELAB_IP=$(getent hosts homelab | awk '{print $1}' | head -1)
                     MINIO_IP=$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1)
 
+                    # Pass commands via env var to avoid all sh/Groovy quoting issues
+                    TEST_CMD="set -e; npm ci --prefer-offline; npx jest --ci --forceExit"
+
                     docker run --rm \
                         --network betelsas-test \
                         --add-host=homelab:${HOMELAB_IP} \
                         --add-host=s3.kajiyama.com.br:${MINIO_IP} \
+                        -e "TEST_CMD=${TEST_CMD}" \
                         -v "$APP_DIR/src/s3-ui:/app" \
                         -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
                         -w /app \
                         node:20-alpine \
-                        sh << 'TESTEOF'
-set -e
-npm ci --prefer-offline
-npx jest --ci --forceExit
-TESTEOF
+                        sh -c "$TEST_CMD"
                 '''
             }
         }
