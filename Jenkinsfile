@@ -47,25 +47,19 @@ pipeline {
                     HOMELAB_IP=$(getent hosts homelab | awk '{print $1}' | head -1)
                     MINIO_IP=$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1)
 
-                    # Write the test script to a temp file so sh -c quoting is not an issue
-                    printf '%s\n' \
-                        '#!/bin/sh' \
-                        'set -e' \
-                        'npm ci --prefer-offline' \
-                        'npx jest --ci --forceExit' \
-                        > /tmp/betelsas-test.sh
-                    chmod +x /tmp/betelsas-test.sh
-
                     docker run --rm \
                         --network betelsas-test \
                         --add-host=homelab:${HOMELAB_IP} \
                         --add-host=s3.kajiyama.com.br:${MINIO_IP} \
                         -v "$APP_DIR/src/s3-ui:/app" \
                         -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
-                        -v /tmp/betelsas-test.sh:/betelsas-test.sh:ro \
                         -w /app \
                         node:20-alpine \
-                        /betelsas-test.sh
+                        sh << 'TESTEOF'
+set -e
+npm ci --prefer-offline
+npx jest --ci --forceExit
+TESTEOF
                 '''
             }
         }
