@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @tailwind base;
@@ -86,7 +87,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #F5F5F5;
+    color: #333333;
+    font-family: 'Poppins', sans-serif;
   }
   html {
     @apply font-sans;
