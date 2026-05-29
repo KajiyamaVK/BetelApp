@@ -3,7 +3,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npx prisma generate
+# DATABASE_URL is not needed for code generation — only for runtime connections.
+# Pass a placeholder so prisma.config.ts can load without throwing PrismaConfigEnvError.
+RUN DATABASE_URL=postgresql://x:x@localhost/x npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
