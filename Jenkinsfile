@@ -52,7 +52,8 @@ pipeline {
                     # Generate a patched env file replacing 'homelab' with the real IP so the
                     # test container (--network host) can reach PostgreSQL and MinIO.
                     # The Jenkins container's /etc/hosts maps 'homelab' to its own loopback.
-                    sed 's/homelab/192.168.0.200/g' /home/kajiyamavk/.config/betelsas-dev.env \
+                    # .ci/dev.env lives inside APP_DIR (host-managed, never committed).
+                    sed 's/homelab/192.168.0.200/g' "$APP_DIR/.ci/dev.env" \
                         > /tmp/betelsas-test.env
 
                     docker run --rm \
