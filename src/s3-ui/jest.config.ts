@@ -5,10 +5,26 @@ const createJestConfig = nextJest({ dir: './' })
 
 const config: Config = {
   testEnvironment: 'jest-environment-jsdom',
-  setupFilesAfterFramework: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
 }
 
-export default createJestConfig(config)
+// next/jest prepends '/node_modules/' which swallows any trailing exceptions.
+// We override transformIgnorePatterns after next/jest builds the config so
+// that ESM-only packages like jose are transpiled by the SWC transformer.
+const createConfig = async () => {
+  const nextConfig = await createJestConfig(config)()
+  return {
+    ...nextConfig,
+    transformIgnorePatterns: [
+      // Allow the SWC transform to process jose (ESM-only) and any other
+      // ESM packages we add in the future.
+      '/node_modules/(?!(jose)/)',
+      '^.+\\.module\\.(css|sass|scss)$',
+    ],
+  }
+}
+
+export default createConfig
