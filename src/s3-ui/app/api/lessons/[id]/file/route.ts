@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadObject, getObjectText } from '@/lib/minio'
 import { parseManifest, softDeleteFile } from '@/lib/manifest'

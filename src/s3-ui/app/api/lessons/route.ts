@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import { getObjectText } from '@/lib/minio'
 import { parseManifest } from '@/lib/manifest'
