@@ -39,21 +39,24 @@ pipeline {
                 // Uses a dedicated docker bridge network with access to dev DB/MinIO
                 // via the homelab's internal hostname — never --network host,
                 // which would expose all host ports to attacker-controlled npm scripts.
-                sh '''
+                sh """
                     set -e
                     docker network inspect betelsas-test 2>/dev/null || \
                         docker network create betelsas-test
 
+                    HOMELAB_IP=\$(getent hosts homelab | awk '{print \$1}' | head -1)
+                    MINIO_IP=\$(getent hosts s3.kajiyama.com.br | awk '{print \$1}' | head -1)
+
                     docker run --rm \
                         --network betelsas-test \
-                        --add-host=homelab:$(getent hosts homelab | awk '{print $1}' | head -1) \
-                        --add-host=s3.kajiyama.com.br:$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1) \
-                        -v "$APP_DIR/src/s3-ui:/app" \
-                        -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
+                        --add-host=homelab:\${HOMELAB_IP} \
+                        --add-host=s3.kajiyama.com.br:\${MINIO_IP} \
+                        -v "${APP_DIR}/src/s3-ui:/app" \
+                        -v "${APP_DIR}/src/s3-ui/.env.local:/app/.env.local:ro" \
                         -w /app \
                         node:20-alpine \
-                        sh -c "npm ci --prefer-offline && npx jest --ci --forceExit"
-                '''
+                        sh -c 'npm ci --prefer-offline && npx jest --ci --forceExit'
+                """
             }
         }
 
