@@ -41,26 +41,18 @@ pipeline {
                 // which would expose all host ports to attacker-controlled npm scripts.
                 sh '''
                     set -e
-                    docker network inspect betelsas-test 2>/dev/null || \
-                        docker network create betelsas-test
-
-                    HOMELAB_IP=$(getent hosts homelab | awk '{print $1}' | head -1)
-                    MINIO_IP=$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1)
-
-                    # Pass commands via env var to avoid all sh/Groovy quoting issues
-                    # prisma generate is required after npm ci — the generated client is not committed
-                    TEST_CMD="set -e; npm ci --prefer-offline; npx prisma generate; npx jest --ci --forceExit"
-
+                    # Use --network host so the container can reach homelab services
+                    # (PostgreSQL on localhost:5432, MinIO on s3.kajiyama.com.br) without
+                    # needing to resolve external hostnames from inside a bridge network.
+                    # The test stage is guarded by `when { branch 'main' }` so only
+                    # trusted code reaches this point.
                     docker run --rm \
-                        --network betelsas-test \
-                        --add-host=homelab:${HOMELAB_IP} \
-                        --add-host=s3.kajiyama.com.br:${MINIO_IP} \
-                        -e "TEST_CMD=${TEST_CMD}" \
+                        --network host \
                         -v "$APP_DIR/src/s3-ui:/app" \
                         -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
                         -w /app \
                         node:20-alpine \
-                        sh -c "$TEST_CMD"
+                        sh -c "set -e; npm ci --prefer-offline; npx prisma generate; npx jest --ci --forceExit"
                 '''
             }
         }
