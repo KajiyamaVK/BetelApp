@@ -15,12 +15,14 @@ function makeLoginRequest(body: object): NextRequest {
   })
 }
 
+const AUTH_TEST_USER = 'authtest_login_user'
+
 beforeAll(async () => {
   await prisma.user.upsert({
-    where: { username: 'integtest_auth' },
+    where: { username: AUTH_TEST_USER },
     update: {},
     create: {
-      username: 'integtest_auth',
+      username: AUTH_TEST_USER,
       passwordHash: await bcrypt.hash('correct-pass', 12),
       isAdmin: false,
     },
@@ -28,20 +30,20 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await prisma.user.deleteMany({ where: { username: 'integtest_auth' } })
+  await prisma.user.deleteMany({ where: { username: AUTH_TEST_USER } })
   await prisma.$disconnect()
 })
 
 describe('POST /api/auth/login', () => {
   it('returns 200 and sets cookie on valid credentials', async () => {
-    const req = makeLoginRequest({ username: 'integtest_auth', password: 'correct-pass' })
+    const req = makeLoginRequest({ username: AUTH_TEST_USER, password: 'correct-pass' })
     const res = await loginHandler(req)
     expect(res.status).toBe(200)
     expect(res.cookies.get('token')?.value).toBeTruthy()
   })
 
   it('returns 401 on wrong password', async () => {
-    const req = makeLoginRequest({ username: 'integtest_auth', password: 'wrong' })
+    const req = makeLoginRequest({ username: AUTH_TEST_USER, password: 'wrong' })
     const res = await loginHandler(req)
     expect(res.status).toBe(401)
   })
@@ -61,7 +63,7 @@ describe('GET /api/auth/me', () => {
   })
 
   it('returns user info with valid token', async () => {
-    const loginReq = makeLoginRequest({ username: 'integtest_auth', password: 'correct-pass' })
+    const loginReq = makeLoginRequest({ username: AUTH_TEST_USER, password: 'correct-pass' })
     const loginRes = await loginHandler(loginReq)
     const token = loginRes.cookies.get('token')!.value
 
@@ -70,6 +72,6 @@ describe('GET /api/auth/me', () => {
     const res = await meHandler(req)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.username).toBe('integtest_auth')
+    expect(body.username).toBe(AUTH_TEST_USER)
   })
 })
