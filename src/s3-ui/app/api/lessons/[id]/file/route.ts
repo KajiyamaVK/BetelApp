@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { uploadObject, getObjectText } from '@/lib/minio'
 import { parseManifest, softDeleteFile } from '@/lib/manifest'
 import { uploadQuerySchema } from '@/lib/schemas'
+import { requireAuth } from '@/lib/auth'
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await requireAuth(req)
+  if ('error' in authResult) return authResult.error
+
   const { id: idStr } = await params
   const id = parseInt(idStr, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 })

@@ -4,7 +4,20 @@
 import { GET as getLessons } from '@/app/api/lessons/route'
 import { PUT as updateTitle } from '@/app/api/lessons/[id]/route'
 import { prisma } from '@/lib/prisma'
+import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
+
+async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
+  // Any logged-in user (not necessarily admin) can mutate lessons
+  const token = await signToken({ id: 1, username: 'victor', isAdmin: false })
+  const req = new NextRequest(url, {
+    method,
+    body: body ? JSON.stringify(body) : undefined,
+    headers: { 'Content-Type': 'application/json' },
+  })
+  req.cookies.set(TOKEN_COOKIE, token)
+  return req
+}
 
 beforeAll(async () => {
   await prisma.lesson.upsert({
@@ -29,11 +42,7 @@ describe('GET /api/lessons', () => {
 
 describe('PUT /api/lessons/[id]', () => {
   it('updates title successfully', async () => {
-    const req = new NextRequest('http://localhost/api/lessons/1', {
-      method: 'PUT',
-      body: JSON.stringify({ title: 'Updated Title' }),
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: 'Updated Title' })
     const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -41,12 +50,18 @@ describe('PUT /api/lessons/[id]', () => {
   })
 
   it('returns 400 on empty title', async () => {
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: '' })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 401 without token', async () => {
     const req = new NextRequest('http://localhost/api/lessons/1', {
       method: 'PUT',
-      body: JSON.stringify({ title: '' }),
+      body: JSON.stringify({ title: 'No auth' }),
       headers: { 'Content-Type': 'application/json' },
     })
     const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(401)
   })
 })
