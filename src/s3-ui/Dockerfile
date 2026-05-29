@@ -14,11 +14,13 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# Copy prisma schema and CLI so the migrator profile can run migrate deploy
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 EXPOSE 3000
 CMD ["node", "server.js"]
+
+# Dedicated migrator stage — keeps full node_modules so prisma.config.ts loads correctly
+FROM node:20-alpine AS migrator
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+CMD ["/app/node_modules/.bin/prisma", "migrate", "deploy"]

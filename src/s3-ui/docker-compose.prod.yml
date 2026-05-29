@@ -9,9 +9,10 @@ services:
 
   # Run with: docker compose --profile migrate run --rm migrator
   migrator:
-    build: .
+    build:
+      context: .
+      target: migrator
     env_file:
       - .env.production
-    entrypoint: ["/app/node_modules/.bin/prisma", "migrate", "deploy"]
     profiles:
       - migrate
