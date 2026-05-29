@@ -39,24 +39,34 @@ pipeline {
                 // Uses a dedicated docker bridge network with access to dev DB/MinIO
                 // via the homelab's internal hostname — never --network host,
                 // which would expose all host ports to attacker-controlled npm scripts.
-                sh """
+                sh '''
                     set -e
                     docker network inspect betelsas-test 2>/dev/null || \
                         docker network create betelsas-test
 
-                    HOMELAB_IP=\$(getent hosts homelab | awk '{print \$1}' | head -1)
-                    MINIO_IP=\$(getent hosts s3.kajiyama.com.br | awk '{print \$1}' | head -1)
+                    HOMELAB_IP=$(getent hosts homelab | awk '{print $1}' | head -1)
+                    MINIO_IP=$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1)
+
+                    # Write the test script to a temp file so sh -c quoting is not an issue
+                    printf '%s\n' \
+                        '#!/bin/sh' \
+                        'set -e' \
+                        'npm ci --prefer-offline' \
+                        'npx jest --ci --forceExit' \
+                        > /tmp/betelsas-test.sh
+                    chmod +x /tmp/betelsas-test.sh
 
                     docker run --rm \
                         --network betelsas-test \
-                        --add-host=homelab:\${HOMELAB_IP} \
-                        --add-host=s3.kajiyama.com.br:\${MINIO_IP} \
-                        -v "${APP_DIR}/src/s3-ui:/app" \
-                        -v "${APP_DIR}/src/s3-ui/.env.local:/app/.env.local:ro" \
+                        --add-host=homelab:${HOMELAB_IP} \
+                        --add-host=s3.kajiyama.com.br:${MINIO_IP} \
+                        -v "$APP_DIR/src/s3-ui:/app" \
+                        -v "$APP_DIR/src/s3-ui/.env.local:/app/.env.local:ro" \
+                        -v /tmp/betelsas-test.sh:/betelsas-test.sh:ro \
                         -w /app \
                         node:20-alpine \
-                        sh -c 'npm ci --prefer-offline && npx jest --ci --forceExit'
-                """
+                        /betelsas-test.sh
+                '''
             }
         }
 
