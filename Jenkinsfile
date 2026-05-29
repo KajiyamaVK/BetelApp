@@ -25,6 +25,7 @@ pipeline {
                     set -e
                     rsync -a --delete \
                         --exclude='.env*' \
+                        --exclude='.ci' \
                         --exclude='node_modules' \
                         --exclude='.next' \
                         --exclude='.prisma' \
