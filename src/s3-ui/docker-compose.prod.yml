@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.production
+    restart: unless-stopped
+
+  # Run with: docker compose --profile migrate run --rm migrator
+  migrator:
+    build: .
+    env_file:
+      - .env.production
+    entrypoint: ["node", "node_modules/.bin/prisma", "migrate", "deploy"]
+    profiles:
+      - migrate
