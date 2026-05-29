@@ -48,7 +48,8 @@ pipeline {
                     MINIO_IP=$(getent hosts s3.kajiyama.com.br | awk '{print $1}' | head -1)
 
                     # Pass commands via env var to avoid all sh/Groovy quoting issues
-                    TEST_CMD="set -e; npm ci --prefer-offline; npx jest --ci --forceExit"
+                    # prisma generate is required after npm ci — the generated client is not committed
+                    TEST_CMD="set -e; npm ci --prefer-offline; npx prisma generate; npx jest --ci --forceExit"
 
                     docker run --rm \
                         --network betelsas-test \
