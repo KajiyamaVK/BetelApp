@@ -14,7 +14,9 @@ pipeline {
         stage('Update Source') {
             // Only run the full pipeline on main — prevents any other branch or fork
             // from executing deploy/migrate stages with prod credentials.
-            when { branch 'main' }
+            // GIT_BRANCH is set by the Git plugin in regular pipeline jobs (unlike
+            // BRANCH_NAME which only exists in Multibranch Pipelines).
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 // Sync Jenkins workspace to the host APP_DIR.
                 // .env* are host-managed secrets — never overwrite them.
@@ -31,7 +33,7 @@ pipeline {
         }
 
         stage('Test') {
-            when { branch 'main' }
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 // Run Jest inside a temporary Node container.
                 // Uses a dedicated docker bridge network with access to dev DB/MinIO
@@ -56,7 +58,7 @@ pipeline {
         }
 
         stage('Build & Deploy') {
-            when { branch 'main' }
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 sh '''
                     set -e
@@ -67,7 +69,7 @@ pipeline {
         }
 
         stage('Migrate') {
-            when { branch 'main' }
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 // Run Prisma migrate deploy against the production database.
                 // Uses the prod env file — never touches the dev database.
