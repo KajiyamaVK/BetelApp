@@ -49,9 +49,17 @@ pipeline {
                     # needing to resolve external hostnames from inside a bridge network.
                     # The test stage is guarded by `when { branch 'main' }` so only
                     # trusted code reaches this point.
-                    # Mount dev env from a host path outside APP_DIR so rsync never touches it
+                    # Read dev env, replacing the 'homelab' hostname with its real IP (192.168.0.200)
+                    # so the Node container (--network host) can reach PostgreSQL and MinIO.
+                    # The Jenkins container's /etc/hosts maps 'homelab' to its own loopback,
+                    # not to the actual server — so we inject the corrected URL as an env override.
+                    DEV_DB_URL=$(sed 's/@homelab:/@192.168.0.200:/g' /home/kajiyamavk/.config/betelsas-dev.env | grep DATABASE_URL | cut -d= -f2-)
+                    DEV_MINIO_EP="192.168.0.200"
+
                     docker run --rm \
                         --network host \
+                        -e "DATABASE_URL=${DEV_DB_URL}" \
+                        -e "MINIO_ENDPOINT=${DEV_MINIO_EP}" \
                         -v "$APP_DIR/src/s3-ui:/app" \
                         -v "/home/kajiyamavk/.config/betelsas-dev.env:/app/.env.local:ro" \
                         -w /app \
