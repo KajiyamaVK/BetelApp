@@ -52,15 +52,14 @@ pipeline {
                     # trusted code reaches this point.
                     # Generate a patched env file replacing 'homelab' with the real IP so the
                     # test container (--network host) can reach PostgreSQL and MinIO.
-                    # The Jenkins container's /etc/hosts maps 'homelab' to its own loopback.
-                    # .ci/dev.env lives inside APP_DIR (host-managed, never committed).
+                    # Written to APP_DIR/.ci/ which is a host-mounted volume visible to Docker.
                     sed 's/homelab/192.168.0.200/g' "$APP_DIR/.ci/dev.env" \
-                        > /tmp/betelsas-test.env
+                        > "$APP_DIR/.ci/test.env"
 
                     docker run --rm \
                         --network host \
                         -v "$APP_DIR/src/s3-ui:/app" \
-                        -v "/tmp/betelsas-test.env:/app/.env.local:ro" \
+                        -v "$APP_DIR/.ci/test.env:/app/.env.local:ro" \
                         -w /app \
                         node:20-alpine \
                         sh -c "set -e; npm ci --prefer-offline; npx prisma generate; npx jest --ci --forceExit"
