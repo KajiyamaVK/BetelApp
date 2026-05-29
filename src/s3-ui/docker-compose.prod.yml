@@ -3,6 +3,7 @@ services:
     build:
       context: .
       target: runner
+    image: s3-ui-app
     ports:
       - "3001:3000"
     env_file:
@@ -14,6 +15,7 @@ services:
     build:
       context: .
       target: migrator
+    image: s3-ui-migrator
     env_file:
       - .env.production
     profiles:
