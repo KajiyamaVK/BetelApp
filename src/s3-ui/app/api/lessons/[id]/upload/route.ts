@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { uploadObject, getObjectText } from '@/lib/minio'
 import { parseManifest, applyUpload } from '@/lib/manifest'
+import { prisma } from '@/lib/prisma'
 import { uploadQuerySchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -34,14 +35,36 @@ export async function POST(
   const manifest = parseManifest(manifestText)
 
   const updated = applyUpload(manifest, id, type, checksum)
-  const lesson = updated.lessons.find((l) => l.id === id)
-  if (!lesson) return NextResponse.json({ error: 'Lesson not found in manifest' }, { status: 404 })
+  const manifestLesson = updated.lessons.find((l) => l.id === id)
+  if (!manifestLesson) return NextResponse.json({ error: 'Lesson not found in manifest' }, { status: 404 })
 
-  const activePath = type === 'audio' ? lesson.audio.active! : lesson.pdf.active!
+  const activePath = type === 'audio' ? manifestLesson.audio.active! : manifestLesson.pdf.active!
   const contentType = type === 'audio' ? 'audio/mpeg' : 'application/pdf'
 
   await uploadObject(activePath, buffer, contentType)
   await uploadObject('manifest.json', Buffer.from(JSON.stringify(updated, null, 2)), 'application/json')
+
+  // Keep DB in sync with manifest so publish/unpublish can reconstruct the manifest entry
+  if (type === 'pdf') {
+    await prisma.lesson.update({
+      where: { id },
+      data: {
+        pdfActive: manifestLesson.pdf.active,
+        pdfChecksum: manifestLesson.pdf.checksum,
+        pdfHistory: manifestLesson.pdf.history,
+      },
+    })
+  } else {
+    await prisma.lesson.update({
+      where: { id },
+      data: {
+        audioActive: manifestLesson.audio.active,
+        audioExt: manifestLesson.audio.ext,
+        audioChecksum: manifestLesson.audio.checksum,
+        audioHistory: manifestLesson.audio.history,
+      },
+    })
+  }
 
   return NextResponse.json({ path: activePath, checksum })
 }

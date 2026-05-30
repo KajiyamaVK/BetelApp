@@ -25,6 +25,10 @@ beforeAll(() => {
   window.HTMLMediaElement.prototype.pause = jest.fn()
 })
 
+beforeEach(() => {
+  jest.clearAllMocks()
+})
+
 describe('LessonRow — publish toggle', () => {
   it('shows "Publicar" button when lesson is unpublished', () => {
     render(<LessonRow lesson={baseLesson} {...handlers} />)
@@ -37,16 +41,40 @@ describe('LessonRow — publish toggle', () => {
     expect(screen.getByRole('button', { name: /despublicar/i })).toBeInTheDocument()
   })
 
-  it('calls onPublishToggle with correct args when clicking publish', () => {
+  it('opens confirmation dialog on publish click without calling onPublishToggle', () => {
     render(<LessonRow lesson={baseLesson} {...handlers} />)
     fireEvent.click(screen.getByRole('button', { name: /publicar/i }))
-    expect(handlers.onPublishToggle).toHaveBeenCalledWith(1, true)
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(handlers.onPublishToggle).not.toHaveBeenCalled()
   })
 
-  it('calls onPublishToggle with correct args when clicking despublicar', () => {
+  it('opens confirmation dialog on despublicar click without calling onPublishToggle', () => {
     const publishedLesson = { ...baseLesson, published: true }
     render(<LessonRow lesson={publishedLesson} {...handlers} />)
     fireEvent.click(screen.getByRole('button', { name: /despublicar/i }))
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(handlers.onPublishToggle).not.toHaveBeenCalled()
+  })
+
+  it('calls onPublishToggle with correct args after confirming publish', () => {
+    render(<LessonRow lesson={baseLesson} {...handlers} />)
+    fireEvent.click(screen.getByRole('button', { name: /publicar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+    expect(handlers.onPublishToggle).toHaveBeenCalledWith(1, true)
+  })
+
+  it('calls onPublishToggle with correct args after confirming despublicar', () => {
+    const publishedLesson = { ...baseLesson, published: true }
+    render(<LessonRow lesson={publishedLesson} {...handlers} />)
+    fireEvent.click(screen.getByRole('button', { name: /despublicar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }))
     expect(handlers.onPublishToggle).toHaveBeenCalledWith(1, false)
+  })
+
+  it('does not call onPublishToggle when dialog is cancelled', () => {
+    render(<LessonRow lesson={baseLesson} {...handlers} />)
+    fireEvent.click(screen.getByRole('button', { name: /publicar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(handlers.onPublishToggle).not.toHaveBeenCalled()
   })
 })

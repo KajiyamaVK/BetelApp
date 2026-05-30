@@ -17,7 +17,14 @@ model User {
 }
 
 model Lesson {
-  id        Int     @id
-  title     String
-  published Boolean @default(false)
+  id            Int     @id
+  title         String
+  published     Boolean @default(false)
+  pdfActive     String?
+  pdfChecksum   String?
+  pdfHistory    Json    @default("[]")
+  audioActive   String?
+  audioExt      String?
+  audioChecksum String?
+  audioHistory  Json    @default("[]")
 }
