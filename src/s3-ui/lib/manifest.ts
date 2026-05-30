@@ -1,7 +1,7 @@
 export interface ManifestLesson {
   id: number
   title: string
-  audio: { active: string | null; ext: string; checksum: string; history: string[] }
+  audio: { active: string | null; ext: string; checksum: string; history: string[] } | null
   pdf: { active: string | null; checksum: string; history: string[] }
 }
 
