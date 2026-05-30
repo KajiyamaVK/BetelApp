@@ -27,19 +27,19 @@ beforeAll(() => {
 
 describe('LessonRow', () => {
   it('renders lesson number and title', () => {
-    render(<LessonRow lesson={baseLesson} {...handlers} />)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
     expect(screen.getByText('1')).toBeInTheDocument()
     expect(screen.getByText('Qual o Fim principal?')).toBeInTheDocument()
   })
 
   it('shows warning badges when both files absent', () => {
-    render(<LessonRow lesson={baseLesson} {...handlers} />)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
     const badges = screen.getAllByText('⚠')
     expect(badges.length).toBeGreaterThanOrEqual(2)
   })
 
   it('expands on click showing file rows', () => {
-    render(<LessonRow lesson={baseLesson} {...handlers} />)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
     fireEvent.click(screen.getByText('Qual o Fim principal?'))
     expect(screen.getByText(/Nenhum áudio/)).toBeInTheDocument()
     expect(screen.getByText(/Nenhum PDF/)).toBeInTheDocument()
@@ -50,7 +50,7 @@ describe('LessonRow', () => {
       ...baseLesson,
       audio: { active: 'lessons/1/audio_v1.mp3', ext: 'mp3', checksum: 'abc', history: [] as string[] },
     }
-    render(<LessonRow lesson={lesson} {...handlers} />)
+    render(<LessonRow uploadingKey={null} lesson={lesson} {...handlers} />)
     expect(screen.getAllByText('✓').length).toBeGreaterThanOrEqual(1)
   })
 })

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { uploadObject, getObjectText } from '@/lib/minio'
-import { parseManifest, applyUpload } from '@/lib/manifest'
+import { parseManifest, applyUpload, upsertLesson } from '@/lib/manifest'
 import { prisma } from '@/lib/prisma'
 import { uploadQuerySchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
@@ -31,8 +31,23 @@ export async function POST(
   const buffer = Buffer.from(await file.arrayBuffer())
   const checksum = crypto.createHash('md5').update(buffer).digest('hex')
 
-  const manifestText = await getObjectText('manifest.json')
-  const manifest = parseManifest(manifestText)
+  const [dbLesson, manifestText] = await Promise.all([
+    prisma.lesson.findUnique({ where: { id } }),
+    getObjectText('manifest.json'),
+  ])
+  if (!dbLesson) return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
+
+  let manifest = parseManifest(manifestText)
+
+  // If the lesson was removed from the manifest (e.g. unpublished), re-add it before uploading
+  if (!manifest.lessons.find((l) => l.id === id)) {
+    manifest = upsertLesson(manifest, {
+      id,
+      title: dbLesson.title,
+      audio: dbLesson.audioActive ? { active: dbLesson.audioActive, ext: dbLesson.audioExt ?? 'mp3', checksum: dbLesson.audioChecksum ?? '', history: (dbLesson.audioHistory as string[]) ?? [] } : null,
+      pdf: { active: dbLesson.pdfActive, checksum: dbLesson.pdfChecksum ?? '', history: (dbLesson.pdfHistory as string[]) ?? [] },
+    })
+  }
 
   const updated = applyUpload(manifest, id, type, checksum)
   const manifestLesson = updated.lessons.find((l) => l.id === id)

@@ -12,12 +12,13 @@ interface FileRowProps {
   type: 'audio' | 'pdf'
   active: string | null
   filename: string | null
+  uploading?: boolean
   onUpload: (lessonId: number, type: 'audio' | 'pdf', file: File) => void
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
 }
 
-export function FileRow({ lessonId, type, active, filename, onUpload, onDelete, onPreview }: FileRowProps) {
+export function FileRow({ lessonId, type, active, filename, uploading = false, onUpload, onDelete, onPreview }: FileRowProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -40,12 +41,19 @@ export function FileRow({ lessonId, type, active, filename, onUpload, onDelete, 
         />
         <Button
           size="sm"
-          className="bg-primary hover:bg-yellow-400 text-text-main"
+          className="bg-primary hover:bg-yellow-400 text-text-main min-w-[80px]"
           onClick={() => inputRef.current?.click()}
+          disabled={uploading}
           aria-label="Upload"
         >
-          <Upload size={14} className="mr-1" />
-          Upload
+          {uploading ? (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+            </svg>
+          ) : (
+            <><Upload size={14} className="mr-1" />Upload</>
+          )}
         </Button>
       </div>
     )

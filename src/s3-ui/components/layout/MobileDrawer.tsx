@@ -47,7 +47,7 @@ export function MobileDrawer({ open, onClose, username, isAdmin }: MobileDrawerP
     <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()} direction="left">
       <DrawerContent className="w-64 h-full flex flex-col">
         <DrawerHeader>
-          <DrawerTitle className="text-primary text-lg">⚡ BetelSAS</DrawerTitle>
+          <DrawerTitle className="text-primary text-lg">Portal Betel</DrawerTitle>
         </DrawerHeader>
         <nav className="flex flex-col gap-1 px-3 flex-1">
           {navItem('/lessons', <BookOpen size={18} />, 'Lições')}

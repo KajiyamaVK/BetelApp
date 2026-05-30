@@ -20,7 +20,7 @@ const mockGetObjectText = getObjectText as jest.Mock
 const mockUploadObject = uploadObject as jest.Mock
 
 async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
-  const token = await signToken({ id: 1, username: 'victor', isAdmin: true })
+  const token = await signToken({ id: 1, username: 'victor', isAdmin: true, mustChangePassword: false })
   const req = new NextRequest(url, {
     method,
     body: body ? JSON.stringify(body) : undefined,

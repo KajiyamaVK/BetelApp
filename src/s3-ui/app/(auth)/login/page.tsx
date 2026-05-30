@@ -28,7 +28,8 @@ export default function LoginPage() {
         setError(data.error ?? 'Credenciais inválidas')
         return
       }
-      router.push('/lessons')
+      const data = await res.json()
+      router.push(data.mustChangePassword ? '/change-password' : '/lessons')
     } finally {
       setLoading(false)
     }
@@ -38,8 +39,7 @@ export default function LoginPage() {
     <main className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="bg-surface rounded-2xl shadow-md w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-2">⚡</div>
-          <h1 className="text-2xl font-bold text-text-main">BetelSAS</h1>
+          <h1 className="text-2xl font-bold text-text-main">Portal Betel</h1>
           <p className="text-sm text-gray-500 mt-1">Painel de conteúdo</p>
         </div>
 
@@ -73,8 +73,14 @@ export default function LoginPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-yellow-400 text-text-main font-semibold"
+            className="w-full bg-primary hover:bg-yellow-400 text-text-main font-semibold flex items-center justify-center gap-2"
           >
+            {loading && (
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+              </svg>
+            )}
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>

@@ -24,6 +24,7 @@ interface Lesson {
 
 interface LessonRowProps {
   lesson: Lesson
+  uploadingKey: string | null
   onUpload: (lessonId: number, type: 'audio' | 'pdf', file: File) => void
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
@@ -31,11 +32,12 @@ interface LessonRowProps {
   onPublishToggle: (lessonId: number, published: boolean) => void
 }
 
-export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
+export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(lesson.title)
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null)
+  const [pendingPdfDelete, setPendingPdfDelete] = useState(false)
 
   function saveTitle() {
     setEditing(false)
@@ -54,6 +56,20 @@ export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, 
       onPublishToggle(lesson.id, pendingPublish)
     }
     setPendingPublish(null)
+  }
+
+  function handleDeleteRequest(lessonId: number, type: 'audio' | 'pdf') {
+    if (type === 'pdf' && lesson.published) {
+      setPendingPdfDelete(true)
+    } else {
+      onDelete(lessonId, type)
+    }
+  }
+
+  function handlePdfDeleteConfirm() {
+    onDelete(lesson.id, 'pdf')
+    onPublishToggle(lesson.id, false)
+    setPendingPdfDelete(false)
   }
 
   const audioBadge = lesson.audio.active
@@ -102,10 +118,14 @@ export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, 
 
           <button
             onClick={handlePublishClick}
+            disabled={!lesson.pdf.active}
+            title={!lesson.pdf.active ? 'Adicione um PDF antes de publicar' : undefined}
             className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
-              lesson.published
-                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              !lesson.pdf.active
+                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                : lesson.published
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
           >
             {lesson.published ? 'Despublicar' : 'Publicar'}
@@ -121,8 +141,9 @@ export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, 
               type="audio"
               active={lesson.audio.active}
               filename={lesson.audio.active ? lesson.audio.active.split('/').pop() ?? null : null}
+              uploading={uploadingKey === `${lesson.id}-audio`}
               onUpload={onUpload}
-              onDelete={onDelete}
+              onDelete={handleDeleteRequest}
               onPreview={onPreview}
             />
             <FileRow
@@ -130,13 +151,34 @@ export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, 
               type="pdf"
               active={lesson.pdf.active}
               filename={lesson.pdf.active ? lesson.pdf.active.split('/').pop() ?? null : null}
+              uploading={uploadingKey === `${lesson.id}-pdf`}
               onUpload={onUpload}
-              onDelete={onDelete}
+              onDelete={handleDeleteRequest}
               onPreview={onPreview}
             />
           </div>
         )}
       </div>
+
+      <AlertDialog open={pendingPdfDelete} onOpenChange={(open) => !open && setPendingPdfDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover PDF e despublicar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta lição está publicada. Ao remover o PDF ela será despublicada automaticamente e deixará de aparecer no app mobile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-delete-bg text-delete-text hover:bg-red-200"
+              onClick={handlePdfDeleteConfirm}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={pendingPublish !== null} onOpenChange={(open) => !open && setPendingPublish(null)}>
         <AlertDialogContent>

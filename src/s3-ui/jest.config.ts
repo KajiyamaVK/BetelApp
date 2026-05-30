@@ -11,6 +11,8 @@ const config: Config = {
   },
   // Exclude Playwright E2E test files — they are run by `npx playwright test`, not Jest.
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/e2e/'],
+  // Run tests sequentially to prevent DB contention between parallel workers.
+  maxWorkers: 1,
 }
 
 // next/jest prepends '/node_modules/' which swallows any trailing exceptions.

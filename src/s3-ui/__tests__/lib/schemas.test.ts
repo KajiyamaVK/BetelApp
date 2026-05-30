@@ -13,12 +13,16 @@ describe('loginSchema', () => {
 })
 
 describe('createUserSchema', () => {
-  it('accepts valid user', () => {
-    const input = { username: 'ana', password: 'pass123', isAdmin: false }
-    expect(createUserSchema.safeParse(input).success).toBe(true)
+  it('accepts valid user without password (password is always 123456 by default)', () => {
+    expect(createUserSchema.safeParse({ username: 'ana', isAdmin: false }).success).toBe(true)
   })
-  it('rejects password shorter than 6 chars', () => {
-    expect(createUserSchema.safeParse({ username: 'ana', password: '123', isAdmin: false }).success).toBe(false)
+  it('rejects empty username', () => {
+    expect(createUserSchema.safeParse({ username: '', isAdmin: false }).success).toBe(false)
+  })
+  it('accepts extra password field and strips it (Zod strips unknown keys)', () => {
+    const result = createUserSchema.safeParse({ username: 'ana', password: 'ignored', isAdmin: false })
+    expect(result.success).toBe(true)
+    if (result.success) expect((result.data as Record<string, unknown>).password).toBeUndefined()
   })
 })
 

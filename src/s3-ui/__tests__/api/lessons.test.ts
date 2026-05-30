@@ -16,7 +16,7 @@ jest.mock('@/lib/minio', () => ({
 
 async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
   // Any logged-in user (not necessarily admin) can mutate lessons
-  const token = await signToken({ id: 1, username: 'victor', isAdmin: false })
+  const token = await signToken({ id: 1, username: 'victor', isAdmin: false, mustChangePassword: false })
   const req = new NextRequest(url, {
     method,
     body: body ? JSON.stringify(body) : undefined,
