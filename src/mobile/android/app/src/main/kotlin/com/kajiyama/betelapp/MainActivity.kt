@@ -1,4 +1,4 @@
-package com.example.betelsas
+package com.kajiyama.betelapp
 
 import com.ryanheise.audioservice.AudioServiceActivity
 

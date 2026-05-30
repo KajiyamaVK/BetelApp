@@ -23,21 +23,25 @@ class MusicScreen extends ConsumerWidget {
               if (songs.isEmpty) {
                 return const Center(child: Text('Nenhuma música encontrada.'));
               }
-              return Column(
-                children: [
-                   const BetelHeader(),
-                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('Músicas', style: AppTheme.heading1),
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const BetelHeader(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: Text('Músicas', style: AppTheme.heading1),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 220),
-                      itemCount: songs.length,
-                      itemBuilder: (context, index) {
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 220),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
                         final song = songs[index];
                         final isPlayingThis = audioState.currentUrl == song.audioUrl && audioState.isPlaying;
                         final isCurrent = audioState.currentUrl == song.audioUrl;
@@ -84,6 +88,8 @@ class MusicScreen extends ConsumerWidget {
                           ),
                         );
                       },
+                        childCount: songs.length,
+                      ),
                     ),
                   ),
                 ],
