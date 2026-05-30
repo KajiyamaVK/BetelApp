@@ -72,7 +72,11 @@ pipeline {
                 ]) {
                     sh '''
                         set -e
-                        STAGE=$(mktemp -d -t betelsas-mobile.XXXXXX)
+                        # Use APP_DIR for staging — it is bind-mounted identically on host and Jenkins container,
+                        # so paths are valid from the Docker daemon's perspective (host filesystem).
+                        STAGE="$APP_DIR/src/mobile/.ci-secrets"
+                        mkdir -p "$STAGE"
+                        chmod 700 "$STAGE"
                         trap 'rm -rf "$STAGE"' EXIT
                         install -m 600 "$KEY_PROPERTIES" "$STAGE/key.properties"
                         install -m 600 "$KEYSTORE_FILE"  "$STAGE/betelsas.keystore"
