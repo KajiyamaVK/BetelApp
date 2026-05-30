@@ -3,6 +3,8 @@ import {
   softDeleteFile,
   applyUpload,
   nextVersion,
+  removeLesson,
+  upsertLesson,
 } from '@/lib/manifest'
 
 const baseManifest = {
@@ -63,6 +65,51 @@ describe('nextVersion', () => {
 
   it('returns max+1 across active and history', () => {
     expect(nextVersion('lessons/1/audio_v2.mp3', ['lessons/1/audio_v1.mp3'])).toBe(3)
+  })
+})
+
+describe('removeLesson', () => {
+  it('removes lesson from the list', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const result = removeLesson(manifest, 1)
+    expect(result.lessons).toHaveLength(0)
+  })
+
+  it('increments manifest version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const result = removeLesson(manifest, 1)
+    expect(result.version).toBe(2)
+  })
+
+  it('is a no-op for unknown lesson id but still increments version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const result = removeLesson(manifest, 999)
+    expect(result.lessons).toHaveLength(1)
+    expect(result.version).toBe(2)
+  })
+})
+
+describe('upsertLesson', () => {
+  it('adds a new lesson to the list', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null }
+    const result = upsertLesson(manifest, newLesson)
+    expect(result.lessons).toHaveLength(2)
+  })
+
+  it('replaces an existing lesson', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const updated = { ...manifest.lessons[0], title: 'Updated Title' }
+    const result = upsertLesson(manifest, updated)
+    expect(result.lessons).toHaveLength(1)
+    expect(result.lessons[0].title).toBe('Updated Title')
+  })
+
+  it('increments manifest version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifest))
+    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null }
+    const result = upsertLesson(manifest, newLesson)
+    expect(result.version).toBe(2)
   })
 })
 
