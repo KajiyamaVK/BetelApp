@@ -1,0 +1,5 @@
+.ci-secrets/
+vendor/
+android/build/
+build/
+.dart_tool/
