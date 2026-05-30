@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, TOKEN_COOKIE } from '@/lib/auth'
+import { verifyToken, TOKEN_COOKIE } from '@/lib/auth-edge'
 
 const PUBLIC_PATHS = new Set(['/login', '/api/auth/login'])
 
