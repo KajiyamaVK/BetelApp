@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
-import { verifyToken, TOKEN_COOKIE } from '@/lib/auth'
 
 export async function DELETE(
   req: NextRequest,
@@ -15,9 +14,7 @@ export async function DELETE(
   const { id } = await params
   const targetId = parseInt(id, 10)
 
-  const token = req.cookies.get(TOKEN_COOKIE)?.value!
-  const payload = await verifyToken(token)
-  if (payload.id === targetId) {
+  if (authResult.userId === targetId) {
     return NextResponse.json({ error: 'Não é possível deletar seu próprio usuário' }, { status: 403 })
   }
 
