@@ -15,4 +15,7 @@ RUN bundle config set --local path vendor/bundle && bundle install
 
 COPY . .
 
+# Create placeholder files so Docker bind-mounts replace files, not create directories
+RUN touch android/key.properties android/app/betelsas.keystore
+
 ENTRYPOINT ["bundle", "exec", "fastlane"]
