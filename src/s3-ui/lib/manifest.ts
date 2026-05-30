@@ -55,6 +55,27 @@ export function nextVersion(active: string | null, history: string[]): number {
   return Math.max(...versionNumbers) + 1
 }
 
+/** Removes a lesson from the manifest by id. Returns manifest unchanged if not found. */
+export function removeLesson(manifest: Manifest, lessonId: number): Manifest {
+  return {
+    ...manifest,
+    updated_at: new Date().toISOString(),
+    lessons: manifest.lessons.filter((lesson) => lesson.id !== lessonId),
+  }
+}
+
+/** Adds or replaces a lesson entry in the manifest. Appends if not already present. */
+export function upsertLesson(manifest: Manifest, lesson: ManifestLesson): Manifest {
+  const exists = manifest.lessons.some((existing) => existing.id === lesson.id)
+  return {
+    ...manifest,
+    updated_at: new Date().toISOString(),
+    lessons: exists
+      ? manifest.lessons.map((existing) => (existing.id === lesson.id ? lesson : existing))
+      : [...manifest.lessons, lesson],
+  }
+}
+
 /**
  * Applies a new file upload to the manifest:
  * - bumps the version number

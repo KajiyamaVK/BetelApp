@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getObjectText, uploadObject } from '@/lib/minio'
+import { parseManifest, removeLesson, upsertLesson, ManifestLesson } from '@/lib/manifest'
 import { togglePublishSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -25,6 +27,41 @@ export async function PATCH(
       where: { id },
       data: { published: parsed.data.published },
     })
+
+    const manifestText = await getObjectText('manifest.json')
+    const manifest = parseManifest(manifestText)
+
+    let updatedManifest
+    if (parsed.data.published) {
+      // Reconstruct manifest entry from DB-stored file metadata
+      const manifestLesson: ManifestLesson = {
+        id: lesson.id,
+        title: lesson.title,
+        pdf: {
+          active: lesson.pdfActive,
+          checksum: lesson.pdfChecksum ?? '',
+          history: (lesson.pdfHistory as string[]) ?? [],
+        },
+        audio: lesson.audioActive
+          ? {
+              active: lesson.audioActive,
+              ext: lesson.audioExt ?? 'mp3',
+              checksum: lesson.audioChecksum ?? '',
+              history: (lesson.audioHistory as string[]) ?? [],
+            }
+          : null,
+      }
+      updatedManifest = upsertLesson(manifest, manifestLesson)
+    } else {
+      updatedManifest = removeLesson(manifest, id)
+    }
+
+    await uploadObject(
+      'manifest.json',
+      Buffer.from(JSON.stringify(updatedManifest, null, 2)),
+      'application/json',
+    )
+
     return NextResponse.json({ id: lesson.id, published: lesson.published })
   } catch {
     return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
