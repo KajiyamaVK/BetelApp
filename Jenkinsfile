@@ -86,14 +86,13 @@ pipeline {
                         install -m 600 "$PLAY_STORE_JSON" "$STAGE/play-store-credentials.json"
                         cd "$APP_DIR/src/mobile"
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
-                        # Persistent cache volumes — survive between runs, shaving ~12 min off each build.
-                        mkdir -p /var/cache/betelsas/gradle /var/cache/betelsas/android-sdk
+                        # Persist only the Gradle cache — the Android SDK is already baked into the image.
+                        mkdir -p /var/cache/betelsas/gradle
                         docker run --rm \
                             -v "$STAGE/play-store-credentials.json":/app/fastlane/play-store-credentials.json:ro \
                             -v "$STAGE/key.properties":/app/android/key.properties:ro \
                             -v "$STAGE/betelsas.keystore":/app/android/app/betelsas.keystore:ro \
                             -v /var/cache/betelsas/gradle:/root/.gradle \
-                            -v /var/cache/betelsas/android-sdk:/opt/android-sdk-linux \
                             betelsas-mobile-ci internal
                     '''
                 }
