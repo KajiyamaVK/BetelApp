@@ -198,6 +198,71 @@ void main() {
     });
   });
 
+  group('playPrevious with shuffle', () {
+    // Regression: playPrevious() was ignoring _shuffledIndices and calling
+    // skipToPrevious() (linear), which goes to index-1 instead of the prior
+    // position in the shuffled order.
+    test('calls skipToIndex (not skipToPrevious) when shuffle is on', () async {
+      when(mockHandler.skipToIndex(any)).thenAnswer((_) async {});
+      await notifier.setQueue(songs, startIndex: 1);
+      await notifier.toggleShuffle();
+
+      await notifier.playPrevious();
+
+      verify(mockHandler.skipToIndex(any)).called(greaterThanOrEqualTo(1));
+      verifyNever(mockHandler.skipToPrevious());
+    });
+  });
+
+  group('repeatAll auto-loop on natural track completion', () {
+    // Regression: when playback completes on the last track with repeatMode=all,
+    // the notifier must detect the completed processingState and call skipToIndex(0).
+    // Previously, skipToNext() on the last item returned early with no action.
+    test('calls skipToIndex(0) when playbackState emits completed on last track with repeatMode all', () async {
+      when(mockHandler.skipToIndex(any)).thenAnswer((_) async {});
+      await notifier.setQueue(songs, startIndex: 2); // last track
+      await notifier.toggleRepeat(); // off -> all
+
+      playbackSubject.add(PlaybackState(
+        playing: false,
+        processingState: AudioProcessingState.completed,
+      ));
+      await Future.microtask(() {});
+
+      verify(mockHandler.skipToIndex(0)).called(1);
+    });
+  });
+
+  group('repeatOne — slider and play state after natural restart', () {
+    // Regression: when repeat_one is active and the track completes, the notifier
+    // emitted position=duration briefly before the handler restarted, leaving the
+    // slider stuck at the end with the pause button visible.
+    test('resets position to zero when playbackState emits completed with repeatMode one', () async {
+      await notifier.setQueue(songs, startIndex: 0);
+      await notifier.toggleRepeat(); // off -> all
+      await notifier.toggleRepeat(); // all -> one
+
+      // Simulate: position reaches near end (still playing)
+      playbackSubject.add(PlaybackState(
+        playing: true,
+        updatePosition: const Duration(seconds: 180),
+        processingState: AudioProcessingState.ready,
+      ));
+      await Future.microtask(() {});
+
+      // Simulate: natural completion
+      playbackSubject.add(PlaybackState(
+        playing: false,
+        updatePosition: const Duration(seconds: 180),
+        processingState: AudioProcessingState.completed,
+      ));
+      await Future.microtask(() {});
+
+      expect(notifier.state.position, Duration.zero,
+          reason: 'repeat_one: slider must reset to zero immediately on completion, not stay at end');
+    });
+  });
+
   group('currentUrl sync from mediaItem stream', () {
     test('currentUrl and currentIndex update when handler emits a new mediaItem (e.g. autoplay advance)', () async {
       await notifier.setQueue(songs, startIndex: 0);

@@ -19,6 +19,7 @@ class LessonDetailScreen extends ConsumerStatefulWidget {
 
 class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
   String? localPdfPath;
+  bool _isPdfReady = false;
 
   @override
   void initState() {
@@ -93,15 +94,21 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
               padding: EdgeInsets.only(bottom: hasAudio ? 100 : 0),
               child: PdfViewer.file(
                 localPdfPath!,
-                params: const PdfViewerParams(
+                params: PdfViewerParams(
                   maxScale: 3.0,
-                  // Enable momentum scrolling
-                  scrollPhysics: BouncingScrollPhysics(),
+                  scrollPhysics: const BouncingScrollPhysics(),
+                  verticalCacheExtent: 100.0,
+                  onViewerReady: (_, __) {
+                    if (mounted) setState(() => _isPdfReady = true);
+                  },
                 ),
               ),
-            )
-          else
-            const Center(child: CircularProgressIndicator()),
+            ),
+          if (!_isPdfReady)
+            const Center(
+              key: Key('lesson-pdf-loading'),
+              child: CircularProgressIndicator(),
+            ),
           if (hasAudio)
             Align(
               alignment: Alignment.bottomCenter,

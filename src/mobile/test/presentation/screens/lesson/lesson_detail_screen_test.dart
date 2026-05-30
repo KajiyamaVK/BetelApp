@@ -101,6 +101,18 @@ void main() {
     });
   });
 
+  // UX: a loading overlay must be visible until the PDF viewer signals it is ready.
+  // This covers the gap where localPdfPath is set but PdfViewer is still parsing.
+  group('LessonDetailScreen — loading state', () {
+    testWidgets('shows loading overlay when localPdfPath is set but PDF is not yet ready', (tester) async {
+      await tester.pumpWidget(_wrap(LessonDetailScreen(lesson: _lessonWithAudio())));
+      await tester.pump(); // localPdfPath resolves (or stays null in test env — either way)
+
+      // The loading overlay must be visible until onViewerReady fires
+      expect(find.byKey(const Key('lesson-pdf-loading')), findsOneWidget);
+    });
+  });
+
   // Regression: when the user backs out of a lesson, audio must stop so that
   // the Music tab queue-based navigation remains functional.
   group('LessonDetailScreen — audio lifecycle', () {

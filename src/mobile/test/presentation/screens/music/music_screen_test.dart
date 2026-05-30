@@ -97,7 +97,7 @@ void main() {
         await tester.pump();
 
         // Scroll all the way to the bottom of the list
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -5000));
         await tester.pumpAndSettle();
 
         final lastCard = find.text('Song 9');

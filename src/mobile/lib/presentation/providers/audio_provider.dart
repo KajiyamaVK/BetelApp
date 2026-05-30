@@ -83,6 +83,10 @@ class AudioNotifier extends StateNotifier<AudioState> {
 
   void _initListeners() {
     _playbackSub = _handler.playbackState.listen((ps) {
+      if (ps.processingState == AudioProcessingState.completed) {
+        _onTrackCompleted();
+        return;
+      }
       state = state.copyWith(
         isPlaying: ps.playing,
         position: ps.position,
@@ -253,13 +257,40 @@ class AudioNotifier extends StateNotifier<AudioState> {
     final queue = state.queue;
     final index = state.currentIndex;
     if (queue.isEmpty || index == null) return;
+
+    if (state.shuffleMode == AudioShuffleMode.on && _shuffledIndices.isNotEmpty) {
+      final pos = _shuffledIndices.indexOf(index);
+      final prevPos = (pos - 1 + _shuffledIndices.length) % _shuffledIndices.length;
+      final prevIndex = _shuffledIndices[prevPos];
+      state = state.copyWith(currentIndex: prevIndex);
+      await _handler.skipToIndex(prevIndex);
+      return;
+    }
+
     if (index > 0) {
       state = state.copyWith(currentIndex: index - 1);
     }
     // At index 0, skipToPrevious() seeks to Duration.zero (restart current song).
-    // Calling the handler unconditionally here is intentional — the asymmetry
-    // with playNext() (which returns early at the last song) is by design:
-    // "Previous" on the first song restarts it rather than being a no-op.
     await _handler.skipToPrevious();
+  }
+
+  void _onTrackCompleted() {
+    if (state.repeatMode == AudioRepeatMode.one) {
+      state = state.copyWith(position: Duration.zero, isPlaying: true);
+      return;
+    }
+
+    if (state.repeatMode == AudioRepeatMode.all) {
+      final queue = state.queue;
+      if (queue.isEmpty) return;
+      final index = state.currentIndex ?? 0;
+      if (index >= queue.length - 1) {
+        state = state.copyWith(currentIndex: 0, position: Duration.zero);
+        _handler.skipToIndex(0);
+      }
+      return;
+    }
+
+    state = state.copyWith(isPlaying: false, position: Duration.zero);
   }
 }
