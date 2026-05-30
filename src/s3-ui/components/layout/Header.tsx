@@ -10,7 +10,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   return (
     <header className="md:hidden flex items-center justify-between bg-primary px-4 py-3">
-      <span className="font-bold text-text-main">⚡ BetelSAS</span>
+      <span className="font-bold text-text-main">Portal Betel</span>
       <Button
         variant="ghost"
         size="icon"

@@ -42,6 +42,22 @@ describe('POST /api/auth/login', () => {
     expect(res.cookies.get('token')?.value).toBeTruthy()
   })
 
+  it('returns mustChangePassword in JSON response so the frontend can redirect correctly', async () => {
+    const req = makeLoginRequest({ username: AUTH_TEST_USER, password: 'correct-pass' })
+    const res = await loginHandler(req)
+    const body = await res.json()
+    expect(body).toHaveProperty('mustChangePassword')
+  })
+
+  it('JWT cookie carries mustChangePassword so middleware can enforce /change-password redirect', async () => {
+    const { verifyToken } = await import('@/lib/auth')
+    const req = makeLoginRequest({ username: AUTH_TEST_USER, password: 'correct-pass' })
+    const res = await loginHandler(req)
+    const token = res.cookies.get('token')!.value
+    const payload = await verifyToken(token)
+    expect(typeof payload.mustChangePassword).toBe('boolean')
+  })
+
   it('returns 401 on wrong password', async () => {
     const req = makeLoginRequest({ username: AUTH_TEST_USER, password: 'wrong' })
     const res = await loginHandler(req)

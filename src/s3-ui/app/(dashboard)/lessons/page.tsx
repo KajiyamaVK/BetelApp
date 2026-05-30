@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { LessonList } from '@/components/lessons/LessonList'
 import { PdfViewer } from '@/components/lessons/PdfViewer'
+import { CreateLessonDialog } from '@/components/lessons/CreateLessonDialog'
+import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,8 +41,11 @@ export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [pdfPath, setPdfPath] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
-  const [uploading, setUploading] = useState(false)
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const isMobile = useIsMobile()
+
+  const suggestedId = lessons.length > 0 ? Math.max(...lessons.map((lesson) => lesson.id)) + 1 : 1
 
   const loadLessons = useCallback(async () => {
     const res = await fetch('/api/lessons')
@@ -51,12 +56,12 @@ export default function LessonsPage() {
   useEffect(() => { loadLessons() }, [loadLessons])
 
   async function handleUpload(lessonId: number, type: 'audio' | 'pdf', file: File) {
-    setUploading(true)
+    setUploadingKey(`${lessonId}-${type}`)
     const form = new FormData()
     form.append('file', file)
     await fetch(`/api/lessons/${lessonId}/upload?type=${type}`, { method: 'POST', body: form })
     await loadLessons()
-    setUploading(false)
+    setUploadingKey(null)
   }
 
   function handleDeleteRequest(lessonId: number, type: 'audio' | 'pdf') {
@@ -95,10 +100,20 @@ export default function LessonsPage() {
       <div className={`flex-1 min-w-0 ${pdfPath && !isMobile ? 'w-1/2' : 'w-full'}`}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-text-main">Lições</h1>
-          {uploading && <span className="text-xs text-gray-400 animate-pulse">Enviando...</span>}
+          <div className="flex items-center gap-3">
+            {uploadingKey && <span className="text-xs text-gray-400 animate-pulse">Enviando...</span>}
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="bg-primary hover:bg-yellow-400 text-text-main font-semibold"
+              size="sm"
+            >
+              + Nova Lição
+            </Button>
+          </div>
         </div>
         <LessonList
           lessons={lessons}
+          uploadingKey={uploadingKey}
           onUpload={handleUpload}
           onDelete={handleDeleteRequest}
           onPreview={setPdfPath}
@@ -112,6 +127,13 @@ export default function LessonsPage() {
           <PdfViewer path={pdfPath} onClose={() => setPdfPath(null)} isMobile={isMobile} />
         </div>
       )}
+
+      <CreateLessonDialog
+        open={createDialogOpen}
+        suggestedId={suggestedId}
+        onCreated={() => { setCreateDialogOpen(false); loadLessons() }}
+        onClose={() => setCreateDialogOpen(false)}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(isOpen) => !isOpen && setDeleteTarget(null)}>
         <AlertDialogContent>

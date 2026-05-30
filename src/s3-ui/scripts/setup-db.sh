@@ -7,7 +7,7 @@ if [[ "$ENV" != "dev" && "$ENV" != "test" ]]; then
   exit 1
 fi
 
-ENV_FILE=".env.${ENV}"
+ENV_FILE=".env.${ENV/dev/development}"
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Error: $ENV_FILE not found. Copy .env.example and fill in the values." >&2
   exit 1

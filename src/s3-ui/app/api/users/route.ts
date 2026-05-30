@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'asc' },
-    select: { id: true, username: true, isAdmin: true, createdAt: true },
+    select: { id: true, username: true, isAdmin: true, mustChangePassword: true, createdAt: true },
   })
   return NextResponse.json(users)
 }
@@ -25,13 +25,13 @@ export async function POST(req: NextRequest) {
   const parsed = createUserSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
-  const { username, password, isAdmin } = parsed.data
-  const passwordHash = await bcrypt.hash(password, 12)
+  const { username, isAdmin } = parsed.data
+  const passwordHash = await bcrypt.hash('123456', 12)
 
   try {
     const user = await prisma.user.create({
-      data: { username, passwordHash, isAdmin },
-      select: { id: true, username: true, isAdmin: true, createdAt: true },
+      data: { username, passwordHash, isAdmin, mustChangePassword: true },
+      select: { id: true, username: true, isAdmin: true, mustChangePassword: true, createdAt: true },
     })
     return NextResponse.json(user, { status: 201 })
   } catch {

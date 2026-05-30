@@ -12,6 +12,7 @@ interface Lesson {
 
 interface LessonListProps {
   lessons: Lesson[]
+  uploadingKey: string | null
   onUpload: (lessonId: number, type: 'audio' | 'pdf', file: File) => void
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
@@ -19,13 +20,14 @@ interface LessonListProps {
   onPublishToggle: (lessonId: number, published: boolean) => void
 }
 
-export function LessonList({ lessons, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonListProps) {
+export function LessonList({ lessons, uploadingKey, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonListProps) {
   return (
     <div className="space-y-2">
       {lessons.map((lesson) => (
         <LessonRow
           key={lesson.id}
           lesson={lesson}
+          uploadingKey={uploadingKey}
           onUpload={onUpload}
           onDelete={onDelete}
           onPreview={onPreview}

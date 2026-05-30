@@ -8,7 +8,7 @@ beforeAll(() => {
 })
 
 describe('auth', () => {
-  const payload = { id: 1, username: 'victor', isAdmin: true }
+  const payload = { id: 1, username: 'victor', isAdmin: true, mustChangePassword: false }
 
   it('signs and verifies a token', async () => {
     const token = await signToken(payload)

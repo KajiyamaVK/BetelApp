@@ -38,7 +38,7 @@ export function Sidebar({ username, isAdmin }: SidebarProps) {
   return (
     <aside className="hidden md:flex flex-col w-60 min-h-screen bg-[#1a1a1a] px-3 py-6">
       <div className="px-4 mb-8">
-        <span className="text-primary text-xl font-bold">⚡ BetelSAS</span>
+        <span className="text-primary text-xl font-bold">Portal Betel</span>
       </div>
 
       <nav className="flex flex-col gap-1 flex-1">

@@ -1,28 +1,54 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
-import { getObjectText } from '@/lib/minio'
-import { parseManifest } from '@/lib/manifest'
+import { getObjectText, uploadObject } from '@/lib/minio'
+import { parseManifest, upsertLesson } from '@/lib/manifest'
+import { createLessonSchema } from '@/lib/schemas'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET() {
-  const [lessons, manifestText] = await Promise.all([
-    prisma.lesson.findMany({ orderBy: { id: 'asc' } }),
-    getObjectText('manifest.json'),
-  ])
+  const lessons = await prisma.lesson.findMany({ orderBy: { id: 'asc' } })
 
-  const manifest = parseManifest(manifestText)
-
-  const result = lessons.map((lesson) => {
-    const mLesson = manifest.lessons.find((m) => m.id === lesson.id)
-    return {
-      id: lesson.id,
-      title: lesson.title,
-      published: lesson.published,
-      audio: mLesson?.audio ?? { active: null, ext: 'mp3', checksum: '', history: [] },
-      pdf: mLesson?.pdf ?? { active: null, checksum: '', history: [] },
-    }
-  })
+  const result = lessons.map((lesson) => ({
+    id: lesson.id,
+    title: lesson.title,
+    published: lesson.published,
+    audio: lesson.audioActive
+      ? { active: lesson.audioActive, ext: lesson.audioExt ?? 'mp3', checksum: lesson.audioChecksum ?? '', history: (lesson.audioHistory as string[]) ?? [] }
+      : { active: null, ext: 'mp3', checksum: '', history: [] },
+    pdf: { active: lesson.pdfActive, checksum: lesson.pdfChecksum ?? '', history: (lesson.pdfHistory as string[]) ?? [] },
+  }))
 
   return NextResponse.json(result)
+}
+
+export async function POST(req: NextRequest) {
+  const authResult = await requireAuth(req)
+  if ('error' in authResult) return authResult.error
+
+  const body = await req.json()
+  const parsed = createLessonSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  }
+
+  const { id, title } = parsed.data
+
+  try {
+    const lesson = await prisma.lesson.create({ data: { id, title } })
+
+    const manifestText = await getObjectText('manifest.json')
+    const manifest = parseManifest(manifestText)
+    const updated = upsertLesson(manifest, { id, title, audio: null, pdf: { active: null, checksum: '', history: [] } })
+    await uploadObject('manifest.json', Buffer.from(JSON.stringify(updated, null, 2)), 'application/json')
+
+    return NextResponse.json({ id: lesson.id, title: lesson.title, published: lesson.published }, { status: 201 })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: `Lição #${id} já existe` }, { status: 409 })
+    }
+    throw error
+  }
 }

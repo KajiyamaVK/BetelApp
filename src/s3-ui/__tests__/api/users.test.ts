@@ -7,7 +7,7 @@ import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
 
 async function makeAdminRequest(method: string, body?: object): Promise<NextRequest> {
-  const token = await signToken({ id: 1, username: 'victor', isAdmin: true })
+  const token = await signToken({ id: 1, username: 'victor', isAdmin: true, mustChangePassword: false })
   const req = new NextRequest('http://localhost/api/users', {
     method,
     body: body ? JSON.stringify(body) : undefined,
