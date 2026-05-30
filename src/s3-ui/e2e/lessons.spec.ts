@@ -15,20 +15,23 @@ test('lesson list shows 24 items', async ({ page }) => {
   await expect(items).toHaveCount(24)
 })
 
-test('publish button toggles label between Publicar and Despublicar', async ({ page }) => {
+test('publish button toggles label between Publicar and Despublicar after confirmation', async ({ page }) => {
   const firstRow = page.locator('[data-testid="lesson-row"]').first()
   await firstRow.waitFor({ timeout: 15000 })
 
   const toggleBtn = firstRow.getByRole('button', { name: /publicar|despublicar/i })
   const initialLabel = await toggleBtn.textContent()
 
+  // Click opens a confirmation dialog — confirm it
   await toggleBtn.click()
+  await page.getByRole('button', { name: 'Confirmar' }).click()
 
   const expectedLabel = initialLabel?.trim().toLowerCase() === 'publicar' ? 'Despublicar' : 'Publicar'
   await expect(toggleBtn).toHaveText(expectedLabel)
 
-  // Restore original state
+  // Restore original state by confirming again
   await toggleBtn.click()
+  await page.getByRole('button', { name: 'Confirmar' }).click()
   await expect(toggleBtn).toHaveText(initialLabel!.trim())
 })
 
