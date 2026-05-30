@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class BetelHeader extends StatefulWidget {
   const BetelHeader({super.key});
@@ -11,11 +12,18 @@ class BetelHeader extends StatefulWidget {
 
 class _BetelHeaderState extends State<BetelHeader> {
   bool _updateAvailable = false;
+  String _version = '';
 
   @override
   void initState() {
     super.initState();
     _checkForUpdate();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) setState(() => _version = info.version);
   }
 
   Future<void> _checkForUpdate() async {
@@ -48,12 +56,28 @@ class _BetelHeaderState extends State<BetelHeader> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/images/betel-topbar-logo.svg',
-                  height: 50,
-                  fit: BoxFit.contain,
-                ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/betel-topbar-logo.svg',
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
+                  if (_version.isNotEmpty)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Text(
+                        _version,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Color(0xFFAAAAAA),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             if (_updateAvailable)

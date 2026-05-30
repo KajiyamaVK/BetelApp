@@ -22,6 +22,7 @@ void main() {
     final Container container = tester.widget(containerFinder);
     expect(container.color, Colors.white);
 
-    expect(find.byType(Center), findsWidgets);
+    // Logo is inside a Stack to allow the version badge overlay
+    expect(find.byType(Stack), findsWidgets);
   });
 }
