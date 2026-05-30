@@ -17,6 +17,7 @@ model User {
 }
 
 model Lesson {
-  id    Int    @id
-  title String
+  id        Int     @id
+  title     String
+  published Boolean @default(false)
 }

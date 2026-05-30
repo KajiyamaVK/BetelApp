@@ -7,6 +7,7 @@ import { FileRow } from './FileRow'
 interface Lesson {
   id: number
   title: string
+  published: boolean
   audio: { active: string | null; ext: string; checksum: string; history: string[] }
   pdf: { active: string | null; checksum: string; history: string[] }
 }
@@ -17,9 +18,10 @@ interface LessonRowProps {
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
   onTitleSave: (lessonId: number, title: string) => void
+  onPublishToggle: (lessonId: number, published: boolean) => void
 }
 
-export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave }: LessonRowProps) {
+export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(lesson.title)
@@ -73,6 +75,17 @@ export function LessonRow({ lesson, onUpload, onDelete, onPreview, onTitleSave }
           <span>🎵 {audioBadge}</span>
           <span>📄 {pdfBadge}</span>
         </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onPublishToggle(lesson.id, !lesson.published) }}
+          className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+            lesson.published
+              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          }`}
+        >
+          {lesson.published ? 'Despublicar' : 'Publicar'}
+        </button>
 
         {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </div>

@@ -3,7 +3,7 @@ import { config as loadEnv } from 'dotenv'
 import path from 'path'
 
 // Load .env.local so E2E_VICTOR_PASSWORD and other secrets are available to tests
-loadEnv({ path: path.resolve(__dirname, '.env.local') })
+loadEnv({ path: path.resolve(__dirname, '.env.test') })
 
 export default defineConfig({
   testDir: './e2e',
@@ -14,7 +14,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev',
+    command: `set -a && . ${path.resolve(__dirname, '.env.test')} && set +a && npm run dev`,
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

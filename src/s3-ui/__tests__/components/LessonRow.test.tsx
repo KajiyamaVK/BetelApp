@@ -7,6 +7,7 @@ import { LessonRow } from '@/components/lessons/LessonRow'
 const baseLesson = {
   id: 1,
   title: 'Qual o Fim principal?',
+  published: false,
   audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
   pdf: { active: null as string | null, checksum: '', history: [] as string[] },
 }
@@ -16,6 +17,7 @@ const handlers = {
   onDelete: jest.fn(),
   onPreview: jest.fn(),
   onTitleSave: jest.fn(),
+  onPublishToggle: jest.fn(),
 }
 
 beforeAll(() => {

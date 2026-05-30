@@ -15,6 +15,23 @@ test('lesson list shows 24 items', async ({ page }) => {
   await expect(items).toHaveCount(24)
 })
 
+test('publish button toggles label between Publicar and Despublicar', async ({ page }) => {
+  const firstRow = page.locator('[data-testid="lesson-row"]').first()
+  await firstRow.waitFor({ timeout: 15000 })
+
+  const toggleBtn = firstRow.getByRole('button', { name: /publicar|despublicar/i })
+  const initialLabel = await toggleBtn.textContent()
+
+  await toggleBtn.click()
+
+  const expectedLabel = initialLabel?.trim().toLowerCase() === 'publicar' ? 'Despublicar' : 'Publicar'
+  await expect(toggleBtn).toHaveText(expectedLabel)
+
+  // Restore original state
+  await toggleBtn.click()
+  await expect(toggleBtn).toHaveText(initialLabel!.trim())
+})
+
 test('edit lesson title inline via double-click', async ({ page }) => {
   const firstTitle = page.locator('[data-testid="lesson-title"]').first()
   const originalText = await firstTitle.textContent()

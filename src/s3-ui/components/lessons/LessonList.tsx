@@ -5,6 +5,7 @@ import { LessonRow } from './LessonRow'
 interface Lesson {
   id: number
   title: string
+  published: boolean
   audio: { active: string | null; ext: string; checksum: string; history: string[] }
   pdf: { active: string | null; checksum: string; history: string[] }
 }
@@ -15,9 +16,10 @@ interface LessonListProps {
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
   onTitleSave: (lessonId: number, title: string) => void
+  onPublishToggle: (lessonId: number, published: boolean) => void
 }
 
-export function LessonList({ lessons, onUpload, onDelete, onPreview, onTitleSave }: LessonListProps) {
+export function LessonList({ lessons, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonListProps) {
   return (
     <div className="space-y-2">
       {lessons.map((lesson) => (
@@ -28,6 +30,7 @@ export function LessonList({ lessons, onUpload, onDelete, onPreview, onTitleSave
           onDelete={onDelete}
           onPreview={onPreview}
           onTitleSave={onTitleSave}
+          onPublishToggle={onPublishToggle}
         />
       ))}
     </div>

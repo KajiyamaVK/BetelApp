@@ -7,6 +7,13 @@ import { prisma } from '@/lib/prisma'
 import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
 
+jest.mock('@/lib/minio', () => ({
+  getObjectText: jest.fn().mockResolvedValue(
+    JSON.stringify({ version: 1, updated_at: '2024-01-01T00:00:00Z', lessons: [] }),
+  ),
+  uploadObject: jest.fn().mockResolvedValue(undefined),
+}))
+
 async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
   // Any logged-in user (not necessarily admin) can mutate lessons
   const token = await signToken({ id: 1, username: 'victor', isAdmin: false })

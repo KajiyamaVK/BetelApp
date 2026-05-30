@@ -18,6 +18,7 @@ export async function GET() {
     return {
       id: lesson.id,
       title: lesson.title,
+      published: lesson.published,
       audio: mLesson?.audio ?? { active: null, ext: 'mp3', checksum: '', history: [] },
       pdf: mLesson?.pdf ?? { active: null, checksum: '', history: [] },
     }

@@ -18,3 +18,7 @@ export const uploadQuerySchema = z.object({
 export const updateTitleSchema = z.object({
   title: z.string().min(1, 'Title required'),
 })
+
+export const togglePublishSchema = z.object({
+  published: z.boolean(),
+})

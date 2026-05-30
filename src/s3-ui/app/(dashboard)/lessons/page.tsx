@@ -17,6 +17,7 @@ import {
 interface Lesson {
   id: number
   title: string
+  published: boolean
   audio: { active: string | null; ext: string; checksum: string; history: string[] }
   pdf: { active: string | null; checksum: string; history: string[] }
 }
@@ -78,6 +79,17 @@ export default function LessonsPage() {
     setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title } : lesson)))
   }
 
+  async function handlePublishToggle(lessonId: number, published: boolean) {
+    await fetch(`/api/lessons/${lessonId}/publish`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published }),
+    })
+    setLessons((prev) =>
+      prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, published } : lesson)),
+    )
+  }
+
   return (
     <div className={`flex h-full ${pdfPath && !isMobile ? 'gap-4' : ''}`}>
       <div className={`flex-1 min-w-0 ${pdfPath && !isMobile ? 'w-1/2' : 'w-full'}`}>
@@ -91,6 +103,7 @@ export default function LessonsPage() {
           onDelete={handleDeleteRequest}
           onPreview={setPdfPath}
           onTitleSave={handleTitleSave}
+          onPublishToggle={handlePublishToggle}
         />
       </div>
 
