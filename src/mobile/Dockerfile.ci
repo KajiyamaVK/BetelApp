@@ -10,8 +10,8 @@ RUN gem install bundler
 
 WORKDIR /app
 
-COPY Gemfile Gemfile.lock ./
-RUN bundle install
+COPY Gemfile Gemfile.lock .bundle/ ./
+RUN bundle config set --local path vendor/bundle && bundle install
 
 COPY . .
 
