@@ -38,7 +38,7 @@ export async function POST(
   const manifestLesson = updated.lessons.find((l) => l.id === id)
   if (!manifestLesson) return NextResponse.json({ error: 'Lesson not found in manifest' }, { status: 404 })
 
-  const activePath = type === 'audio' ? manifestLesson.audio.active! : manifestLesson.pdf.active!
+  const activePath = type === 'audio' ? manifestLesson.audio!.active! : manifestLesson.pdf.active!
   const contentType = type === 'audio' ? 'audio/mpeg' : 'application/pdf'
 
   await uploadObject(activePath, buffer, contentType)
@@ -55,13 +55,14 @@ export async function POST(
       },
     })
   } else {
+    const audio = manifestLesson.audio!
     await prisma.lesson.update({
       where: { id },
       data: {
-        audioActive: manifestLesson.audio.active,
-        audioExt: manifestLesson.audio.ext,
-        audioChecksum: manifestLesson.audio.checksum,
-        audioHistory: manifestLesson.audio.history,
+        audioActive: audio.active,
+        audioExt: audio.ext,
+        audioChecksum: audio.checksum,
+        audioHistory: audio.history,
       },
     })
   }
