@@ -1,39 +1,33 @@
 ---
 name: deploy-app
-description: Use when deploying a new version of the BetelSAS mobile app to the Google Play Store internal testing track.
+description: Use when the user wants to deploy a new version of the BetelSAS mobile app to the Play Store.
 ---
 
 # Deploy App
 
-Builds and uploads the Android AAB to the Play Store internal track via fastlane.
+The CI/CD pipeline (Jenkins + Docker + fastlane) handles the actual build and upload automatically on push to main. This skill's job is just to bump the version and commit.
 
 ## Steps
 
-1. Bump version in `src/mobile/pubspec.yaml` — increment both `versionName` (e.g. `1.0.3`) and `versionCode` (e.g. `+5`). The Play Store rejects any reused versionCode.
-2. Build the release AAB:
-   ```bash
-   cd src/mobile
-   flutter build appbundle --release
+1. Ask the user for the new version if not provided (e.g. `1.0.3`).
+2. Read `src/mobile/pubspec.yaml` and update the `version` line:
+   - Increment `versionName` to the requested version
+   - Increment `versionCode` (`+N`) by 1
+   - Example: `version: 1.0.2+4` → `version: 1.0.3+5`
+3. Show the proposed commit message and wait for approval:
    ```
-3. Upload via fastlane:
-   ```bash
-   cd src/mobile
-   export PATH="$HOME/.local/share/gem/ruby/3.2.0/bin:$PATH"
-   bundle exec fastlane internal
+   chore(mobile): bump version to X.Y.Z for Play Store deploy
    ```
+4. After approval: commit and push to main. Jenkins picks it up automatically.
 
-## Setup (already done)
+## How the pipeline works
 
-- Fastlane gems installed to `src/mobile/vendor/bundle` (bundler path configured in `.bundle/config`)
-- Play Store credentials at `src/mobile/fastlane/play-store-credentials.json` (gitignored — stored in Bitwarden as `BetelApp Play Store Service Account`)
-- Service account: `fastlane-play-store@betelapp-497909.iam.gserviceaccount.com`
-- Google Play Android Developer API enabled on project `betelapp-497909`
+- Jenkins watches `main` for changes to `src/mobile/**`
+- On change: builds the Docker image (`Dockerfile.ci`), runs `flutter build appbundle --release`, then `fastlane internal`
+- Credentials are managed in Jenkins (secret file `play-store-credentials-json`) — never in the repo
 
-## Common Errors
+## Notes
 
-| Error | Fix |
-|-------|-----|
-| `Version code X has already been used` | Increment `+N` in pubspec.yaml and rebuild |
-| `PERMISSION_DENIED` | Enable Google Play Android Developer API in Cloud Console |
-| `The caller does not have permission` | Add service account email to Play Console → Users and permissions |
-| `bundle: command not found` | Add `export PATH="$HOME/.local/share/gem/ruby/3.2.0/bin:$PATH"` |
+- The Play Store rejects reused versionCodes — always increment `+N`
+- `versionName` is what users see (e.g. `1.0.3`); `versionCode` is the internal counter
+- Never push credentials to the repo — they live only in Jenkins and Bitwarden (`play-store-credentials-json`)
