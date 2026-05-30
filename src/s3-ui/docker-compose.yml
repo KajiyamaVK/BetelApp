@@ -1,8 +1,25 @@
 services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
+  migrator:
+    build:
+      context: .
+      target: migrator
     env_file:
-      - .env.local
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
+    depends_on:
+      migrator:
+        condition: service_completed_successfully

@@ -23,4 +23,4 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-CMD ["/app/node_modules/.bin/prisma", "migrate", "deploy"]
+CMD ["/app/node_modules/.bin/prisma", "db", "push"]
