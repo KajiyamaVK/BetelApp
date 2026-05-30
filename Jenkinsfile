@@ -73,12 +73,16 @@ pipeline {
                     sh '''
                         set -e
                         cd "$APP_DIR/src/mobile"
+                        # Copy credentials to known paths so Docker bind-mounts work reliably
+                        cp "$KEY_PROPERTIES" /tmp/key.properties
+                        cp "$KEYSTORE_FILE" /tmp/betelsas.keystore
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
                         docker run --rm \
                             -v "$PLAY_STORE_JSON":/app/fastlane/play-store-credentials.json:ro \
-                            -v "$KEY_PROPERTIES":/app/android/key.properties:ro \
-                            -v "$KEYSTORE_FILE":/app/android/app/betelsas.keystore:ro \
+                            -v /tmp/key.properties:/app/android/key.properties:ro \
+                            -v /tmp/betelsas.keystore:/app/android/app/betelsas.keystore:ro \
                             betelsas-mobile-ci internal
+                        rm -f /tmp/key.properties /tmp/betelsas.keystore
                     '''
                 }
             }
