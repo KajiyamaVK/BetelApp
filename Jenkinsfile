@@ -69,12 +69,10 @@ pipeline {
                     sh '''
                         set -e
                         cd "$APP_DIR/src/mobile"
-                        cp "$PLAY_STORE_JSON" fastlane/play-store-credentials.json
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
                         docker run --rm \
-                            -v "$APP_DIR/src/mobile":/app \
+                            -v "$PLAY_STORE_JSON":/app/fastlane/play-store-credentials.json:ro \
                             betelsas-mobile-ci internal
-                        rm -f fastlane/play-store-credentials.json
                     '''
                 }
             }
