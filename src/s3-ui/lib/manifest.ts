@@ -1,7 +1,7 @@
 export interface ManifestLesson {
   id: number
   title: string
-  audio: { active: string | null; ext: string; checksum: string; history: string[] }
+  audio: { active: string | null; ext: string; checksum: string; history: string[] } | null
   pdf: { active: string | null; checksum: string; history: string[] }
 }
 
@@ -30,6 +30,7 @@ export function softDeleteFile(
   if (!lesson) return manifest
 
   const entry = lesson[type]
+  if (!entry) return manifest
   if (entry.active) {
     entry.history = [...entry.history, entry.active]
     entry.active = null
@@ -95,6 +96,7 @@ export function applyUpload(
   if (!lesson) return manifest
 
   const entry = lesson[type]
+  if (!entry) return manifest
   const version = nextVersion(entry.active, entry.history)
   const extension = type === 'audio' ? 'mp3' : 'pdf'
   const filePrefix = type === 'audio' ? 'audio' : 'lesson'

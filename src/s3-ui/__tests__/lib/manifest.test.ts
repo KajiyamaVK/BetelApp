@@ -35,8 +35,8 @@ describe('softDeleteFile', () => {
   it('sets audio active to null and appends history', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
     const result = softDeleteFile(manifest, 1, 'audio')
-    expect(result.lessons[0].audio.active).toBeNull()
-    expect(result.lessons[0].audio.history).toContain('lessons/1/audio_v1.mp3')
+    expect(result.lessons[0].audio!.active).toBeNull()
+    expect(result.lessons[0].audio!.history).toContain('lessons/1/audio_v1.mp3')
   })
 
   it('sets pdf active to null and appends history', () => {
@@ -48,9 +48,9 @@ describe('softDeleteFile', () => {
 
   it('is a no-op when active is already null', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
-    manifest.lessons[0].audio.active = null
+    manifest.lessons[0].audio!.active = null
     const result = softDeleteFile(manifest, 1, 'audio')
-    expect(result.lessons[0].audio.history).toHaveLength(0)
+    expect(result.lessons[0].audio!.history).toHaveLength(0)
   })
 })
 
@@ -117,9 +117,9 @@ describe('applyUpload', () => {
   it('sets new active path, moves old to history, bumps version', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
     const result = applyUpload(manifest, 1, 'audio', 'abc123')
-    expect(result.lessons[0].audio.active).toBe('lessons/1/audio_v2.mp3')
-    expect(result.lessons[0].audio.history).toContain('lessons/1/audio_v1.mp3')
-    expect(result.lessons[0].audio.checksum).toBe('abc123')
+    expect(result.lessons[0].audio!.active).toBe('lessons/1/audio_v2.mp3')
+    expect(result.lessons[0].audio!.history).toContain('lessons/1/audio_v1.mp3')
+    expect(result.lessons[0].audio!.checksum).toBe('abc123')
   })
 
   it('sets new pdf active path', () => {
