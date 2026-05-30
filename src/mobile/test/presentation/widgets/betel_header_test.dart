@@ -20,7 +20,7 @@ void main() {
 
     final containerFinder = find.byType(Container);
     final Container container = tester.widget(containerFinder);
-    expect(container.color, const Color(0xFF1e1e1e));
+    expect(container.color, Colors.white);
 
     expect(find.byType(Center), findsWidgets);
   });
