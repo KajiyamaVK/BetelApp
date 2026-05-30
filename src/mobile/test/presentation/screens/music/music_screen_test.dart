@@ -18,10 +18,10 @@ import 'music_screen_test.mocks.dart';
 final _testSongs = List.generate(
   10,
   (i) => Song(
-    id: '$i',
-    title: 'Song $i',
+    id: '${i + 1}',
+    title: 'Song ${i + 1}',
     artist: 'Artist',
-    audioUrl: 'url_$i',
+    audioUrl: 'url_${i + 1}',
     durationIds: 180,
   ),
 );
@@ -118,6 +118,82 @@ void main() {
           reason:
               'last song card bottom (${cardRect.bottom}) must not overlap player top (${playerRect.top})',
         );
+      },
+    );
+
+    // Issue #7: when no song is playing, the list should not have a large blank space
+    testWidgets(
+      'bottom padding is small when no song is playing (player hidden)',
+      (tester) async {
+        await tester.pumpWidget(_buildScreen(songs: [_testSongs.first]));
+        await tester.pump();
+
+        expect(find.byType(AudioPlayerWidget), findsNothing,
+            reason: 'AudioPlayerWidget must not be rendered when no song is playing');
+
+        // Inspect the SliverPadding widget directly — it's the contract holder.
+        final sliverPadding = tester.widget<SliverPadding>(find.byType(SliverPadding));
+        expect(
+          sliverPadding.padding.resolve(TextDirection.ltr).bottom,
+          lessThan(100),
+          reason: 'Bottom padding must be small (~20px) when no song is playing',
+        );
+      },
+    );
+  });
+
+  group('MusicScreen song card leading widget', () {
+    // Issue #4: leading widget shows lesson number, not a music-note icon
+    testWidgets(
+      'each song card shows its 1-based position number as leading widget',
+      (tester) async {
+        final songs = _testSongs.take(3).toList();
+
+        await tester.pumpWidget(_buildScreen(songs: songs));
+        await tester.pump();
+
+        for (final song in songs) {
+          expect(
+            find.text(song.id),
+            findsOneWidget,
+            reason: 'Card for song ${song.id} must display its lesson number',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'music note icon is not shown on any song card',
+      (tester) async {
+        await tester.pumpWidget(_buildScreen(songs: _testSongs.take(3).toList()));
+        await tester.pump();
+
+        expect(
+          find.byIcon(Icons.music_note_rounded),
+          findsNothing,
+          reason: 'music_note_rounded icon must be replaced by the lesson number',
+        );
+      },
+    );
+
+    testWidgets(
+      'graphic_eq icon is shown on the currently playing card instead of the number',
+      (tester) async {
+        final songs = _testSongs.take(3).toList();
+        final playingState = AudioState(
+          currentUrl: songs[1].audioUrl,
+          isPlaying: true,
+          currentTitle: songs[1].title,
+          currentArtist: songs[1].artist,
+        );
+
+        await tester.pumpWidget(
+          _buildScreen(songs: songs, overrideAudioState: playingState),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.graphic_eq_rounded), findsOneWidget,
+            reason: 'currently playing card must show graphic_eq icon');
       },
     );
   });

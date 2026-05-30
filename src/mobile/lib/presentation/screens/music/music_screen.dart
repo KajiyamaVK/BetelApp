@@ -38,7 +38,7 @@ class MusicScreen extends ConsumerWidget {
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 220),
+                    padding: EdgeInsets.fromLTRB(20, 0, 20, audioState.currentUrl != null ? 220.0 : 20.0),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -51,11 +51,20 @@ class MusicScreen extends ConsumerWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: AppTheme.primaryColor,
-                              child: Icon(
-                                isCurrent ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
-                                color: Colors.black,
+                            leading: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: isCurrent
+                                    ? const Icon(Icons.graphic_eq_rounded, color: Colors.black)
+                                    : Text(
+                                        song.id,
+                                        style: AppTheme.heading2.copyWith(color: Colors.black),
+                                      ),
                               ),
                             ),
                             title: Text(song.title, style: AppTheme.bodyText.copyWith(fontWeight: FontWeight.bold)),
