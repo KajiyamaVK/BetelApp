@@ -111,4 +111,105 @@ void main() {
     final result = await service.sync();
     expect(result, SyncResult.offlineWithData);
   });
+
+  test('lesson removed from manifest is deleted from local db on sync', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+    // Manifest now has only lesson 2 — lesson 1 was unpublished
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => ContentManifest(
+          version: 3,
+          updatedAt: '2026-05-30T00:00:00Z',
+          lessons: [
+            ManifestLesson(
+              id: 2,
+              title: 'Lesson 2',
+              pdf: ManifestFileEntry(active: 'lessons/2/lesson_v1.pdf', checksum: 'ccc', history: []),
+              audio: null,
+            ),
+          ],
+        ));
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    when(mockDb.database).thenAnswer((_) async {
+      final db = await openDatabase(inMemoryDatabasePath, version: 1, onCreate: (db, _) async {
+        await db.execute(
+            'CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
+        await db.insert('sync_meta', {'id': 1, 'manifest_version': 2, 'last_sync_at': 0});
+        await db.execute('''
+          CREATE TABLE lessons (
+            id INTEGER PRIMARY KEY, title TEXT NOT NULL,
+            pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL,
+            audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        // Lesson 1 exists locally but is no longer in the manifest
+        await db.insert('lessons', {
+          'id': 1, 'title': 'Lesson 1',
+          'pdf_local_path': 'betelsas/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
+          'synced_at': 0,
+        });
+        await db.insert('lessons', {
+          'id': 2, 'title': 'Lesson 2',
+          'pdf_local_path': 'betelsas/lessons/2/lesson.pdf', 'pdf_checksum': 'ccc',
+          'synced_at': 0,
+        });
+      });
+      openedDb = db;
+      return db;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp/test-docs');
+
+    final remaining = await openedDb!.query('lessons');
+    expect(remaining.length, 1);
+    expect(remaining.first['id'], 2);
+  });
+
+  test('lesson still in manifest is preserved during sync', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => ContentManifest(
+          version: 3,
+          updatedAt: '2026-05-30T00:00:00Z',
+          lessons: [
+            ManifestLesson(
+              id: 1,
+              title: 'Lesson 1',
+              pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'aaa', history: []),
+              audio: null,
+            ),
+          ],
+        ));
+
+    when(mockDb.database).thenAnswer((_) async {
+      final db = await openDatabase(inMemoryDatabasePath, version: 1, onCreate: (db, _) async {
+        await db.execute(
+            'CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
+        await db.insert('sync_meta', {'id': 1, 'manifest_version': 2, 'last_sync_at': 0});
+        await db.execute('''
+          CREATE TABLE lessons (
+            id INTEGER PRIMARY KEY, title TEXT NOT NULL,
+            pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL,
+            audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT,
+            synced_at INTEGER NOT NULL
+          )
+        ''');
+        await db.insert('lessons', {
+          'id': 1, 'title': 'Lesson 1',
+          'pdf_local_path': 'betelsas/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
+          'synced_at': 0,
+        });
+      });
+      openedDb = db;
+      return db;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp/test-docs');
+
+    final remaining = await openedDb!.query('lessons');
+    expect(remaining.length, 1);
+    expect(remaining.first['id'], 1);
+  });
 }

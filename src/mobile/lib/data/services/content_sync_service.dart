@@ -37,6 +37,7 @@ class ContentSyncService {
 
   Future<SyncResult> sync({
     void Function(SyncProgress)? onProgress,
+    Future<String> Function()? getDocsDir,
   }) async {
     final db = await _dbHelper.database;
 
@@ -57,6 +58,16 @@ class ContentSyncService {
     final meta = await db.query('sync_meta', limit: 1);
     final localVersion = meta.isEmpty ? -1 : meta.first['manifest_version'] as int;
     if (localVersion == manifest.version) return SyncResult.upToDate;
+
+    // Remove lessons that are no longer in the manifest
+    final manifestIds = manifest.lessons.map((l) => l.id).toSet();
+    final localLessons = await db.query('lessons', columns: ['id']);
+    for (final row in localLessons) {
+      final localId = row['id'] as int;
+      if (!manifestIds.contains(localId)) {
+        await db.delete('lessons', where: 'id = ?', whereArgs: [localId]);
+      }
+    }
 
     final lessonsToDownload = <ManifestLesson>[];
     for (final lesson in manifest.lessons) {
@@ -86,7 +97,8 @@ class ContentSyncService {
       return SyncResult.updated;
     }
 
-    final docsDir = await getApplicationDocumentsDirectory();
+    final resolvedGetDocsDir = getDocsDir ?? () async => (await getApplicationDocumentsDirectory()).path;
+    final docsDirPath = await resolvedGetDocsDir();
 
     int current = 0;
     for (final lesson in lessonsToDownload) {
@@ -94,14 +106,14 @@ class ContentSyncService {
       onProgress?.call(SyncProgress(current, lessonsToDownload.length, lesson.title));
 
       final lessonDir = Directory(
-          p.join(docsDir.path, 'betelsas', 'lessons', '${lesson.id}'));
+          p.join(docsDirPath, 'betelsas', 'lessons', '${lesson.id}'));
       await lessonDir.create(recursive: true);
 
       final pdfLocalPath =
           p.join('betelsas', 'lessons', '${lesson.id}', 'lesson.pdf');
       await _remote.downloadFile(
         remotePath: lesson.pdf.active,
-        localPath: p.join(docsDir.path, pdfLocalPath),
+        localPath: p.join(docsDirPath, pdfLocalPath),
       );
 
       String? audioLocalPath;
@@ -112,7 +124,7 @@ class ContentSyncService {
             p.join('betelsas', 'lessons', '${lesson.id}', 'audio.$audioExt');
         await _remote.downloadFile(
           remotePath: lesson.audio!.active,
-          localPath: p.join(docsDir.path, audioLocalPath),
+          localPath: p.join(docsDirPath, audioLocalPath),
         );
       }
 

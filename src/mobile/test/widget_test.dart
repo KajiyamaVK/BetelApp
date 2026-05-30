@@ -51,7 +51,7 @@ class _FakeSyncService extends ContentSyncService {
         );
 
   @override
-  Future<SyncResult> sync({void Function(SyncProgress)? onProgress}) async =>
+  Future<SyncResult> sync({void Function(SyncProgress)? onProgress, Future<String> Function()? getDocsDir}) async =>
       SyncResult.upToDate;
 }
 
