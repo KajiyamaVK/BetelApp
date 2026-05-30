@@ -9,6 +9,7 @@ interface TokenPayload {
   id: number
   username: string
   isAdmin: boolean
+  mustChangePassword: boolean
 }
 
 /** Encodes the JWT_SECRET env variable into a byte array for jose */

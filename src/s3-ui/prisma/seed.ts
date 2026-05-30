@@ -88,9 +88,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: 'victor' },
-    // Only refresh the password hash — never touch isAdmin so a deliberate demotion isn't silently undone
-    update: { passwordHash },
-    create: { username: 'victor', passwordHash, isAdmin: true },
+    // Only refresh the password hash — never touch isAdmin so a deliberate demotion isn't silently undone.
+    // mustChangePassword is explicitly false for the seed user so dev/test logins work without a forced change.
+    update: { passwordHash, mustChangePassword: false },
+    create: { username: 'victor', passwordHash, isAdmin: true, mustChangePassword: false },
   })
 
   const manifestLessons = await fetchManifestLessons()

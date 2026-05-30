@@ -7,7 +7,6 @@ export const loginSchema = z.object({
 
 export const createUserSchema = z.object({
   username: z.string().min(1, 'Username required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   isAdmin: z.boolean(),
 })
 
@@ -21,4 +20,9 @@ export const updateTitleSchema = z.object({
 
 export const togglePublishSchema = z.object({
   published: z.boolean(),
+})
+
+export const createLessonSchema = z.object({
+  id: z.number().int().positive('Lesson number must be a positive integer'),
+  title: z.string().min(1, 'Title required'),
 })

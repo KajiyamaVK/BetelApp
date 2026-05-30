@@ -6,6 +6,7 @@ interface TokenPayload {
   id: number
   username: string
   isAdmin: boolean
+  mustChangePassword: boolean
 }
 
 function getSecret(): Uint8Array {
