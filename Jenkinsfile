@@ -81,12 +81,13 @@ pipeline {
                         mkdir -p "$STAGE"
                         chmod 700 "$STAGE"
                         trap 'rm -rf "$STAGE"' EXIT
-                        install -m 600 "$KEY_PROPERTIES" "$STAGE/key.properties"
-                        install -m 600 "$KEYSTORE_FILE"  "$STAGE/betelsas.keystore"
+                        install -m 600 "$KEY_PROPERTIES"  "$STAGE/key.properties"
+                        install -m 600 "$KEYSTORE_FILE"   "$STAGE/betelsas.keystore"
+                        install -m 600 "$PLAY_STORE_JSON" "$STAGE/play-store-credentials.json"
                         cd "$APP_DIR/src/mobile"
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
                         docker run --rm \
-                            -v "$PLAY_STORE_JSON":/app/fastlane/play-store-credentials.json:ro \
+                            -v "$STAGE/play-store-credentials.json":/app/fastlane/play-store-credentials.json:ro \
                             -v "$STAGE/key.properties":/app/android/key.properties:ro \
                             -v "$STAGE/betelsas.keystore":/app/android/app/betelsas.keystore:ro \
                             betelsas-mobile-ci internal
