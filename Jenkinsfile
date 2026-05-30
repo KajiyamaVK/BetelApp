@@ -56,6 +56,29 @@ pipeline {
                 '''
             }
         }
+
+        stage('Mobile: Build & Deploy to Play Store') {
+            when {
+                allOf {
+                    expression { env.GIT_BRANCH == 'origin/main' }
+                    changeset 'src/mobile/**'
+                }
+            }
+            steps {
+                withCredentials([file(credentialsId: 'play-store-credentials-json', variable: 'PLAY_STORE_JSON')]) {
+                    sh '''
+                        set -e
+                        cd "$APP_DIR/src/mobile"
+                        cp "$PLAY_STORE_JSON" fastlane/play-store-credentials.json
+                        docker build -f Dockerfile.ci -t betelsas-mobile-ci .
+                        docker run --rm \
+                            -v "$APP_DIR/src/mobile":/app \
+                            betelsas-mobile-ci internal
+                        rm -f fastlane/play-store-credentials.json
+                    '''
+                }
+            }
+        }
     }
 
     post {
