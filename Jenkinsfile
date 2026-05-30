@@ -65,13 +65,19 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([file(credentialsId: 'play-store-credentials-json', variable: 'PLAY_STORE_JSON')]) {
+                withCredentials([
+                    file(credentialsId: 'play-store-credentials-json', variable: 'PLAY_STORE_JSON'),
+                    file(credentialsId: 'android-key-properties', variable: 'KEY_PROPERTIES'),
+                    file(credentialsId: 'android-keystore', variable: 'KEYSTORE_FILE')
+                ]) {
                     sh '''
                         set -e
                         cd "$APP_DIR/src/mobile"
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
                         docker run --rm \
                             -v "$PLAY_STORE_JSON":/app/fastlane/play-store-credentials.json:ro \
+                            -v "$KEY_PROPERTIES":/app/android/key.properties:ro \
+                            -v "$KEYSTORE_FILE":/app/android/app/betelsas.keystore:ro \
                             betelsas-mobile-ci internal
                     '''
                 }
