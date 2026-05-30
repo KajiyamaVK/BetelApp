@@ -72,17 +72,17 @@ pipeline {
                 ]) {
                     sh '''
                         set -e
+                        STAGE=$(mktemp -d -t betelsas-mobile.XXXXXX)
+                        trap 'rm -rf "$STAGE"' EXIT
+                        install -m 600 "$KEY_PROPERTIES" "$STAGE/key.properties"
+                        install -m 600 "$KEYSTORE_FILE"  "$STAGE/betelsas.keystore"
                         cd "$APP_DIR/src/mobile"
-                        # Copy credentials to known paths so Docker bind-mounts work reliably
-                        cp "$KEY_PROPERTIES" /tmp/key.properties
-                        cp "$KEYSTORE_FILE" /tmp/betelsas.keystore
                         docker build -f Dockerfile.ci -t betelsas-mobile-ci .
                         docker run --rm \
                             -v "$PLAY_STORE_JSON":/app/fastlane/play-store-credentials.json:ro \
-                            -v /tmp/key.properties:/app/android/key.properties:ro \
-                            -v /tmp/betelsas.keystore:/app/android/app/betelsas.keystore:ro \
+                            -v "$STAGE/key.properties":/app/android/key.properties:ro \
+                            -v "$STAGE/betelsas.keystore":/app/android/app/betelsas.keystore:ro \
                             betelsas-mobile-ci internal
-                        rm -f /tmp/key.properties /tmp/betelsas.keystore
                     '''
                 }
             }
