@@ -29,6 +29,14 @@ export async function POST(
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
   const buffer = Buffer.from(await file.arrayBuffer())
+  const MAX_BYTES = type === 'pdf' ? 50 * 1024 * 1024 : 20 * 1024 * 1024
+  const MAX_LABEL = type === 'pdf' ? '50 MB' : '20 MB'
+  if (buffer.byteLength > MAX_BYTES) {
+    return NextResponse.json(
+      { error: `O arquivo excede o limite de ${MAX_LABEL} para ${type === 'pdf' ? 'PDF' : 'áudio'}` },
+      { status: 413 },
+    )
+  }
   const checksum = crypto.createHash('md5').update(buffer).digest('hex')
 
   const [dbLesson, manifestText] = await Promise.all([

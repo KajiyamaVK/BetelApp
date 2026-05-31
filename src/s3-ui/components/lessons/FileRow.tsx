@@ -21,9 +21,20 @@ interface FileRowProps {
 export function FileRow({ lessonId, type, active, filename, uploading = false, onUpload, onDelete, onPreview }: FileRowProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const MAX_AUDIO_BYTES = 20 * 1024 * 1024
+  const MAX_PDF_BYTES = 50 * 1024 * 1024
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) onUpload(lessonId, type, file)
+    if (!file) return
+    const limit = type === 'audio' ? MAX_AUDIO_BYTES : MAX_PDF_BYTES
+    const limitLabel = type === 'audio' ? '20 MB' : '50 MB'
+    if (file.size > limit) {
+      alert(`O arquivo excede o limite de ${limitLabel}. Escolha um arquivo menor.`)
+      e.target.value = ''
+      return
+    }
+    onUpload(lessonId, type, file)
   }
 
   if (!active) {

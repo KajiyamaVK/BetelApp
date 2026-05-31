@@ -66,3 +66,48 @@ describe('POST /api/lessons/[id]/upload — lição ausente do manifest', () => 
     expect(lesson?.pdfActive).not.toBeNull()
   })
 })
+
+describe('POST /api/lessons/[id]/upload — file size validation', () => {
+  async function makeOversizeRequest(lessonId: number, type: 'audio' | 'pdf', sizeBytes: number): Promise<NextRequest> {
+    const token = await signToken({ id: 1, username: 'victor', isAdmin: false, mustChangePassword: false })
+    const content = Buffer.alloc(sizeBytes, 'x')
+    const form = new FormData()
+    form.append('file', new File([content], `file.${type === 'pdf' ? 'pdf' : 'mp3'}`, { type: type === 'pdf' ? 'application/pdf' : 'audio/mpeg' }))
+    const req = new NextRequest(`http://localhost/api/lessons/${lessonId}/upload?type=${type}`, {
+      method: 'POST',
+      body: form,
+    })
+    req.cookies.set(TOKEN_COOKIE, token)
+    return req
+  }
+
+  beforeEach(() => {
+    mockGetObjectText.mockResolvedValue(MANIFEST_WITHOUT_LESSON_24)
+    mockUploadObject.mockResolvedValue(undefined)
+  })
+
+  it('returns 413 when PDF exceeds 50 MB', async () => {
+    const oversizePdf = 51 * 1024 * 1024
+    const req = await makeOversizeRequest(24, 'pdf', oversizePdf)
+    const res = await uploadFile(req, { params: Promise.resolve({ id: '24' }) })
+    expect(res.status).toBe(413)
+    const body = await res.json()
+    expect(body.error).toMatch(/50.*MB|tamanho/i)
+  })
+
+  it('returns 413 when audio exceeds 20 MB', async () => {
+    const oversizeAudio = 21 * 1024 * 1024
+    const req = await makeOversizeRequest(24, 'audio', oversizeAudio)
+    const res = await uploadFile(req, { params: Promise.resolve({ id: '24' }) })
+    expect(res.status).toBe(413)
+    const body = await res.json()
+    expect(body.error).toMatch(/20.*MB|tamanho/i)
+  })
+
+  it('accepts PDF at exactly 50 MB', async () => {
+    const maxPdf = 50 * 1024 * 1024
+    const req = await makeOversizeRequest(24, 'pdf', maxPdf)
+    const res = await uploadFile(req, { params: Promise.resolve({ id: '24' }) })
+    expect(res.status).toBe(200)
+  })
+})
