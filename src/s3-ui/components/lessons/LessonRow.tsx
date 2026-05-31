@@ -51,9 +51,11 @@ export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview,
     setPendingPublish(!lesson.published)
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (pendingPublish !== null) {
-      onPublishToggle(lesson.id, pendingPublish)
+      // Always close the dialog after confirmation, regardless of outcome.
+      // Error surfacing is the parent page's responsibility.
+      await onPublishToggle(lesson.id, pendingPublish).catch(() => undefined)
     }
     setPendingPublish(null)
   }

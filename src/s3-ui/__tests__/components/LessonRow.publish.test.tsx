@@ -18,7 +18,7 @@ const handlers = {
   onDelete: jest.fn(),
   onPreview: jest.fn(),
   onTitleSave: jest.fn(),
-  onPublishToggle: jest.fn(),
+  onPublishToggle: jest.fn().mockResolvedValue(undefined),
 }
 
 beforeAll(() => {
@@ -106,7 +106,9 @@ describe('LessonRow — publish toggle', () => {
     await userEvent.click(screen.getByRole('button', { name: /publicar/i }))
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
     await waitFor(() => expect(onPublishToggle).toHaveBeenCalled())
-    // The row's own publish button still shows 'Publicar' — the row doesn't flip state internally
-    expect(screen.getByRole('button', { name: /publicar/i })).toBeInTheDocument()
+    // After rejection, the dialog closes (finally block always calls setPendingPublish(null)).
+    // The row does not flip its own published state — 'published' remains false on the lesson prop,
+    // so the 'Publicar' button is visible again after the dialog closes.
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 })
