@@ -24,12 +24,22 @@ export async function POST(
   if (!parsed.success) return NextResponse.json({ error: 'type must be audio or pdf' }, { status: 400 })
 
   const type = parsed.data.type
+  const MAX_BYTES = type === 'pdf' ? 50 * 1024 * 1024 : 20 * 1024 * 1024
+  const MAX_LABEL = type === 'pdf' ? '50 MB' : '20 MB'
+
+  // Reject before buffering the body when Content-Length is present (belt-and-suspenders for chunked uploads)
+  const contentLength = Number(req.headers.get('content-length') ?? 0)
+  if (contentLength > MAX_BYTES) {
+    return NextResponse.json(
+      { error: `O arquivo excede o limite de ${MAX_LABEL} para ${type === 'pdf' ? 'PDF' : 'áudio'}` },
+      { status: 413 },
+    )
+  }
+
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
-  const MAX_BYTES = type === 'pdf' ? 50 * 1024 * 1024 : 20 * 1024 * 1024
-  const MAX_LABEL = type === 'pdf' ? '50 MB' : '20 MB'
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
       { error: `O arquivo excede o limite de ${MAX_LABEL} para ${type === 'pdf' ? 'PDF' : 'áudio'}` },
