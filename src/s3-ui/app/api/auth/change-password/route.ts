@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'As senhas não coincidem' }, { status: 400 })
   }
 
+  if (password === '123456') {
+    return NextResponse.json({ error: 'A senha não pode ser 123456' }, { status: 400 })
+  }
+
   const passwordHash = await bcrypt.hash(password, 12)
   const user = await prisma.user.update({
     where: { id: authResult.userId },

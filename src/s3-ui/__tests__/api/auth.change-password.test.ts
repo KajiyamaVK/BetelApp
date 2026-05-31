@@ -82,6 +82,15 @@ describe('POST /api/auth/change-password', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 when new password is 123456', async () => {
+    const changePassword = await importRoute()
+    const req = await makeRequest({ password: '123456', confirmPassword: '123456' }, testUserId)
+    const res = await changePassword(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/123456/i)
+  })
+
   it('returns 401 when no auth token', async () => {
     const changePassword = await importRoute()
     const req = new NextRequest('http://localhost/api/auth/change-password', {
