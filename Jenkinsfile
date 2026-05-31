@@ -13,11 +13,19 @@ pipeline {
     stages {
         stage('Notify: Started') {
             steps {
-                sh """
+                // Use jq to build JSON so branch names with special chars cannot break the payload.
+                sh '''
+                    body=$(jq -n \
+                        --arg status "started" \
+                        --arg pipeline "BetelSAS" \
+                        --arg branch "$GIT_BRANCH" \
+                        --arg buildUrl "$BUILD_URL" \
+                        --argjson buildNumber "$BUILD_NUMBER" \
+                        '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
                     curl -s -X POST http://localhost:3000/notifications/jenkins \
                         -H 'Content-Type: application/json' \
-                        -d '{"status":"started","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
-                """
+                        --data-raw "$body"
+                '''
             }
         }
 
@@ -111,25 +119,46 @@ pipeline {
 
     post {
         success {
-            sh """
+            sh '''
+                body=$(jq -n \
+                    --arg status "success" \
+                    --arg pipeline "BetelSAS" \
+                    --arg branch "$GIT_BRANCH" \
+                    --arg buildUrl "$BUILD_URL" \
+                    --argjson buildNumber "$BUILD_NUMBER" \
+                    '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
                 curl -s -X POST http://localhost:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
-                    -d '{"status":"success","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
-            """
+                    --data-raw "$body"
+            '''
         }
         failure {
-            sh """
+            sh '''
+                body=$(jq -n \
+                    --arg status "failure" \
+                    --arg pipeline "BetelSAS" \
+                    --arg branch "$GIT_BRANCH" \
+                    --arg buildUrl "$BUILD_URL" \
+                    --argjson buildNumber "$BUILD_NUMBER" \
+                    '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
                 curl -s -X POST http://localhost:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
-                    -d '{"status":"failure","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
-            """
+                    --data-raw "$body"
+            '''
         }
         aborted {
-            sh """
+            sh '''
+                body=$(jq -n \
+                    --arg status "aborted" \
+                    --arg pipeline "BetelSAS" \
+                    --arg branch "$GIT_BRANCH" \
+                    --arg buildUrl "$BUILD_URL" \
+                    --argjson buildNumber "$BUILD_NUMBER" \
+                    '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
                 curl -s -X POST http://localhost:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
-                    -d '{"status":"aborted","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
-            """
+                    --data-raw "$body"
+            '''
         }
     }
 }

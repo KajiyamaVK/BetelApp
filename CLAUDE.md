@@ -2,6 +2,23 @@
 
 This file contains instructions for the Gemini CLI agent to follow when working on this project.
 
+## Spec-Driven Development
+
+**At the start of every session:** Read `docs/specs-index.md` to identify which specs are relevant to the task at hand, then read those specs before writing any code.
+
+**During work:**
+- If an implementation decision conflicts with a spec, signal it explicitly before proceeding — never resolve silently.
+- If a spec is missing or outdated for the area being changed, note it.
+- If a gap, TODO, or technical debt is identified, check GitHub issues (`gh issue list`) before flagging it. If no issue covers it, suggest creating one — all tracked work lives in GitHub Issues.
+
+**At the end of every session:** Suggest updates to any specs impacted by the work done in that session.
+
+Spec files live alongside their subproject code:
+- `docs/specs/` — infra.md (infraestrutura compartilhada)
+- `src/mobile/specs/` — ui.md, business.md, data.md, infra.md
+- `src/s3-ui/specs/` — ui.md, business.md, data.md, infra.md
+- `src/backend/specs/` — ui.md, business.md, data.md, infra.md
+
 ## Instructions
 
 - **Update Documentation**: Every time we add, remove, or update API endpoints or features, update `README.md` with detailed usage instructions.
