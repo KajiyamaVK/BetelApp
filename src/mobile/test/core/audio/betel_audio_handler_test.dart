@@ -138,16 +138,19 @@ void main() {
       verify(mockPlayer.stop()).called(1);
     });
 
-    test('auto-advances to next song when processingState completes', () async {
+    test('emits completed processingState and does NOT auto-advance (advance is AudioNotifier responsibility)', () async {
+      // The handler no longer auto-advances on completion — that would bypass
+      // AudioNotifier's shuffle/repeat logic. It only emits the completed state;
+      // AudioNotifier._onTrackCompleted() decides what to play next.
       await handler.setQueue(songs, startIndex: 0);
       clearInteractions(mockPlayer);
 
-      // Simulate the player completing the current track
       playerStateController.add(PlayerState(false, ProcessingState.completed));
       await Future.delayed(Duration.zero);
 
-      expect(handler.mediaItem.value?.title, 'Song B');
-      verify(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition'))).called(1);
+      // mediaItem must NOT have advanced — handler stays on Song A
+      expect(handler.mediaItem.value?.title, 'Song A');
+      verifyNever(mockPlayer.setAudioSource(any, initialPosition: anyNamed('initialPosition')));
     });
 
     test('emits playing:true loading state before setAudioSource to prevent ANR', () async {

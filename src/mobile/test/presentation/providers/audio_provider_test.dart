@@ -198,6 +198,43 @@ void main() {
     });
   });
 
+  group('shuffle auto-advance on natural track completion', () {
+    // Regression: when shuffle is on and a track ends naturally, the notifier
+    // must call skipToIndex with the next shuffled index — NOT skipToNext()
+    // (which is sequential and ignores the shuffled order).
+    test('calls skipToIndex (not skipToNext) when shuffle is on and track completes naturally', () async {
+      when(mockHandler.skipToIndex(any)).thenAnswer((_) async {});
+      await notifier.setQueue(songs, startIndex: 0);
+      await notifier.toggleShuffle(); // enable shuffle
+
+      playbackSubject.add(PlaybackState(
+        playing: false,
+        processingState: AudioProcessingState.completed,
+      ));
+      await Future.microtask(() {});
+
+      verify(mockHandler.skipToIndex(any)).called(1);
+      verifyNever(mockHandler.skipToNext());
+    });
+
+    test('advances through the shuffled order on successive natural completions', () async {
+      when(mockHandler.skipToIndex(any)).thenAnswer((_) async {});
+      await notifier.setQueue(songs, startIndex: 0);
+      await notifier.toggleShuffle();
+
+      // First natural completion
+      playbackSubject.add(PlaybackState(
+        playing: false,
+        processingState: AudioProcessingState.completed,
+      ));
+      await Future.microtask(() {});
+
+      final firstIndex = verify(mockHandler.skipToIndex(captureAny)).captured.last as int;
+      // Index must have changed from 0 (since shuffle picked a different track)
+      expect(firstIndex, isNot(0), reason: 'shuffle must not stay on the same track');
+    });
+  });
+
   group('playPrevious with shuffle', () {
     // Regression: playPrevious() was ignoring _shuffledIndices and calling
     // skipToPrevious() (linear), which goes to index-1 instead of the prior

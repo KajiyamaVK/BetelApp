@@ -44,9 +44,10 @@ class BetelAudioHandler extends BaseAudioHandler with SeekHandler {
       if (state.processingState == ProcessingState.completed) {
         if (_repeatOne) {
           _player.seek(Duration.zero).then((_) => _player.play());
-        } else {
-          skipToNext();
         }
+        // Non-repeat auto-advance is handled by AudioNotifier._onTrackCompleted(),
+        // which has full shuffle/repeat context. The handler only manages repeatOne
+        // because it needs direct player access without the notifier layer.
       }
     });
 

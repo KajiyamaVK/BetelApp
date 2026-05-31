@@ -280,6 +280,16 @@ class AudioNotifier extends StateNotifier<AudioState> {
       return;
     }
 
+    if (state.shuffleMode == AudioShuffleMode.on && _shuffledIndices.isNotEmpty) {
+      final index = state.currentIndex ?? 0;
+      final pos = _shuffledIndices.indexOf(index);
+      final nextPos = (pos + 1) % _shuffledIndices.length;
+      final nextIndex = _shuffledIndices[nextPos];
+      state = state.copyWith(currentIndex: nextIndex, position: Duration.zero);
+      _handler.skipToIndex(nextIndex);
+      return;
+    }
+
     if (state.repeatMode == AudioRepeatMode.all) {
       final queue = state.queue;
       if (queue.isEmpty) return;
@@ -287,7 +297,18 @@ class AudioNotifier extends StateNotifier<AudioState> {
       if (index >= queue.length - 1) {
         state = state.copyWith(currentIndex: 0, position: Duration.zero);
         _handler.skipToIndex(0);
+      } else {
+        state = state.copyWith(currentIndex: index + 1, position: Duration.zero);
+        _handler.skipToIndex(index + 1);
       }
+      return;
+    }
+
+    final queue = state.queue;
+    final index = state.currentIndex ?? 0;
+    if (index < queue.length - 1) {
+      state = state.copyWith(currentIndex: index + 1, position: Duration.zero);
+      _handler.skipToIndex(index + 1);
       return;
     }
 
