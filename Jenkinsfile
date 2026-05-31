@@ -22,7 +22,7 @@ pipeline {
                         --arg buildUrl "$BUILD_URL" \
                         --argjson buildNumber "$BUILD_NUMBER" \
                         '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
-                    curl -s -X POST http://localhost:3000/notifications/jenkins \
+                    curl -s -X POST http://host.docker.internal:3000/notifications/jenkins \
                         -H 'Content-Type: application/json' \
                         --data-raw "$body"
                 '''
@@ -127,7 +127,7 @@ pipeline {
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
                     '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
-                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                curl -s -X POST http://host.docker.internal:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
                     --data-raw "$body"
             '''
@@ -141,7 +141,7 @@ pipeline {
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
                     '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
-                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                curl -s -X POST http://host.docker.internal:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
                     --data-raw "$body"
             '''
@@ -155,7 +155,7 @@ pipeline {
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
                     '{status:$status,pipeline:$pipeline,branch:$branch,buildUrl:$buildUrl,buildNumber:$buildNumber}')
-                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                curl -s -X POST http://host.docker.internal:3000/notifications/jenkins \
                     -H 'Content-Type: application/json' \
                     --data-raw "$body"
             '''
