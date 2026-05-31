@@ -70,8 +70,11 @@ export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview,
 
   async function handlePdfDeleteConfirm() {
     onDelete(lesson.id, 'pdf')
-    await onPublishToggle(lesson.id, false)
-    setPendingPdfDelete(false)
+    try {
+      await onPublishToggle(lesson.id, false)
+    } finally {
+      setPendingPdfDelete(false)
+    }
   }
 
   const audioBadge = lesson.audio.active
