@@ -7,6 +7,9 @@ import { MiniPlayer } from './MiniPlayer'
 
 const S3_BASE = process.env.NEXT_PUBLIC_S3_BASE_URL ?? 'https://s3.kajiyama.com.br/betelsas-content'
 
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024
+const MAX_PDF_BYTES = 50 * 1024 * 1024
+
 interface FileRowProps {
   lessonId: number
   type: 'audio' | 'pdf'
@@ -20,9 +23,6 @@ interface FileRowProps {
 
 export function FileRow({ lessonId, type, active, filename, uploading = false, onUpload, onDelete, onPreview }: FileRowProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const MAX_AUDIO_BYTES = 20 * 1024 * 1024
-  const MAX_PDF_BYTES = 50 * 1024 * 1024
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

@@ -28,15 +28,16 @@ export async function POST(
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
-  const buffer = Buffer.from(await file.arrayBuffer())
   const MAX_BYTES = type === 'pdf' ? 50 * 1024 * 1024 : 20 * 1024 * 1024
   const MAX_LABEL = type === 'pdf' ? '50 MB' : '20 MB'
-  if (buffer.byteLength > MAX_BYTES) {
+  if (file.size > MAX_BYTES) {
     return NextResponse.json(
       { error: `O arquivo excede o limite de ${MAX_LABEL} para ${type === 'pdf' ? 'PDF' : 'áudio'}` },
       { status: 413 },
     )
   }
+
+  const buffer = Buffer.from(await file.arrayBuffer())
   const checksum = crypto.createHash('md5').update(buffer).digest('hex')
 
   const [dbLesson, manifestText] = await Promise.all([
@@ -48,7 +49,7 @@ export async function POST(
   let manifest = parseManifest(manifestText)
 
   // If the lesson was removed from the manifest (e.g. unpublished), re-add it before uploading
-  if (!manifest.lessons.find((l) => l.id === id)) {
+  if (!manifest.lessons.find((lesson) => lesson.id === id)) {
     manifest = upsertLesson(manifest, {
       id,
       title: dbLesson.title,
@@ -58,7 +59,7 @@ export async function POST(
   }
 
   const updated = applyUpload(manifest, id, type, checksum)
-  const manifestLesson = updated.lessons.find((l) => l.id === id)
+  const manifestLesson = updated.lessons.find((lesson) => lesson.id === id)
   if (!manifestLesson) return NextResponse.json({ error: 'Lesson not found in manifest' }, { status: 404 })
 
   const activePath = type === 'audio' ? manifestLesson.audio!.active! : manifestLesson.pdf.active!
