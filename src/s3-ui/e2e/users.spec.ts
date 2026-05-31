@@ -12,9 +12,14 @@ async function deleteE2eUsers(page: Page) {
   const res = await page.request.get('/api/users')
   const users: Array<{ id: number; username: string }> = await res.json()
   const e2eUsers = users.filter((user) => user.username.startsWith('e2e_user_'))
-  await Promise.all(
+  const responses = await Promise.all(
     e2eUsers.map((user) => page.request.delete(`/api/users/${user.id}`)),
   )
+  for (const response of responses) {
+    if (!response.ok()) {
+      throw new Error(`Failed to delete e2e user: ${response.status()} ${response.statusText()}`)
+    }
+  }
 }
 
 test.beforeEach(async ({ page }) => {
