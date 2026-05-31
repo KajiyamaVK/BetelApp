@@ -17,7 +17,7 @@ interface LessonListProps {
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
   onTitleSave: (lessonId: number, title: string) => void
-  onPublishToggle: (lessonId: number, published: boolean) => void
+  onPublishToggle: (lessonId: number, published: boolean) => Promise<void>
 }
 
 export function LessonList({ lessons, uploadingKey, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonListProps) {

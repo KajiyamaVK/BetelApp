@@ -57,6 +57,7 @@ export default function LessonsPage() {
   useEffect(() => { loadLessons() }, [loadLessons])
 
   async function handleUpload(lessonId: number, type: 'audio' | 'pdf', file: File) {
+    setErrorMessage(null)
     setUploadingKey(`${lessonId}-${type}`)
     try {
       const form = new FormData()
@@ -98,19 +99,24 @@ export default function LessonsPage() {
   }
 
   async function handlePublishToggle(lessonId: number, published: boolean) {
-    const res = await fetch(`/api/lessons/${lessonId}/publish`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published }),
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      setErrorMessage(body.error ?? 'Erro ao alterar publicação. Tente novamente.')
-      return
+    setErrorMessage(null)
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}/publish`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setErrorMessage(body.error ?? 'Erro ao alterar publicação. Tente novamente.')
+        return
+      }
+      setLessons((prev) =>
+        prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, published } : lesson)),
+      )
+    } catch {
+      setErrorMessage('Erro de rede ao alterar publicação. Verifique sua conexão.')
     }
-    setLessons((prev) =>
-      prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, published } : lesson)),
-    )
   }
 
   return (

@@ -29,7 +29,7 @@ interface LessonRowProps {
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
   onTitleSave: (lessonId: number, title: string) => void
-  onPublishToggle: (lessonId: number, published: boolean) => void
+  onPublishToggle: (lessonId: number, published: boolean) => Promise<void>
 }
 
 export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
@@ -66,9 +66,9 @@ export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview,
     }
   }
 
-  function handlePdfDeleteConfirm() {
+  async function handlePdfDeleteConfirm() {
     onDelete(lesson.id, 'pdf')
-    onPublishToggle(lesson.id, false)
+    await onPublishToggle(lesson.id, false)
     setPendingPdfDelete(false)
   }
 
