@@ -16,10 +16,16 @@ test('lesson list shows 24 items', async ({ page }) => {
 })
 
 test('publish button toggles label between Publicar and Despublicar after confirmation', async ({ page }) => {
-  const firstRow = page.locator('[data-testid="lesson-row"]').first()
-  await firstRow.waitFor({ timeout: 15000 })
+  // Wait for rows to load, then find the first row that has an enabled publish toggle
+  await page.locator('[data-testid="lesson-row"]').first().waitFor({ timeout: 15000 })
+  const enabledToggleBtn = page
+    .locator('[data-testid="lesson-row"]')
+    .locator('button:not([disabled])')
+    .filter({ hasText: /publicar|despublicar/i })
+    .first()
+  await enabledToggleBtn.waitFor({ timeout: 5000 })
 
-  const toggleBtn = firstRow.getByRole('button', { name: /publicar|despublicar/i })
+  const toggleBtn = enabledToggleBtn
   const initialLabel = await toggleBtn.textContent()
 
   // Click opens a confirmation dialog — confirm it
