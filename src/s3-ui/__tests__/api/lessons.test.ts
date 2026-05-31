@@ -6,6 +6,7 @@ import { PUT as updateTitle } from '@/app/api/lessons/[id]/route'
 import { prisma } from '@/lib/prisma'
 import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
+import { getObjectText, uploadObject } from '@/lib/minio'
 
 jest.mock('@/lib/minio', () => ({
   getObjectText: jest.fn().mockResolvedValue(
@@ -13,6 +14,9 @@ jest.mock('@/lib/minio', () => ({
   ),
   uploadObject: jest.fn().mockResolvedValue(undefined),
 }))
+
+const mockGetObjectText = jest.mocked(getObjectText)
+const mockUploadObject = jest.mocked(uploadObject)
 
 async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
   // Any logged-in user (not necessarily admin) can mutate lessons
@@ -70,5 +74,42 @@ describe('PUT /api/lessons/[id]', () => {
     })
     const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
     expect(res.status).toBe(401)
+  })
+
+  it('updates manifest.json when title changes and lesson is in the manifest', async () => {
+    const manifestWithLesson = JSON.stringify({
+      version: 1,
+      updated_at: '2024-01-01T00:00:00Z',
+      lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null }],
+    })
+    mockGetObjectText.mockResolvedValueOnce(manifestWithLesson)
+    mockUploadObject.mockClear()
+
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: 'New Title' })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(200)
+
+    expect(mockUploadObject).toHaveBeenCalledWith('manifest.json', expect.any(Buffer), 'application/json')
+    const manifestCallArgs = mockUploadObject.mock.calls.find(
+      (call) => call[0] === 'manifest.json',
+    )
+    const uploaded = JSON.parse((manifestCallArgs![1] as Buffer).toString())
+    const updatedLesson = uploaded.lessons.find((lesson: { id: number }) => lesson.id === 1)
+    expect(updatedLesson?.title).toBe('New Title')
+  })
+
+  it('does NOT write manifest when lesson is not in the manifest (unpublished)', async () => {
+    const manifestWithoutLesson = JSON.stringify({
+      version: 1,
+      updated_at: '2024-01-01T00:00:00Z',
+      lessons: [],
+    })
+    mockGetObjectText.mockResolvedValueOnce(manifestWithoutLesson)
+    mockUploadObject.mockClear()
+
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: 'Any Title' })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(200)
+    expect(mockUploadObject).not.toHaveBeenCalledWith('manifest.json', expect.anything(), expect.anything())
   })
 })

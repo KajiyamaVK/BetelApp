@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getObjectText, uploadObject } from '@/lib/minio'
+import { parseManifest, upsertLesson } from '@/lib/manifest'
 import { updateTitleSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -24,6 +26,19 @@ export async function PUT(
     where: { id },
     data: { title: parsed.data.title },
   })
+
+  // Keep manifest in sync so the mobile app sees the new title without a full republish
+  const manifestText = await getObjectText('manifest.json')
+  const manifest = parseManifest(manifestText)
+  const existingEntry = manifest.lessons.find((entry) => entry.id === id)
+  if (existingEntry) {
+    const updatedManifest = upsertLesson(manifest, { ...existingEntry, title: lesson.title })
+    await uploadObject(
+      'manifest.json',
+      Buffer.from(JSON.stringify(updatedManifest, null, 2)),
+      'application/json',
+    )
+  }
 
   return NextResponse.json(lesson)
 }
