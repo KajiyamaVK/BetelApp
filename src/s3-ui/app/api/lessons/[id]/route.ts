@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, upsertLesson } from '@/lib/manifest'
+import { parseManifest, renameLesson } from '@/lib/manifest'
 import { updateTitleSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -32,7 +32,7 @@ export async function PUT(
   const manifest = parseManifest(manifestText)
   const existingEntry = manifest.lessons.find((entry) => entry.id === id)
   if (existingEntry) {
-    const updatedManifest = upsertLesson(manifest, { ...existingEntry, title: lesson.title })
+    const updatedManifest = renameLesson(manifest, id, lesson.title)
     await uploadObject(
       'manifest.json',
       Buffer.from(JSON.stringify(updatedManifest, null, 2)),

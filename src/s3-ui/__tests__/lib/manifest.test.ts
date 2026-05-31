@@ -5,6 +5,8 @@ import {
   nextVersion,
   removeLesson,
   upsertLesson,
+  renameLesson,
+  type Manifest,
 } from '@/lib/manifest'
 
 const baseManifest = {
@@ -110,6 +112,30 @@ describe('upsertLesson', () => {
     const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null }
     const result = upsertLesson(manifest, newLesson)
     expect(result.version).toBe(2)
+  })
+})
+
+describe('renameLesson', () => {
+  it('updates the title of an existing lesson without bumping version', () => {
+    const manifest: Manifest = {
+      version: 3,
+      updated_at: '2024-01-01T00:00:00Z',
+      lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null }],
+    }
+    const result = renameLesson(manifest, 1, 'New Title')
+    expect(result.version).toBe(3)
+    expect(result.lessons[0].title).toBe('New Title')
+    expect(result.updated_at).not.toBe('2024-01-01T00:00:00Z')
+  })
+
+  it('returns manifest unchanged when lesson is not found', () => {
+    const manifest: Manifest = {
+      version: 1,
+      updated_at: '2024-01-01T00:00:00Z',
+      lessons: [],
+    }
+    const result = renameLesson(manifest, 99, 'Ghost')
+    expect(result).toStrictEqual(manifest)
   })
 })
 

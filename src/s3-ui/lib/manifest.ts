@@ -80,6 +80,24 @@ export function upsertLesson(manifest: Manifest, lesson: ManifestLesson): Manife
 }
 
 /**
+ * Updates only the title of an existing lesson entry in the manifest.
+ * Does NOT increment version — title changes are metadata only and do not
+ * require mobile clients to re-sync file assets.
+ * Returns the manifest unchanged if the lesson is not found.
+ */
+export function renameLesson(manifest: Manifest, lessonId: number, newTitle: string): Manifest {
+  const exists = manifest.lessons.some((lesson) => lesson.id === lessonId)
+  if (!exists) return manifest
+  return {
+    ...manifest,
+    updated_at: new Date().toISOString(),
+    lessons: manifest.lessons.map((lesson) =>
+      lesson.id === lessonId ? { ...lesson, title: newTitle } : lesson,
+    ),
+  }
+}
+
+/**
  * Applies a new file upload to the manifest:
  * - bumps the version number
  * - moves the previous active path into history
