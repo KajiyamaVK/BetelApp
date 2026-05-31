@@ -2,6 +2,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+ARG GIT_COMMIT=unknown
+RUN echo "$GIT_COMMIT" > .build-hash
 COPY . .
 # DATABASE_URL is not needed for code generation — only for runtime connections.
 # Pass a placeholder so prisma.config.ts can load without throwing PrismaConfigEnvError.

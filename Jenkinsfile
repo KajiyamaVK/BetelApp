@@ -39,7 +39,8 @@ pipeline {
                 sh '''
                     set -e
                     cd "$APP_DIR/src/s3-ui"
-                    docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d --build --wait --wait-timeout 180
+                    docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml build --build-arg GIT_COMMIT=$(git rev-parse HEAD)
+                    docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d --wait --wait-timeout 180
                 '''
             }
         }
@@ -52,6 +53,7 @@ pipeline {
                 sh '''
                     set -e
                     cd "$APP_DIR/src/s3-ui"
+                    docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml --profile migrate build --build-arg GIT_COMMIT=$(git rev-parse HEAD) migrator
                     docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml --profile migrate run --rm migrator
                 '''
             }
