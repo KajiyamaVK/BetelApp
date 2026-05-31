@@ -27,17 +27,22 @@ export async function PUT(
     data: { title: parsed.data.title },
   })
 
-  // Keep manifest in sync so the mobile app sees the new title without a full republish
-  const manifestText = await getObjectText('manifest.json')
-  const manifest = parseManifest(manifestText)
-  const existingEntry = manifest.lessons.find((entry) => entry.id === id)
-  if (existingEntry) {
-    const updatedManifest = renameLesson(manifest, id, lesson.title)
-    await uploadObject(
-      'manifest.json',
-      Buffer.from(JSON.stringify(updatedManifest, null, 2)),
-      'application/json',
-    )
+  // Keep manifest in sync so the mobile app sees the new title without a full republish.
+  // This is best-effort: a MinIO failure must never prevent the DB rename from returning 200.
+  try {
+    const manifestText = await getObjectText('manifest.json')
+    const manifest = parseManifest(manifestText)
+    const existingEntry = manifest.lessons.find((entry) => entry.id === id)
+    if (existingEntry) {
+      const updatedManifest = renameLesson(manifest, id, lesson.title)
+      await uploadObject(
+        'manifest.json',
+        Buffer.from(JSON.stringify(updatedManifest, null, 2)),
+        'application/json',
+      )
+    }
+  } catch (err) {
+    console.error('Failed to update manifest after title rename:', err)
   }
 
   return NextResponse.json(lesson)

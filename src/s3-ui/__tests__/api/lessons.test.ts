@@ -99,6 +99,17 @@ describe('PUT /api/lessons/[id]', () => {
     expect(uploaded.version).toBe(1) // version must NOT be bumped on title rename
   })
 
+  it('returns 200 even when manifest fetch fails (manifest is best-effort)', async () => {
+    mockGetObjectText.mockRejectedValueOnce(new Error('MinIO unreachable'))
+    mockUploadObject.mockClear()
+
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: 'Safe Title' })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.title).toBe('Safe Title')
+  })
+
   it('does NOT write manifest when lesson is not in the manifest (unpublished)', async () => {
     const manifestWithoutLesson = JSON.stringify({
       version: 1,
