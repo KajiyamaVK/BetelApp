@@ -11,6 +11,16 @@ pipeline {
     }
 
     stages {
+        stage('Notify: Started') {
+            steps {
+                sh """
+                    curl -s -X POST http://localhost:3000/notifications/jenkins \
+                        -H 'Content-Type: application/json' \
+                        -d '{"status":"started","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
+                """
+            }
+        }
+
         stage('Update Source') {
             // Only run on main — prevents other branches from deploying with prod credentials.
             // GIT_BRANCH is set by the Git plugin in regular pipeline jobs (unlike
@@ -100,11 +110,26 @@ pipeline {
     }
 
     post {
-        failure {
-            echo 'Pipeline failed — deploy aborted. Check the logs above.'
-        }
         success {
-            echo 'BetelSAS s3-ui deployed successfully to production.'
+            sh """
+                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                    -H 'Content-Type: application/json' \
+                    -d '{"status":"success","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
+            """
+        }
+        failure {
+            sh """
+                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                    -H 'Content-Type: application/json' \
+                    -d '{"status":"failure","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
+            """
+        }
+        aborted {
+            sh """
+                curl -s -X POST http://localhost:3000/notifications/jenkins \
+                    -H 'Content-Type: application/json' \
+                    -d '{"status":"aborted","pipeline":"BetelSAS","branch":"${env.GIT_BRANCH}","buildUrl":"${env.BUILD_URL}","buildNumber":${env.BUILD_NUMBER}}'
+            """
         }
     }
 }
