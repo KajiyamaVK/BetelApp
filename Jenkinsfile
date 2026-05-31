@@ -63,10 +63,7 @@ pipeline {
             when {
                 allOf {
                     expression { env.GIT_BRANCH == 'origin/main' }
-                    anyOf {
-                        changeset 'src/mobile/**'
-                        changeset 'Jenkinsfile'
-                    }
+                    changeset 'src/mobile/**'
                 }
             }
             steps {
