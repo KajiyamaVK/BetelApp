@@ -1,7 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { LessonRow } from '@/components/lessons/LessonRow'
 
 const baseLesson = {
@@ -76,5 +77,36 @@ describe('LessonRow — publish toggle', () => {
     fireEvent.click(screen.getByRole('button', { name: /publicar/i }))
     fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
     expect(handlers.onPublishToggle).not.toHaveBeenCalled()
+  })
+
+  it('calls onPublishToggle prop and does not internally corrupt state on rejection', async () => {
+    const lesson = {
+      id: 1, title: 'Test', published: false,
+      audio: { active: null, ext: 'mp3', checksum: '', history: [] },
+      pdf: { active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: [] },
+    }
+    // The rejection is intentional — attach a no-op catch so it doesn't become an unhandled rejection
+    const rejectionError = new Error('API error')
+    const onPublishToggle = jest.fn().mockImplementation(() => {
+      const rejected = Promise.reject(rejectionError)
+      rejected.catch(() => { /* handled — error propagation is the page's responsibility */ })
+      return rejected
+    })
+    render(
+      <LessonRow
+        lesson={lesson}
+        uploadingKey={null}
+        onUpload={jest.fn()}
+        onDelete={jest.fn()}
+        onPreview={jest.fn()}
+        onTitleSave={jest.fn()}
+        onPublishToggle={onPublishToggle}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /publicar/i }))
+    await userEvent.click(screen.getByRole('button', { name: /confirmar/i }))
+    await waitFor(() => expect(onPublishToggle).toHaveBeenCalled())
+    // The row's own publish button still shows 'Publicar' — the row doesn't flip state internally
+    expect(screen.getByRole('button', { name: /publicar/i })).toBeInTheDocument()
   })
 })

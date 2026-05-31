@@ -43,6 +43,7 @@ export default function LessonsPage() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [uploadingKey, setUploadingKey] = useState<string | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
   const suggestedId = lessons.length > 0 ? Math.max(...lessons.map((lesson) => lesson.id)) + 1 : 1
@@ -57,11 +58,21 @@ export default function LessonsPage() {
 
   async function handleUpload(lessonId: number, type: 'audio' | 'pdf', file: File) {
     setUploadingKey(`${lessonId}-${type}`)
-    const form = new FormData()
-    form.append('file', file)
-    await fetch(`/api/lessons/${lessonId}/upload?type=${type}`, { method: 'POST', body: form })
-    await loadLessons()
-    setUploadingKey(null)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`/api/lessons/${lessonId}/upload?type=${type}`, { method: 'POST', body: form })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setErrorMessage(body.error ?? 'Erro ao fazer upload. Tente novamente.')
+        return
+      }
+      await loadLessons()
+    } catch {
+      setErrorMessage('Erro de rede ao fazer upload. Verifique sua conexão.')
+    } finally {
+      setUploadingKey(null)
+    }
   }
 
   function handleDeleteRequest(lessonId: number, type: 'audio' | 'pdf') {
@@ -76,20 +87,27 @@ export default function LessonsPage() {
   }
 
   async function handleTitleSave(lessonId: number, title: string) {
-    await fetch(`/api/lessons/${lessonId}`, {
+    const res = await fetch(`/api/lessons/${lessonId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title }),
     })
-    setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title } : lesson)))
+    if (res.ok) {
+      setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title } : lesson)))
+    }
   }
 
   async function handlePublishToggle(lessonId: number, published: boolean) {
-    await fetch(`/api/lessons/${lessonId}/publish`, {
+    const res = await fetch(`/api/lessons/${lessonId}/publish`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ published }),
     })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setErrorMessage(body.error ?? 'Erro ao alterar publicação. Tente novamente.')
+      return
+    }
     setLessons((prev) =>
       prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, published } : lesson)),
     )
@@ -111,6 +129,14 @@ export default function LessonsPage() {
             </Button>
           </div>
         </div>
+
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {errorMessage}
+            <button className="ml-2 underline text-xs" onClick={() => setErrorMessage(null)}>Fechar</button>
+          </div>
+        )}
+
         <LessonList
           lessons={lessons}
           uploadingKey={uploadingKey}
