@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, TOKEN_COOKIE } from '@/lib/auth-edge'
 
-const PUBLIC_PATHS = new Set(['/login', '/change-password', '/api/auth/login', '/api/auth/change-password'])
+const PUBLIC_PATHS = new Set(['/login', '/change-password', '/api/auth/login', '/api/auth/change-password', '/privacy-policy'])
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.has(pathname) ||
