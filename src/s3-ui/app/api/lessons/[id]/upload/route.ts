@@ -58,8 +58,32 @@ export async function POST(
 
   let manifest = parseManifest(manifestText)
 
-  // If the lesson was removed from the manifest (e.g. unpublished), re-add it before uploading
-  if (!manifest.lessons.find((lesson) => lesson.id === id)) {
+  const lessonInManifest = manifest.lessons.find((lesson) => lesson.id === id)
+
+  // Only touch the manifest if the lesson is published. An unpublished lesson's
+  // file should be stored and tracked in the DB, but must not appear in the manifest
+  // until explicitly published via the publish route.
+  if (!lessonInManifest && !dbLesson.published) {
+    // Store the file and update DB only — no manifest write
+    const version = 1
+    const extension = type === 'audio' ? 'mp3' : 'pdf'
+    const filePrefix = type === 'audio' ? 'audio' : 'lesson'
+    const filePath = `lessons/${id}/${filePrefix}_v${version}.${extension}`
+    const contentType = type === 'audio' ? 'audio/mpeg' : 'application/pdf'
+    await uploadObject(filePath, buffer, contentType)
+
+    if (type === 'pdf') {
+      await prisma.lesson.update({ where: { id }, data: { pdfActive: filePath, pdfChecksum: checksum, pdfHistory: [] } })
+    } else {
+      await prisma.lesson.update({ where: { id }, data: { audioActive: filePath, audioExt: 'mp3', audioChecksum: checksum, audioHistory: [] } })
+    }
+
+    return NextResponse.json({ path: filePath, checksum })
+  }
+
+  // If lesson is published but not in the manifest (re-upload after unpublish/re-publish),
+  // re-insert it so applyUpload can find it
+  if (!lessonInManifest && dbLesson.published) {
     manifest = upsertLesson(manifest, {
       id,
       title: dbLesson.title,

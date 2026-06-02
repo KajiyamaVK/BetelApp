@@ -65,6 +65,30 @@ describe('POST /api/lessons/[id]/upload — lição ausente do manifest', () => 
     const lesson = await prisma.lesson.findUnique({ where: { id: 24 } })
     expect(lesson?.pdfActive).not.toBeNull()
   })
+
+  it('does NOT add an unpublished lesson to the manifest on upload', async () => {
+    await prisma.lesson.update({ where: { id: 24 }, data: { published: false, pdfActive: null, pdfChecksum: null } })
+    mockUploadObject.mockClear()
+    const req = await makeUploadRequest(24, 'pdf')
+    const res = await uploadFile(req, { params: Promise.resolve({ id: '24' }) })
+    expect(res.status).toBe(200)
+
+    const manifestUpload = mockUploadObject.mock.calls.find((call) => call[0] === 'manifest.json')
+    expect(manifestUpload).toBeUndefined()
+  })
+
+  it('DOES update the manifest when uploading to a published lesson not currently in manifest', async () => {
+    await prisma.lesson.update({ where: { id: 24 }, data: { published: true, pdfActive: null, pdfChecksum: null } })
+    mockUploadObject.mockClear()
+    const req = await makeUploadRequest(24, 'pdf')
+    const res = await uploadFile(req, { params: Promise.resolve({ id: '24' }) })
+    expect(res.status).toBe(200)
+
+    const manifestUpload = mockUploadObject.mock.calls.find((call) => call[0] === 'manifest.json')
+    expect(manifestUpload).toBeDefined()
+    // Restore published=false for other tests
+    await prisma.lesson.update({ where: { id: 24 }, data: { published: false } })
+  })
 })
 
 describe('POST /api/lessons/[id]/upload — file size validation', () => {
