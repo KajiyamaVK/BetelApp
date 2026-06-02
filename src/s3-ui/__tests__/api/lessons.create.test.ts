@@ -61,17 +61,13 @@ describe('POST /api/lessons', () => {
     expect(dbLesson?.title).toBe('Lição Persistida')
   })
 
-  it('adds the lesson entry to the manifest', async () => {
+  it('does NOT add the lesson to the manifest on creation — manifest is only updated on publish', async () => {
     await prisma.lesson.deleteMany({ where: { id: 902 } })
     mockUploadObject.mockClear()
     const req = await makeAuthRequest({ id: 902, title: 'Lição no Manifest' })
     await createLesson(req)
     const manifestUpload = mockUploadObject.mock.calls.find((call) => call[0] === 'manifest.json')
-    expect(manifestUpload).toBeDefined()
-    const writtenManifest = JSON.parse(manifestUpload[1].toString())
-    const entry = writtenManifest.lessons.find((l: { id: number }) => l.id === 902)
-    expect(entry).toBeDefined()
-    expect(entry.title).toBe('Lição no Manifest')
+    expect(manifestUpload).toBeUndefined()
   })
 
   it('returns 409 with message when id already exists', async () => {

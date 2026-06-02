@@ -6,6 +6,7 @@ import path from 'path'
 loadEnv({ path: path.resolve(__dirname, '.env.test') })
 
 export default defineConfig({
+  globalSetup: './e2e/global-setup.ts',
   testDir: './e2e',
   timeout: 30000,
   use: {

@@ -110,6 +110,67 @@ test('create lesson with duplicate id shows error inside dialog', async ({ page 
   await expect(page.locator('[role="dialog"]').getByText(/já existe/i)).toBeVisible({ timeout: 5000 })
 })
 
+test('newly created lesson is NOT in manifest until published', async ({ page }) => {
+  await page.locator('[data-testid="lesson-row"]').first().waitFor({ timeout: 15000 })
+
+  // Create lesson 202
+  await page.getByRole('button', { name: '+ Nova Lição' }).click()
+  await page.locator('#lesson-title').waitFor({ timeout: 5000 })
+  await page.locator('#lesson-id').fill('202')
+  await page.locator('#lesson-title').fill('Lição E2E Publish Test')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+  await expect(page.locator('[role="dialog"]')).toBeHidden({ timeout: 15000 })
+
+  // Verify lesson row is visible in portal but shows Publicar (not published)
+  const lessonRow = page.locator('[data-testid="lesson-row"]').filter({ hasText: 'Lição E2E Publish Test' })
+  await expect(lessonRow).toBeVisible()
+  await expect(lessonRow.locator('button').filter({ hasText: /publicar/i })).toBeVisible()
+
+  // Fetch manifest directly and confirm lesson 202 is NOT there
+  const manifestRes = await page.request.get('https://s3.kajiyama.com.br/betelapp-content-dev/manifest.json')
+  const manifest = await manifestRes.json()
+  const lessonInManifest = manifest.lessons.find((l: { id: number }) => l.id === 202)
+  expect(lessonInManifest).toBeUndefined()
+})
+
+test('publish adds lesson to manifest, unpublish removes it', async ({ page }) => {
+  await page.locator('[data-testid="lesson-row"]').first().waitFor({ timeout: 15000 })
+
+  // Create lesson 203 with a PDF so the Publicar button is enabled
+  const pdfBytes = Buffer.from(
+    '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF'
+  )
+  await page.getByRole('button', { name: '+ Nova Lição' }).click()
+  await page.locator('#lesson-title').waitFor({ timeout: 5000 })
+  await page.locator('#lesson-id').fill('203')
+  await page.locator('#lesson-title').fill('Lição E2E Pub/Unpub')
+  await page.locator('#lesson-pdf').setInputFiles({ name: 'test.pdf', mimeType: 'application/pdf', buffer: pdfBytes })
+  await page.getByRole('button', { name: 'Salvar' }).click()
+  await expect(page.locator('[role="dialog"]')).toBeHidden({ timeout: 15000 })
+
+  const lessonRow = page.locator('[data-testid="lesson-row"]').filter({ hasText: 'Lição E2E Pub/Unpub' })
+
+  // Publish
+  await lessonRow.locator('button').filter({ hasText: /^publicar$/i }).click()
+  await page.getByRole('button', { name: 'Confirmar' }).click()
+  await expect(lessonRow.locator('button').filter({ hasText: /^despublicar$/i })).toBeVisible({ timeout: 5000 })
+
+  // Manifest should now contain lesson 203
+  const manifestAfterPublish = await (await page.request.get('https://s3.kajiyama.com.br/betelapp-content-dev/manifest.json')).json()
+  const inManifestAfterPublish = manifestAfterPublish.lessons.find((l: { id: number }) => l.id === 203)
+  expect(inManifestAfterPublish).toBeDefined()
+
+  // Unpublish
+  await lessonRow.locator('button').filter({ hasText: /^despublicar$/i }).click()
+  await page.getByRole('button', { name: 'Confirmar' }).click()
+  await expect(lessonRow.locator('button').filter({ hasText: /^publicar$/i })).toBeVisible({ timeout: 5000 })
+
+  // Manifest should no longer contain lesson 203
+  const manifestAfterUnpublish = await (await page.request.get('https://s3.kajiyama.com.br/betelapp-content-dev/manifest.json')).json()
+  const inManifestAfterUnpublish = manifestAfterUnpublish.lessons.find((l: { id: number }) => l.id === 203)
+  expect(inManifestAfterUnpublish).toBeUndefined()
+})
+
 test('edit lesson title inline via double-click', async ({ page }) => {
   const firstTitle = page.locator('[data-testid="lesson-title"]').first()
   const originalText = await firstTitle.textContent()

@@ -3,8 +3,6 @@ import { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
-import { getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, upsertLesson } from '@/lib/manifest'
 import { createLessonSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -38,11 +36,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const lesson = await prisma.lesson.create({ data: { id, title } })
-
-    const manifestText = await getObjectText('manifest.json')
-    const manifest = parseManifest(manifestText)
-    const updated = upsertLesson(manifest, { id, title, audio: null, pdf: { active: null, checksum: '', history: [] } })
-    await uploadObject('manifest.json', Buffer.from(JSON.stringify(updated, null, 2)), 'application/json')
 
     return NextResponse.json({ id: lesson.id, title: lesson.title, published: lesson.published }, { status: 201 })
   } catch (error) {
