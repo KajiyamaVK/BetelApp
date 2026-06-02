@@ -69,7 +69,7 @@ export function CreateLessonDialog({ open, suggestedId, onCreated, onClose }: Cr
       })
 
       if (!createRes.ok) {
-        const data = await createRes.json()
+        const data = await createRes.json().catch(() => ({}))
         setError(data.error ?? 'Erro ao criar lição')
         return
       }
@@ -77,13 +77,23 @@ export function CreateLessonDialog({ open, suggestedId, onCreated, onClose }: Cr
       if (pdfFile) {
         const form = new FormData()
         form.append('file', pdfFile)
-        await fetch(`/api/lessons/${parsedId}/upload?type=pdf`, { method: 'POST', body: form })
+        const uploadRes = await fetch(`/api/lessons/${parsedId}/upload?type=pdf`, { method: 'POST', body: form })
+        if (!uploadRes.ok) {
+          const data = await uploadRes.json().catch(() => ({}))
+          setError(data.error ?? 'Erro ao fazer upload do PDF')
+          return
+        }
       }
 
       if (audioFile) {
         const form = new FormData()
         form.append('file', audioFile)
-        await fetch(`/api/lessons/${parsedId}/upload?type=audio`, { method: 'POST', body: form })
+        const uploadRes = await fetch(`/api/lessons/${parsedId}/upload?type=audio`, { method: 'POST', body: form })
+        if (!uploadRes.ok) {
+          const data = await uploadRes.json().catch(() => ({}))
+          setError(data.error ?? 'Erro ao fazer upload do áudio')
+          return
+        }
       }
 
       reset()
