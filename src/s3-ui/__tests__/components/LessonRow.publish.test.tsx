@@ -14,8 +14,10 @@ const baseLesson = {
 }
 
 const handlers = {
+  isAdmin: false,
   onUpload: jest.fn(),
   onDelete: jest.fn(),
+  onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
   onTitleSave: jest.fn(),
   onPublishToggle: jest.fn().mockResolvedValue(undefined),
@@ -95,9 +97,11 @@ describe('LessonRow — publish toggle', () => {
     render(
       <LessonRow
         lesson={lesson}
+        isAdmin={false}
         uploadingKey={null}
         onUpload={jest.fn()}
         onDelete={jest.fn()}
+        onDeleteLesson={jest.fn()}
         onPreview={jest.fn()}
         onTitleSave={jest.fn()}
         onPublishToggle={onPublishToggle}

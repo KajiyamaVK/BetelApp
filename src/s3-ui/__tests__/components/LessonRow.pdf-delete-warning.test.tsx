@@ -5,8 +5,10 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { LessonRow } from '@/components/lessons/LessonRow'
 
 const handlers = {
+  isAdmin: false,
   onUpload: jest.fn(),
   onDelete: jest.fn(),
+  onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
   onTitleSave: jest.fn(),
   onPublishToggle: jest.fn(),

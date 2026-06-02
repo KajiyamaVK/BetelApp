@@ -2,10 +2,10 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, renameLesson } from '@/lib/manifest'
+import { getObjectText, uploadObject, deleteFolder } from '@/lib/minio'
+import { parseManifest, renameLesson, removeLesson } from '@/lib/manifest'
 import { updateTitleSchema } from '@/lib/schemas'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, requireAdmin } from '@/lib/auth'
 
 export async function PUT(
   req: NextRequest,
@@ -46,4 +46,41 @@ export async function PUT(
   }
 
   return NextResponse.json(lesson)
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authResult = await requireAdmin(req)
+  if ('error' in authResult) return authResult.error
+
+  const { id: idStr } = await params
+  const id = parseInt(idStr, 10)
+  if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
+
+  const lesson = await prisma.lesson.findUnique({ where: { id } })
+  if (!lesson) return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
+
+  // Write audit log before deleting so the record is preserved permanently
+  await prisma.lessonAuditLog.create({
+    data: { lessonId: id, userId: authResult.userId, action: 'delete' },
+  })
+
+  await prisma.lesson.delete({ where: { id } })
+
+  // Remove from manifest (best-effort — manifest may not contain the lesson if unpublished)
+  try {
+    const manifestText = await getObjectText('manifest.json')
+    const manifest = parseManifest(manifestText)
+    const updatedManifest = removeLesson(manifest, id)
+    await uploadObject('manifest.json', Buffer.from(JSON.stringify(updatedManifest, null, 2)), 'application/json')
+  } catch (err) {
+    console.error('Failed to update manifest after lesson delete:', err)
+  }
+
+  // Delete all MinIO files for this lesson
+  await deleteFolder(`lessons/${id}/`)
+
+  return new NextResponse(null, { status: 204 })
 }

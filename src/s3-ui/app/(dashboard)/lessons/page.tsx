@@ -39,6 +39,7 @@ function useIsMobile() {
 
 export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
   const [pdfPath, setPdfPath] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [uploadingKey, setUploadingKey] = useState<string | null>(null)
@@ -54,7 +55,10 @@ export default function LessonsPage() {
     setLessons(data)
   }, [])
 
-  useEffect(() => { loadLessons() }, [loadLessons])
+  useEffect(() => {
+    loadLessons()
+    fetch('/api/auth/me').then((res) => res.json()).then((data) => { if (data.isAdmin) setIsAdmin(true) })
+  }, [loadLessons])
 
   async function handleUpload(lessonId: number, type: 'audio' | 'pdf', file: File) {
     setErrorMessage(null)
@@ -96,6 +100,17 @@ export default function LessonsPage() {
     if (res.ok) {
       setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title } : lesson)))
     }
+  }
+
+  async function handleDeleteLesson(lessonId: number) {
+    setErrorMessage(null)
+    const res = await fetch(`/api/lessons/${lessonId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setErrorMessage(body.error ?? 'Erro ao apagar lição. Tente novamente.')
+      return
+    }
+    setLessons((prev) => prev.filter((lesson) => lesson.id !== lessonId))
   }
 
   async function handlePublishToggle(lessonId: number, published: boolean) {
@@ -145,9 +160,11 @@ export default function LessonsPage() {
 
         <LessonList
           lessons={lessons}
+          isAdmin={isAdmin}
           uploadingKey={uploadingKey}
           onUpload={handleUpload}
           onDelete={handleDeleteRequest}
+          onDeleteLesson={handleDeleteLesson}
           onPreview={setPdfPath}
           onTitleSave={handleTitleSave}
           onPublishToggle={handlePublishToggle}

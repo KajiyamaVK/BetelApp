@@ -39,6 +39,26 @@ export async function uploadObject(
 }
 
 /**
+ * Deletes all objects whose names start with `prefix`.
+ * Used to remove all lesson files when a lesson is deleted.
+ */
+export async function deleteFolder(prefix: string): Promise<void> {
+  const client = getMinioClient()
+  const bucket = getBucket()
+
+  const objectNames: string[] = await new Promise((resolve, reject) => {
+    const names: string[] = []
+    const stream = client.listObjectsV2(bucket, prefix, true)
+    stream.on('data', (obj) => { if (obj.name) names.push(obj.name) })
+    stream.on('end', () => resolve(names))
+    stream.on('error', reject)
+  })
+
+  if (objectNames.length === 0) return
+  await client.removeObjects(bucket, objectNames)
+}
+
+/**
  * Downloads a MinIO object and returns its content as a UTF-8 string.
  * Used primarily for JSON manifest files.
  */

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { FileRow } from './FileRow'
 import {
   AlertDialog,
@@ -24,20 +24,23 @@ interface Lesson {
 
 interface LessonRowProps {
   lesson: Lesson
+  isAdmin: boolean
   uploadingKey: string | null
   onUpload: (lessonId: number, type: 'audio' | 'pdf', file: File) => void
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
+  onDeleteLesson: (lessonId: number) => void
   onPreview: (path: string) => void
   onTitleSave: (lessonId: number, title: string) => void
   onPublishToggle: (lessonId: number, published: boolean) => Promise<void>
 }
 
-export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
+export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, onDeleteLesson, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(lesson.title)
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null)
   const [pendingPdfDelete, setPendingPdfDelete] = useState(false)
+  const [pendingLessonDelete, setPendingLessonDelete] = useState(false)
 
   function saveTitle() {
     setEditing(false)
@@ -136,6 +139,17 @@ export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview,
             {lesson.published ? 'Despublicar' : 'Publicar'}
           </button>
 
+          {isAdmin && (
+            <button
+              data-testid="delete-lesson-btn"
+              onClick={(e) => { e.stopPropagation(); setPendingLessonDelete(true) }}
+              title="Apagar lição permanentemente"
+              className="p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+
           {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
         </div>
 
@@ -200,6 +214,26 @@ export function LessonRow({ lesson, uploadingKey, onUpload, onDelete, onPreview,
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={pendingLessonDelete} onOpenChange={(open) => !open && setPendingLessonDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar lição permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. A lição será removida do banco, do manifest e todos os arquivos serão deletados do storage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => { setPendingLessonDelete(false); onDeleteLesson(lesson.id) }}
+            >
+              Apagar permanentemente
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
