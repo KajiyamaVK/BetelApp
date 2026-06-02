@@ -1,7 +1,7 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
-import 'package:betelsas/data/models/song.dart';
-import 'package:betelsas/presentation/providers/audio_provider.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/data/models/song.dart';
+import 'package:betelapp/presentation/providers/audio_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';

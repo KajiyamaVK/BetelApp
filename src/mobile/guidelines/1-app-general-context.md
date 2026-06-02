@@ -23,6 +23,6 @@ To help children learn and memorize catechism questions and answers, understandi
 > [!NOTE]
 > This document provides the high-level context. For specific details, please refer to:
 >
-- **Screens & Navigation**: [2-app-screens.md](file:///home/vkajiyama/src/BetelSAS/guidelines/2-app-screens.md)
-- **Styles & Design System**: [3-app-style.md](file:///home/vkajiyama/src/BetelSAS/guidelines/3-app-style.md)
-- **Technical Details**: [4-technical-details.md](file:///home/vkajiyama/src/BetelSAS/guidelines/4-technical-details.md)
+- **Screens & Navigation**: [2-app-screens.md](file:///home/vkajiyama/src/BetelApp/guidelines/2-app-screens.md)
+- **Styles & Design System**: [3-app-style.md](file:///home/vkajiyama/src/BetelApp/guidelines/3-app-style.md)
+- **Technical Details**: [4-technical-details.md](file:///home/vkajiyama/src/BetelApp/guidelines/4-technical-details.md)

@@ -1,4 +1,4 @@
-import 'package:betelsas/domain/entities/favorite.dart';
+import 'package:betelapp/domain/entities/favorite.dart';
 
 abstract class FavoritesRepository {
   Future<List<Favorite>> getFavorites();

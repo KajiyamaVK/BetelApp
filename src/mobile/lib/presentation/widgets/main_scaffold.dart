@@ -1,10 +1,10 @@
-import 'package:betelsas/data/services/content_sync_service.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:betelsas/presentation/screens/home/home_screen.dart';
-import 'package:betelsas/presentation/screens/music/music_screen.dart';
-import 'package:betelsas/presentation/screens/favorites/favorites_screen.dart';
-import 'package:betelsas/presentation/providers/audio_provider.dart';
+import 'package:betelapp/presentation/screens/home/home_screen.dart';
+import 'package:betelapp/presentation/screens/music/music_screen.dart';
+import 'package:betelapp/presentation/screens/favorites/favorites_screen.dart';
+import 'package:betelapp/presentation/providers/audio_provider.dart';
 
 
 class MainScaffold extends ConsumerStatefulWidget {

@@ -1,5 +1,5 @@
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/data/models/lesson.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/models/lesson.dart';
 
 class ContentRepository {
   final DatabaseHelper _dbHelper;

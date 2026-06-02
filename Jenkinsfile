@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        APP_DIR  = '/home/kajiyamavk/src/BetelSAS'
+        APP_DIR  = '/home/kajiyamavk/src/BetelApp'
         ENV_FILE = "${APP_DIR}/src/s3-ui/.env.production"
     }
 
@@ -17,7 +17,7 @@ pipeline {
                 sh '''
                     body=$(jq -n \
                         --arg status "started" \
-                        --arg pipeline "BetelSAS" \
+                        --arg pipeline "BetelApp" \
                         --arg branch "$GIT_BRANCH" \
                         --arg buildUrl "$BUILD_URL" \
                         --argjson buildNumber "$BUILD_NUMBER" \
@@ -102,15 +102,15 @@ pipeline {
                         install -m 600 "$KEYSTORE_FILE"   "$STAGE/betelsas.keystore"
                         install -m 600 "$PLAY_STORE_JSON" "$STAGE/play-store-credentials.json"
                         cd "$APP_DIR/src/mobile"
-                        docker build -f Dockerfile.ci -t betelsas-mobile-ci .
+                        docker build -f Dockerfile.ci -t betelapp-mobile-ci .
                         # Persist only the Gradle cache — the Android SDK is already baked into the image.
-                        mkdir -p /var/cache/betelsas/gradle
+                        mkdir -p /var/cache/betelapp/gradle
                         docker run --rm \
                             -v "$STAGE/play-store-credentials.json":/app/fastlane/play-store-credentials.json:ro \
                             -v "$STAGE/key.properties":/app/android/key.properties:ro \
                             -v "$STAGE/betelsas.keystore":/app/android/app/betelsas.keystore:ro \
-                            -v /var/cache/betelsas/gradle:/root/.gradle \
-                            betelsas-mobile-ci internal
+                            -v /var/cache/betelapp/gradle:/root/.gradle \
+                            betelapp-mobile-ci internal
                     '''
                 }
             }

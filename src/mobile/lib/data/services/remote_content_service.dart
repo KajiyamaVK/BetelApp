@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:betelsas/data/models/manifest.dart';
+import 'package:betelapp/data/models/manifest.dart';
 
-const _baseUrl = 'http://s3.kajiyama.com.br/betelsas-content';
+const _baseUrl = 'http://s3.kajiyama.com.br/betelapp-content';
 
 class RemoteContentException implements Exception {
   final String message;

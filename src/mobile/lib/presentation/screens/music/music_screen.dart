@@ -1,8 +1,8 @@
-import 'package:betelsas/core/theme/app_theme.dart';
-import 'package:betelsas/presentation/providers/audio_provider.dart';
-import 'package:betelsas/presentation/screens/music/music_view_model.dart';
-import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
-import 'package:betelsas/presentation/widgets/betel_header.dart';
+import 'package:betelapp/core/theme/app_theme.dart';
+import 'package:betelapp/presentation/providers/audio_provider.dart';
+import 'package:betelapp/presentation/screens/music/music_view_model.dart';
+import 'package:betelapp/presentation/widgets/audio_player_widget.dart';
+import 'package:betelapp/presentation/widgets/betel_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

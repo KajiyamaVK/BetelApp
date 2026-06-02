@@ -5,7 +5,7 @@ import { Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MiniPlayer } from './MiniPlayer'
 
-const S3_BASE = process.env.NEXT_PUBLIC_S3_BASE_URL ?? 'https://s3.kajiyama.com.br/betelsas-content'
+const S3_BASE = process.env.NEXT_PUBLIC_S3_BASE_URL ?? 'https://s3.kajiyama.com.br/betelapp-content'
 
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024
 const MAX_PDF_BYTES = 50 * 1024 * 1024

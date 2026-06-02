@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:betelsas/data/services/remote_content_service.dart';
-import 'package:betelsas/data/models/manifest.dart';
+import 'package:betelapp/data/services/remote_content_service.dart';
+import 'package:betelapp/data/models/manifest.dart';
 
 @GenerateMocks([Dio])
 import 'remote_content_service_test.mocks.dart';

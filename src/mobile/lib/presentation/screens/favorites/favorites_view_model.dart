@@ -1,5 +1,5 @@
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/models/song.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/models/song.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';

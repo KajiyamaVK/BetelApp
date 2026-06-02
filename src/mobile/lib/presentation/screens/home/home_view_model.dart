@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/models/lesson.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/models/lesson.dart';
 
 final homeViewModelProvider = StateNotifierProvider<HomeViewModel, AsyncValue<List<Lesson>>>((ref) {
   return HomeViewModel(ref);

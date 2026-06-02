@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:betelsas/core/connectivity_service.dart';
+import 'package:betelapp/core/connectivity_service.dart';
 
 void main() {
   setUpAll(() {

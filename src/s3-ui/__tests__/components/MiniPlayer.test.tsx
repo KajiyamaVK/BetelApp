@@ -4,7 +4,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MiniPlayer } from '@/components/lessons/MiniPlayer'
 
-const src = 'https://s3.kajiyama.com.br/betelsas-content/lessons/1/audio_v1.mp3'
+const src = 'https://s3.kajiyama.com.br/betelapp-content/lessons/1/audio_v1.mp3'
 
 beforeAll(() => {
   window.HTMLMediaElement.prototype.play = jest.fn().mockResolvedValue(undefined)

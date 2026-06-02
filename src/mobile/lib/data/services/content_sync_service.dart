@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:betelsas/core/connectivity_service.dart';
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/data/models/manifest.dart';
-import 'package:betelsas/data/services/remote_content_service.dart';
+import 'package:betelapp/core/connectivity_service.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/models/manifest.dart';
+import 'package:betelapp/data/services/remote_content_service.dart';
 
 enum SyncResult {
   offlineFirstBoot,
@@ -106,11 +106,11 @@ class ContentSyncService {
       onProgress?.call(SyncProgress(current, lessonsToDownload.length, lesson.title));
 
       final lessonDir = Directory(
-          p.join(docsDirPath, 'betelsas', 'lessons', '${lesson.id}'));
+          p.join(docsDirPath, 'betelapp', 'lessons', '${lesson.id}'));
       await lessonDir.create(recursive: true);
 
       final pdfLocalPath =
-          p.join('betelsas', 'lessons', '${lesson.id}', 'lesson.pdf');
+          p.join('betelapp', 'lessons', '${lesson.id}', 'lesson.pdf');
       await _remote.downloadFile(
         remotePath: lesson.pdf.active,
         localPath: p.join(docsDirPath, pdfLocalPath),
@@ -121,7 +121,7 @@ class ContentSyncService {
       if (lesson.audio != null) {
         audioExt = lesson.audio!.ext;
         audioLocalPath =
-            p.join('betelsas', 'lessons', '${lesson.id}', 'audio.$audioExt');
+            p.join('betelapp', 'lessons', '${lesson.id}', 'audio.$audioExt');
         await _remote.downloadFile(
           remotePath: lesson.audio!.active,
           localPath: p.join(docsDirPath, audioLocalPath),

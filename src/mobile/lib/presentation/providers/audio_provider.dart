@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/models/song.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/models/song.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AudioRepeatMode { off, all, one }

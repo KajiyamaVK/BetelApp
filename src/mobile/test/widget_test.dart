@@ -1,18 +1,18 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
-import 'package:betelsas/core/connectivity_service.dart';
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/services/content_sync_service.dart';
-import 'package:betelsas/data/services/remote_content_service.dart';
-import 'package:betelsas/presentation/screens/splash_screen.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/core/connectivity_service.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/data/services/remote_content_service.dart';
+import 'package:betelapp/presentation/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'package:betelsas/main.dart';
+import 'package:betelapp/main.dart';
 import 'presentation/providers/audio_provider_test.mocks.dart';
 
 // ---------------------------------------------------------------------------

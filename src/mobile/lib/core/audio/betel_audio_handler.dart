@@ -1,5 +1,5 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/data/models/song.dart';
+import 'package:betelapp/data/models/song.dart';
 import 'package:just_audio/just_audio.dart';
 
 class BetelAudioHandler extends BaseAudioHandler with SeekHandler {

@@ -1,6 +1,6 @@
 
-import 'package:betelsas/presentation/screens/favorites/favorites_screen.dart';
-import 'package:betelsas/presentation/screens/favorites/favorites_view_model.dart';
+import 'package:betelapp/presentation/screens/favorites/favorites_screen.dart';
+import 'package:betelapp/presentation/screens/favorites/favorites_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

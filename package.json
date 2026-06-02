@@ -1,5 +1,5 @@
 {
-  "name": "betelsas",
+  "name": "betelapp",
   "version": "1.0.0",
   "description": "A new Flutter project.",
   "main": "index.js",
@@ -12,13 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KajiyamaVK/BetelSAS.git"
+    "url": "git+https://github.com/KajiyamaVK/BetelApp.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/KajiyamaVK/BetelSAS/issues"
+    "url": "https://github.com/KajiyamaVK/BetelApp/issues"
   },
-  "homepage": "https://github.com/KajiyamaVK/BetelSAS#readme"
+  "homepage": "https://github.com/KajiyamaVK/BetelApp#readme"
 }

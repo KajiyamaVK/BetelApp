@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/core/connectivity_service.dart';
-import 'package:betelsas/data/services/remote_content_service.dart';
-import 'package:betelsas/data/services/content_sync_service.dart';
-import 'package:betelsas/data/models/manifest.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/core/connectivity_service.dart';
+import 'package:betelapp/data/services/remote_content_service.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/data/models/manifest.dart';
 
 @GenerateMocks([RemoteContentService, ConnectivityService, DatabaseHelper])
 import 'content_sync_service_test.mocks.dart';
@@ -147,12 +147,12 @@ void main() {
         // Lesson 1 exists locally but is no longer in the manifest
         await db.insert('lessons', {
           'id': 1, 'title': 'Lesson 1',
-          'pdf_local_path': 'betelsas/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
+          'pdf_local_path': 'betelapp/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
           'synced_at': 0,
         });
         await db.insert('lessons', {
           'id': 2, 'title': 'Lesson 2',
-          'pdf_local_path': 'betelsas/lessons/2/lesson.pdf', 'pdf_checksum': 'ccc',
+          'pdf_local_path': 'betelapp/lessons/2/lesson.pdf', 'pdf_checksum': 'ccc',
           'synced_at': 0,
         });
       });
@@ -198,7 +198,7 @@ void main() {
         ''');
         await db.insert('lessons', {
           'id': 1, 'title': 'Lesson 1',
-          'pdf_local_path': 'betelsas/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
+          'pdf_local_path': 'betelapp/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
           'synced_at': 0,
         });
       });

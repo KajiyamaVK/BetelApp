@@ -1,6 +1,6 @@
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/services/content_sync_service.dart';
-import 'package:betelsas/presentation/widgets/main_scaffold.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/presentation/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

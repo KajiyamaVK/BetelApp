@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/data/repositories/content_repository.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/repositories/content_repository.dart';
 
 import 'content_repository_test.mocks.dart';
 
@@ -34,9 +34,9 @@ void main() {
       ''');
       await db.insert('lessons', {
         'id': 1, 'title': 'Qual o Fim principal?',
-        'pdf_local_path': 'betelsas/lessons/1/lesson.pdf',
+        'pdf_local_path': 'betelapp/lessons/1/lesson.pdf',
         'pdf_checksum': 'abc',
-        'audio_local_path': 'betelsas/lessons/1/audio.mp3',
+        'audio_local_path': 'betelapp/lessons/1/audio.mp3',
         'audio_ext': 'mp3', 'audio_checksum': 'def',
         'synced_at': 0,
       });
@@ -47,8 +47,8 @@ void main() {
     expect(lessons.length, 1);
     expect(lessons.first.id, 1);
     expect(lessons.first.title, 'Qual o Fim principal?');
-    expect(lessons.first.localPdfPath, 'betelsas/lessons/1/lesson.pdf');
-    expect(lessons.first.localAudioPath, 'betelsas/lessons/1/audio.mp3');
+    expect(lessons.first.localPdfPath, 'betelapp/lessons/1/lesson.pdf');
+    expect(lessons.first.localAudioPath, 'betelapp/lessons/1/audio.mp3');
     expect(lessons.first.audioExt, 'mp3');
 
     await db.close();
@@ -85,13 +85,13 @@ void main() {
       ''');
       await db.insert('lessons', {
         'id': 1, 'title': 'With Audio',
-        'pdf_local_path': 'betelsas/lessons/1/lesson.pdf', 'pdf_checksum': 'abc',
-        'audio_local_path': 'betelsas/lessons/1/audio.mp3', 'audio_ext': 'mp3',
+        'pdf_local_path': 'betelapp/lessons/1/lesson.pdf', 'pdf_checksum': 'abc',
+        'audio_local_path': 'betelapp/lessons/1/audio.mp3', 'audio_ext': 'mp3',
         'audio_checksum': 'def', 'synced_at': 0,
       });
       await db.insert('lessons', {
         'id': 2, 'title': 'No Audio',
-        'pdf_local_path': 'betelsas/lessons/2/lesson.pdf', 'pdf_checksum': 'ghi',
+        'pdf_local_path': 'betelapp/lessons/2/lesson.pdf', 'pdf_checksum': 'ghi',
         'audio_local_path': null, 'audio_ext': null, 'audio_checksum': null, 'synced_at': 0,
       });
     });

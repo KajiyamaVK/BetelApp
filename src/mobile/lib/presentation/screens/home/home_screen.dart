@@ -1,10 +1,10 @@
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/core/theme/app_theme.dart';
-import 'package:betelsas/data/models/lesson.dart';
-import 'package:betelsas/data/services/content_sync_service.dart';
-import 'package:betelsas/presentation/screens/home/home_view_model.dart';
-import 'package:betelsas/presentation/widgets/betel_header.dart';
-import 'package:betelsas/presentation/screens/lesson/lesson_detail_screen.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/core/theme/app_theme.dart';
+import 'package:betelapp/data/models/lesson.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/presentation/screens/home/home_view_model.dart';
+import 'package:betelapp/presentation/widgets/betel_header.dart';
+import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

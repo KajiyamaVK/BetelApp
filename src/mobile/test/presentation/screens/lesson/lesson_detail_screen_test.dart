@@ -1,10 +1,10 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/data/models/lesson.dart';
-import 'package:betelsas/presentation/providers/audio_provider.dart';
-import 'package:betelsas/presentation/screens/lesson/lesson_detail_screen.dart';
-import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/data/models/lesson.dart';
+import 'package:betelapp/presentation/providers/audio_provider.dart';
+import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
+import 'package:betelapp/presentation/widgets/audio_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,15 +16,15 @@ import '../../../presentation/providers/audio_provider_test.mocks.dart';
 Lesson _lessonWithAudio() => Lesson(
       id: 4,
       title: 'Quem é Deus?',
-      localPdfPath: 'betelsas/lessons/4/lesson.pdf',
-      localAudioPath: 'betelsas/lessons/4/audio.mp3',
+      localPdfPath: 'betelapp/lessons/4/lesson.pdf',
+      localAudioPath: 'betelapp/lessons/4/audio.mp3',
       audioExt: 'mp3',
     );
 
 Lesson _lessonWithoutAudio() => Lesson(
       id: 1,
       title: 'Sem Música',
-      localPdfPath: 'betelsas/lessons/1/lesson.pdf',
+      localPdfPath: 'betelapp/lessons/1/lesson.pdf',
     );
 
 BetelAudioHandler _makeStubHandler() {

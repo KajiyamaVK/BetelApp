@@ -1,6 +1,6 @@
 # 5. Data Layer (SQLite & JSON)
 
-This document outlines the data structure for the BetelSAS application, covering both the local JSON data format used for seed/static content and the SQLite schema used for local persistence.
+This document outlines the data structure for the BetelApp application, covering both the local JSON data format used for seed/static content and the SQLite schema used for local persistence.
 
 ## 1. JSON Data Format (`assets/data/lessons.json`)
 

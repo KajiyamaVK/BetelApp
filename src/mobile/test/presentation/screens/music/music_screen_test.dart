@@ -1,10 +1,10 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
-import 'package:betelsas/data/models/song.dart';
-import 'package:betelsas/presentation/providers/audio_provider.dart';
-import 'package:betelsas/presentation/screens/music/music_screen.dart';
-import 'package:betelsas/presentation/screens/music/music_view_model.dart';
-import 'package:betelsas/presentation/widgets/audio_player_widget.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/data/models/song.dart';
+import 'package:betelapp/presentation/providers/audio_provider.dart';
+import 'package:betelapp/presentation/screens/music/music_screen.dart';
+import 'package:betelapp/presentation/screens/music/music_view_model.dart';
+import 'package:betelapp/presentation/widgets/audio_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

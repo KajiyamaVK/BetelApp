@@ -1,7 +1,7 @@
-import 'package:betelsas/core/audio/audio_service_initializer.dart';
-import 'package:betelsas/core/providers.dart';
-import 'package:betelsas/core/theme/app_theme.dart';
-import 'package:betelsas/presentation/screens/splash_screen.dart';
+import 'package:betelapp/core/audio/audio_service_initializer.dart';
+import 'package:betelapp/core/providers.dart';
+import 'package:betelapp/core/theme/app_theme.dart';
+import 'package:betelapp/presentation/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

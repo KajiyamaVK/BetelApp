@@ -1,13 +1,13 @@
-import 'package:betelsas/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/core/audio/betel_audio_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:betelsas/core/connectivity_service.dart';
-import 'package:betelsas/core/database_helper.dart';
-import 'package:betelsas/data/repositories/content_repository.dart';
-import 'package:betelsas/data/repositories/favorites_repository_impl.dart';
-import 'package:betelsas/data/services/content_sync_service.dart';
-import 'package:betelsas/data/services/remote_content_service.dart';
-import 'package:betelsas/domain/repositories/favorites_repository.dart';
+import 'package:betelapp/core/connectivity_service.dart';
+import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/repositories/content_repository.dart';
+import 'package:betelapp/data/repositories/favorites_repository_impl.dart';
+import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/data/services/remote_content_service.dart';
+import 'package:betelapp/domain/repositories/favorites_repository.dart';
 
 // Core
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) => DatabaseHelper());
