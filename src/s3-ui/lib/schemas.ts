@@ -37,4 +37,7 @@ export const updateQuestionSchema = z.object({
   question: z.string().min(1).optional(),
   answer: z.string().min(1).optional(),
   order: z.number().int().nonnegative().optional(),
-})
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field required' },
+)

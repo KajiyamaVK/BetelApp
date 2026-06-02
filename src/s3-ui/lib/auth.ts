@@ -34,18 +34,18 @@ export async function verifyToken(token: string): Promise<TokenPayload> {
 }
 
 /**
- * Verifies the auth cookie is present and valid. Returns { userId } on success,
+ * Verifies the auth cookie is present and valid. Returns { userId, username } on success,
  * or { error: NextResponse } on missing/invalid token.
  * Use this for routes that require any logged-in user (e.g. lesson mutations).
  */
 export async function requireAuth(
   req: NextRequest,
-): Promise<{ error: NextResponse } | { userId: number }> {
+): Promise<{ error: NextResponse } | { userId: number; username: string }> {
   const token = req.cookies.get(TOKEN_COOKIE)?.value
   if (!token) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   try {
     const payload = await verifyToken(token)
-    return { userId: payload.id }
+    return { userId: payload.id, username: payload.username }
   } catch {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
