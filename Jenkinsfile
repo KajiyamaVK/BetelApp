@@ -81,7 +81,7 @@ pipeline {
             when {
                 allOf {
                     expression { env.GIT_BRANCH == 'origin/main' }
-                    changeset 'src/mobile/**'
+                    changeset 'src/mobile/pubspec.yaml'
                 }
             }
             steps {
@@ -122,7 +122,7 @@ pipeline {
             sh '''
                 body=$(jq -n \
                     --arg status "success" \
-                    --arg pipeline "BetelSAS" \
+                    --arg pipeline "BetelApp" \
                     --arg branch "$GIT_BRANCH" \
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
@@ -136,7 +136,7 @@ pipeline {
             sh '''
                 body=$(jq -n \
                     --arg status "failure" \
-                    --arg pipeline "BetelSAS" \
+                    --arg pipeline "BetelApp" \
                     --arg branch "$GIT_BRANCH" \
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
@@ -150,7 +150,7 @@ pipeline {
             sh '''
                 body=$(jq -n \
                     --arg status "aborted" \
-                    --arg pipeline "BetelSAS" \
+                    --arg pipeline "BetelApp" \
                     --arg branch "$GIT_BRANCH" \
                     --arg buildUrl "$BUILD_URL" \
                     --argjson buildNumber "$BUILD_NUMBER" \
