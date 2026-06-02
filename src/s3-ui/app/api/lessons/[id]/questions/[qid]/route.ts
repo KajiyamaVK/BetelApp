@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { updateQuestionSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
+import { resyncLessonInManifestIfPublished } from '@/lib/manifest-sync'
 
 export async function PATCH(
   req: NextRequest,
@@ -29,6 +30,14 @@ export async function PATCH(
       where: { id: qid, lessonId, deletedAt: null },
       data: parsed.data,
     })
+
+    // Best-effort manifest resync — does not block the response if MinIO is unavailable
+    try {
+      await resyncLessonInManifestIfPublished(lessonId)
+    } catch (err) {
+      console.error('Failed to resync manifest after question update:', err)
+    }
+
     return NextResponse.json(question)
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
@@ -72,6 +81,13 @@ export async function DELETE(
     where: { id: qid, deletedAt: null },
     data: { deletedAt: new Date() },
   })
+
+  // Best-effort manifest resync — does not block the response if MinIO is unavailable
+  try {
+    await resyncLessonInManifestIfPublished(existing.lessonId)
+  } catch (err) {
+    console.error('Failed to resync manifest after question delete:', err)
+  }
 
   return new NextResponse(null, { status: 204 })
 }

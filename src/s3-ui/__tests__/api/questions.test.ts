@@ -6,6 +6,16 @@ import { PATCH, DELETE } from '@/app/api/lessons/[id]/questions/[qid]/route'
 import { prisma } from '@/lib/prisma'
 import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
+import { uploadObject } from '@/lib/minio'
+
+jest.mock('@/lib/minio', () => ({
+  getObjectText: jest.fn().mockResolvedValue(
+    JSON.stringify({ version: 1, updated_at: '2024-01-01T00:00:00Z', lessons: [] }),
+  ),
+  uploadObject: jest.fn().mockResolvedValue(undefined),
+}))
+
+const mockUploadObject = uploadObject as jest.Mock
 
 async function makeAuthRequest(method: string, url: string, body?: object): Promise<NextRequest> {
   const token = await signToken({ id: 1, username: 'victor', isAdmin: true, mustChangePassword: false })
@@ -19,6 +29,11 @@ async function makeAuthRequest(method: string, url: string, body?: object): Prom
 }
 
 const LESSON_ID = 1
+
+beforeEach(() => {
+  mockUploadObject.mockReset()
+  mockUploadObject.mockResolvedValue(undefined)
+})
 
 beforeAll(async () => {
   await prisma.lesson.upsert({

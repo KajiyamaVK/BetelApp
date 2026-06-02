@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createQuestionSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
+import { resyncLessonInManifestIfPublished } from '@/lib/manifest-sync'
 
 export async function GET(
   req: NextRequest,
@@ -47,6 +48,13 @@ export async function POST(
       order: parsed.data.order ?? 0,
     },
   })
+
+  // Best-effort manifest resync — does not block the response if MinIO is unavailable
+  try {
+    await resyncLessonInManifestIfPublished(lessonId)
+  } catch (err) {
+    console.error('Failed to resync manifest after question create:', err)
+  }
 
   return NextResponse.json(question, { status: 201 })
 }

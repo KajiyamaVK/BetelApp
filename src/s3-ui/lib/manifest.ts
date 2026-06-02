@@ -1,8 +1,15 @@
+export interface ManifestQuestion {
+  id: number
+  q: string
+  a: string
+}
+
 export interface ManifestLesson {
   id: number
   title: string
   audio: { active: string | null; ext: string; checksum: string; history: string[] } | null
   pdf: { active: string | null; checksum: string; history: string[] }
+  questions: ManifestQuestion[]
 }
 
 export interface Manifest {

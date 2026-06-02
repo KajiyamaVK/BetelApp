@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, removeLesson, upsertLesson, ManifestLesson } from '@/lib/manifest'
+import { parseManifest, removeLesson, upsertLesson } from '@/lib/manifest'
+import { buildManifestLesson } from '@/lib/manifest-sync'
 import { togglePublishSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 
@@ -33,25 +34,14 @@ export async function PATCH(
 
     let updatedManifest
     if (parsed.data.published) {
-      // Reconstruct manifest entry from DB-stored file metadata
-      const manifestLesson: ManifestLesson = {
-        id: lesson.id,
-        title: lesson.title,
-        pdf: {
-          active: lesson.pdfActive,
-          checksum: lesson.pdfChecksum ?? '',
-          history: (lesson.pdfHistory as string[]) ?? [],
-        },
-        audio: lesson.audioActive
-          ? {
-              active: lesson.audioActive,
-              ext: lesson.audioExt ?? 'mp3',
-              checksum: lesson.audioChecksum ?? '',
-              history: (lesson.audioHistory as string[]) ?? [],
-            }
-          : null,
-      }
-      updatedManifest = upsertLesson(manifest, manifestLesson)
+      // Fetch active (non-deleted) questions to include in the manifest entry
+      const activeQuestions = await prisma.question.findMany({
+        where: { lessonId: id, deletedAt: null },
+        orderBy: { order: 'asc' },
+      })
+
+      // Reconstruct manifest entry from DB-stored file metadata and Q&As
+      updatedManifest = upsertLesson(manifest, buildManifestLesson(lesson, activeQuestions))
     } else {
       updatedManifest = removeLesson(manifest, id)
     }
