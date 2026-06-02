@@ -26,3 +26,15 @@ export const createLessonSchema = z.object({
   id: z.number().int().positive('Lesson number must be a positive integer'),
   title: z.string().min(1, 'Title required'),
 })
+
+export const createQuestionSchema = z.object({
+  question: z.string().min(1, 'Pergunta obrigatória'),
+  answer: z.string().min(1, 'Resposta obrigatória'),
+  order: z.number().int().nonnegative().optional(),
+})
+
+export const updateQuestionSchema = z.object({
+  question: z.string().min(1).optional(),
+  answer: z.string().min(1).optional(),
+  order: z.number().int().nonnegative().optional(),
+})
