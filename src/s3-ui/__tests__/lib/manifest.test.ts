@@ -94,7 +94,7 @@ describe('removeLesson', () => {
 describe('upsertLesson', () => {
   it('adds a new lesson to the list', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
-    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null }
+    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null, questions: [] }
     const result = upsertLesson(manifest, newLesson)
     expect(result.lessons).toHaveLength(2)
   })
@@ -109,7 +109,7 @@ describe('upsertLesson', () => {
 
   it('increments manifest version', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
-    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null }
+    const newLesson = { id: 2, title: 'New', pdf: { active: 'a', checksum: 'b', history: [] }, audio: null, questions: [] }
     const result = upsertLesson(manifest, newLesson)
     expect(result.version).toBe(2)
   })
@@ -120,7 +120,7 @@ describe('renameLesson', () => {
     const manifest: Manifest = {
       version: 3,
       updated_at: '2024-01-01T00:00:00Z',
-      lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null }],
+      lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null, questions: [] }],
     }
     const result = renameLesson(manifest, 1, 'New Title')
     expect(result.version).toBe(3)

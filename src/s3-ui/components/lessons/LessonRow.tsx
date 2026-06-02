@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { FileRow } from './FileRow'
+import { QASection } from './QASection'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,6 +176,7 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
               onDelete={handleDeleteRequest}
               onPreview={onPreview}
             />
+            <QASection lessonId={lesson.id} />
           </div>
         )}
       </div>

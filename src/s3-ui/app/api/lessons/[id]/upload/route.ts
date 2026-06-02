@@ -89,6 +89,7 @@ export async function POST(
       title: dbLesson.title,
       audio: dbLesson.audioActive ? { active: dbLesson.audioActive, ext: dbLesson.audioExt ?? 'mp3', checksum: dbLesson.audioChecksum ?? '', history: (dbLesson.audioHistory as string[]) ?? [] } : null,
       pdf: { active: dbLesson.pdfActive, checksum: dbLesson.pdfChecksum ?? '', history: (dbLesson.pdfHistory as string[]) ?? [] },
+      questions: [],
     })
   }
 
