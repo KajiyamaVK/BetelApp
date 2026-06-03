@@ -81,7 +81,10 @@ pipeline {
             when {
                 allOf {
                     expression { env.GIT_BRANCH == 'origin/main' }
-                    changeset 'src/mobile/pubspec.yaml'
+                    anyOf {
+                        changeset 'src/mobile/pubspec.yaml'
+                        changeset glob: 'src/mobile/fastlane/**'
+                    }
                 }
             }
             steps {
