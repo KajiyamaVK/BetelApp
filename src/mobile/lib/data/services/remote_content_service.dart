@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:betelapp/data/models/manifest.dart';
 
-const _baseUrl = 'http://s3.kajiyama.com.br/betelapp-content';
+const _baseUrl = String.fromEnvironment(
+  'CONTENT_BASE_URL',
+  defaultValue: 'http://s3.kajiyama.com.br/betelapp-content',
+);
 
 class RemoteContentException implements Exception {
   final String message;

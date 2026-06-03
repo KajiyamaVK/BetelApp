@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "BetelApp (dev)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=CONTENT_BASE_URL=https://s3.kajiyama.com.br/betelapp-content-dev"
+      ]
+    },
+    {
+      "name": "BetelApp (prod)",
+      "request": "launch",
+      "type": "dart"
+    }
+  ]
+}
