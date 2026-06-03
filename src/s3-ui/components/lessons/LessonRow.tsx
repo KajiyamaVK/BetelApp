@@ -40,6 +40,7 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(lesson.title)
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null)
+  const [publishing, setPublishing] = useState(false)
   const [pendingPdfDelete, setPendingPdfDelete] = useState(false)
   const [pendingLessonDelete, setPendingLessonDelete] = useState(false)
 
@@ -57,9 +58,11 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
 
   async function handleConfirm() {
     if (pendingPublish !== null) {
+      setPublishing(true)
       // Always close the dialog after confirmation, regardless of outcome.
       // Error surfacing is the parent page's responsibility.
       await onPublishToggle(lesson.id, pendingPublish).catch(() => undefined)
+      setPublishing(false)
     }
     setPendingPublish(null)
   }
@@ -215,7 +218,15 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>Confirmar</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirm} disabled={publishing} className="flex items-center gap-2">
+              {publishing && (
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              )}
+              {publishing ? 'Aguarde...' : 'Confirmar'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
