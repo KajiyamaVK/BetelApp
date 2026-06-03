@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelapp/presentation/screens/home/home_screen.dart';
 import 'package:betelapp/presentation/screens/music/music_screen.dart';
+import 'package:betelapp/presentation/screens/reviews/reviews_screen.dart';
 import 'package:betelapp/presentation/screens/favorites/favorites_screen.dart';
 import 'package:betelapp/presentation/providers/audio_provider.dart';
 
@@ -25,6 +26,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     _screens = [
       HomeScreen(syncResult: widget.syncResult),
       const MusicScreen(),
+      const ReviewsScreen(),
       const FavoritesScreen(),
     ];
   }
@@ -52,6 +54,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           BottomNavigationBarItem(
             icon: Icon(Icons.music_note_rounded),
             label: 'Músicas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.style_rounded),
+            label: 'Revisões',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_rounded),
