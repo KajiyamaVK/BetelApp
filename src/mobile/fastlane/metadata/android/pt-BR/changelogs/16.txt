@@ -1,0 +1,1 @@
+Correção: perguntas e respostas adicionadas a uma lição já sincronizada agora aparecem corretamente no app.

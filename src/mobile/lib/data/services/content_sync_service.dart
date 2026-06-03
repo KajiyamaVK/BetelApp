@@ -72,6 +72,7 @@ class ContentSyncService {
     }
 
     final lessonsToDownload = <ManifestLesson>[];
+    final lessonsWithUpdatedQAs = <ManifestLesson>[];
     for (final lesson in manifest.lessons) {
       final existing = await db.query('lessons',
           where: 'id = ?', whereArgs: [lesson.id], limit: 1);
@@ -82,11 +83,36 @@ class ContentSyncService {
         if (row['pdf_checksum'] != lesson.pdf.checksum ||
             row['audio_checksum'] != lesson.audio?.checksum) {
           lessonsToDownload.add(lesson);
+        } else if ((row['question_count'] as int? ?? 0) != lesson.questions.length) {
+          // Files unchanged but Q&As changed — sync cards without re-downloading files
+          lessonsWithUpdatedQAs.add(lesson);
         }
       }
     }
 
-    if (lessonsToDownload.isEmpty) {
+    // Sync Q&As for lessons whose files are up-to-date but questions changed
+    for (final lesson in lessonsWithUpdatedQAs) {
+      final reviewRepo = ReviewRepositoryImpl(_dbHelper);
+      final flashcards = lesson.questions
+          .map((q) => Flashcard(id: q.id, lessonId: lesson.id, question: q.question, answer: q.answer))
+          .toList();
+      await reviewRepo.upsertCards(flashcards);
+      if (flashcards.isNotEmpty) {
+        await reviewRepo.activateReviewIfNew(lessonId: lesson.id);
+      }
+      final manifestQuestionIds = lesson.questions.map((q) => q.id).toSet();
+      final existingRows = await db.query('card_progress', columns: ['question_id'],
+          where: 'lesson_id = ?', whereArgs: [lesson.id]);
+      final removedIds = existingRows
+          .map((r) => r['question_id'] as int)
+          .where((id) => !manifestQuestionIds.contains(id))
+          .toList();
+      if (removedIds.isNotEmpty) await reviewRepo.deleteCardsForQuestionIds(removedIds);
+      await db.update('lessons', {'question_count': lesson.questions.length},
+          where: 'id = ?', whereArgs: [lesson.id]);
+    }
+
+    if (lessonsToDownload.isEmpty && lessonsWithUpdatedQAs.isEmpty) {
       await db.insert(
         'sync_meta',
         {

@@ -403,4 +403,55 @@ void main() {
     expect(rows.first['question_id'], 10);
     expect(rows.first['bucket'], 3, reason: 'existing progress should be preserved');
   });
+
+  // Regression: Q&As added to a published lesson must appear in the app even when
+  // the lesson's file checksums did not change (add→delete→re-add cycle on portal).
+  test('sync upserts Q&As for existing lessons whose questions changed in manifest', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    // Manifest version bumped because a Q&A was added — but PDF checksum unchanged
+    final manifest = ContentManifest(
+      version: 10,
+      updatedAt: '2026-06-03T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 24,
+          title: 'Lição 24',
+          pdf: ManifestFileEntry(active: 'lessons/24/lesson_v1.pdf', checksum: 'same', history: []),
+          audio: null,
+          questions: [
+            ManifestQuestion(id: 4, question: 'Qual a pergunta 24?', answer: 'Resposta 24'),
+          ],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      // Lesson 24 already exists locally with the SAME checksum — only Q&As changed
+      await db!.insert('sync_meta', {'id': 1, 'manifest_version': 9, 'last_sync_at': 0});
+      await db!.insert('lessons', {
+        'id': 24, 'title': 'Lição 24',
+        'pdf_local_path': 'betelapp/lessons/24/lesson.pdf', 'pdf_checksum': 'same',
+        'synced_at': 0, 'question_count': 0,
+      });
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('card_progress', where: 'lesson_id = ?', whereArgs: [24]);
+    expect(rows.length, 1,
+        reason: 'Q&A added to existing lesson must appear in card_progress even when file checksums unchanged');
+    expect(rows.first['question_id'], 4);
+  });
 }
