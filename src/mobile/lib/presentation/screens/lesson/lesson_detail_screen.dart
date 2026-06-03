@@ -77,8 +77,10 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
           style: AppTheme.heading2.copyWith(color: Colors.white),
         ),
         actions: [
-          if (widget.lesson.questionCount > 0)
-            _ReviewToggleButton(lessonId: widget.lesson.id),
+          _ReviewToggleButton(
+            lessonId: widget.lesson.id,
+            enabled: widget.lesson.questionCount > 0,
+          ),
           IconButton(
             icon: _buildFavoriteIcon(),
             onPressed: () {
@@ -181,8 +183,9 @@ class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
 
 class _ReviewToggleButton extends ConsumerStatefulWidget {
   final int lessonId;
+  final bool enabled;
 
-  const _ReviewToggleButton({required this.lessonId});
+  const _ReviewToggleButton({required this.lessonId, required this.enabled});
 
   @override
   ConsumerState<_ReviewToggleButton> createState() => _ReviewToggleButtonState();
@@ -194,7 +197,7 @@ class _ReviewToggleButtonState extends ConsumerState<_ReviewToggleButton> {
   @override
   void initState() {
     super.initState();
-    _loadState();
+    if (widget.enabled) _loadState();
   }
 
   Future<void> _loadState() async {
@@ -208,17 +211,24 @@ class _ReviewToggleButtonState extends ConsumerState<_ReviewToggleButton> {
     final repo = ref.read(reviewRepositoryProvider);
     final newActive = !_isActive!;
     await repo.setReviewActive(lessonId: widget.lessonId, active: newActive);
-    ref.read(reviewViewModelProvider.notifier).loadState();
+    await ref.read(reviewViewModelProvider.notifier).loadState();
     if (mounted) setState(() => _isActive = newActive);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.enabled) {
+      return IconButton(
+        icon: const Icon(Icons.style_rounded, color: Colors.white24),
+        tooltip: 'Sem perguntas disponíveis',
+        onPressed: null,
+      );
+    }
     final isActive = _isActive ?? false;
     return IconButton(
       icon: Icon(
         Icons.style_rounded,
-        color: isActive ? AppTheme.primaryColor : Colors.white54,
+        color: isActive ? Colors.white : Colors.white54,
       ),
       tooltip: isActive ? 'Revisão ativa' : 'Ativar revisão',
       onPressed: _isActive == null ? null : _toggle,

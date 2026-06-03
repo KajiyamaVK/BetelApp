@@ -14,5 +14,10 @@ abstract class ReviewRepository {
   Future<void> deleteCardsForQuestionIds(List<int> questionIds);
   Future<bool> isReviewActive({required int lessonId});
   Future<void> setReviewActive({required int lessonId, required bool active});
+  /// Activates review for [lessonId] only if no row exists yet (first sync).
+  /// Does nothing if the user has already made an explicit choice.
+  Future<void> activateReviewIfNew({required int lessonId});
   Future<List<int>> getActiveLessonIds();
+  /// Resets all card_progress to bucket=1 and next_review_at=now (dev/test only).
+  Future<void> resetAllProgress();
 }

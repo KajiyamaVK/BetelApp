@@ -157,6 +157,9 @@ class ContentSyncService {
               ))
           .toList();
       await reviewRepo.upsertCards(flashcards);
+      if (flashcards.isNotEmpty) {
+        await reviewRepo.activateReviewIfNew(lessonId: lesson.id);
+      }
 
       // Remove card_progress for Q&As no longer in the manifest
       final manifestQuestionIds = lesson.questions.map((q) => q.id).toSet();

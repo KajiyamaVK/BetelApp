@@ -166,5 +166,24 @@ void main() {
       expect(activeIds, containsAll([1, 2]));
       expect(activeIds, isNot(contains(3)));
     });
+
+    // Regression: new lessons with Q&A must default to active after first sync.
+    test('activateReviewIfNew sets active=true when no row exists', () async {
+      await repo.activateReviewIfNew(lessonId: 10);
+      expect(await repo.isReviewActive(lessonId: 10), isTrue);
+    });
+
+    test('activateReviewIfNew does NOT override an explicit setReviewActive(false)', () async {
+      await repo.setReviewActive(lessonId: 11, active: false);
+      await repo.activateReviewIfNew(lessonId: 11);
+      expect(await repo.isReviewActive(lessonId: 11), isFalse,
+          reason: 'user explicitly deactivated — re-sync must not override that choice');
+    });
+
+    test('activateReviewIfNew does NOT override an explicit setReviewActive(true)', () async {
+      await repo.setReviewActive(lessonId: 12, active: true);
+      await repo.activateReviewIfNew(lessonId: 12);
+      expect(await repo.isReviewActive(lessonId: 12), isTrue);
+    });
   });
 }

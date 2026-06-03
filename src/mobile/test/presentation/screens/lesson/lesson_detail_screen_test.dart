@@ -4,6 +4,7 @@ import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/data/models/flashcard.dart';
 import 'package:betelapp/data/models/lesson.dart';
+import 'package:betelapp/data/repositories/content_repository.dart';
 import 'package:betelapp/data/repositories/review_repository_impl.dart';
 import 'package:betelapp/presentation/providers/audio_provider.dart';
 import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
@@ -17,18 +18,32 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../presentation/providers/audio_provider_test.mocks.dart';
 
+class _StubContentRepo extends ContentRepository {
+  _StubContentRepo() : super(dbHelper: DatabaseHelper());
+
+  @override
+  Future<List<Lesson>> loadLessons() async => [];
+
+  @override
+  Future<List<Lesson>> loadLessonsWithAudio() async => [];
+}
+
 // ---------------------------------------------------------------------------
 // In-memory stub — no SQLite, safe to use in widget (FakeAsync) tests
 // ---------------------------------------------------------------------------
 
 class _StubReviewRepo extends ReviewRepositoryImpl {
-  bool _active = false;
+  // lesson_id → active
+  final Map<int, bool> _activeMap = {};
 
   // DatabaseHelper() returns the singleton but never accesses the database
   // because all database-calling methods are overridden below.
   _StubReviewRepo() : super(DatabaseHelper());
 
-  void seedActive(bool value) => _active = value;
+  // Seed a known active state for a single-lesson scenario (id doesn't matter
+  // to the toggle button itself, which uses its own lessonId).
+  void seedActive(bool value, {int lessonId = 1}) =>
+      _activeMap[lessonId] = value;
 
   @override
   Future<void> upsertCards(List<Flashcard> flashcards) async {}
@@ -51,18 +66,28 @@ class _StubReviewRepo extends ReviewRepositoryImpl {
   Future<void> deleteCardsForQuestionIds(List<int> questionIds) async {}
 
   @override
-  Future<bool> isReviewActive({required int lessonId}) async => _active;
+  Future<bool> isReviewActive({required int lessonId}) async =>
+      _activeMap[lessonId] ?? false;
 
   @override
   Future<void> setReviewActive({
     required int lessonId,
     required bool active,
   }) async {
-    _active = active;
+    _activeMap[lessonId] = active;
   }
 
   @override
-  Future<List<int>> getActiveLessonIds() async => [];
+  Future<void> activateReviewIfNew({required int lessonId}) async {
+    _activeMap.putIfAbsent(lessonId, () => true);
+  }
+
+  @override
+  Future<List<int>> getActiveLessonIds() async =>
+      _activeMap.entries.where((e) => e.value).map((e) => e.key).toList();
+
+  @override
+  Future<void> resetAllProgress() async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -226,8 +251,9 @@ void main() {
   });
 
   group('LessonDetailScreen — review toggle button', () {
+    // Regression: toggle always visible; disabled (white24, non-tappable) when no Q&A.
     testWidgets(
-        'review toggle icon is not shown when lesson has no questions',
+        'review toggle is visible but disabled (opaque) when lesson has no questions',
         (tester) async {
       final repo = _StubReviewRepo();
       final lesson = Lesson(
@@ -239,7 +265,14 @@ void main() {
       await tester.pumpWidget(_wrapWithReview(LessonDetailScreen(lesson: lesson), repo));
       await tester.pump();
 
-      expect(find.byIcon(Icons.style_rounded), findsNothing);
+      expect(find.byIcon(Icons.style_rounded), findsOneWidget,
+          reason: 'toggle must always be visible');
+      final icon = tester.widget<Icon>(find.byIcon(Icons.style_rounded));
+      expect(icon.color, Colors.white24,
+          reason: 'toggle must be opaque/disabled when lesson has no Q&A');
+      final button = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.style_rounded));
+      expect(button.onPressed, isNull,
+          reason: 'toggle must be non-interactive when lesson has no Q&A');
     });
 
     testWidgets(
@@ -293,6 +326,103 @@ void main() {
         isTrue,
         reason: 'stub repo should reflect the toggled state',
       );
+    });
+
+    // Regression: active toggle icon must be white (visible) against the yellow AppBar,
+    // not primaryColor (yellow-on-yellow = invisible).
+    testWidgets(
+        'review toggle icon is white when active (visible against yellow AppBar)',
+        (tester) async {
+      final repo = _StubReviewRepo()..seedActive(true, lessonId: 5);
+      final lesson = Lesson(
+        id: 5,
+        title: 'Active Review',
+        localPdfPath: 'betelapp/lessons/5/lesson.pdf',
+        questionCount: 1,
+      );
+      await tester.pumpWidget(_wrapWithReview(LessonDetailScreen(lesson: lesson), repo));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100)); // _loadState completes
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.style_rounded));
+      expect(icon.color, Colors.white,
+          reason: 'active toggle must be white to be visible on the yellow AppBar');
+    });
+
+    // Regression: tapping the toggle must await loadState() so that ReviewsScreen
+    // reflects the new active lesson immediately when the user switches tabs.
+    testWidgets(
+        'toggling review awaits reviewViewModel loadState so tab state is up to date',
+        (tester) async {
+      final repo = _StubReviewRepo();
+      final lesson = Lesson(
+        id: 6,
+        title: 'Sync Check',
+        localPdfPath: 'betelapp/lessons/6/lesson.pdf',
+        questionCount: 2,
+      );
+
+      late ReviewViewModel capturedVm;
+      final vm = ReviewViewModel(repo);
+      capturedVm = vm;
+
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          betelAudioHandlerProvider.overrideWithValue(_makeStubHandler()),
+          reviewRepositoryProvider.overrideWithValue(repo),
+          reviewViewModelProvider.overrideWith((_) => capturedVm),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(useMaterial3: false),
+          home: LessonDetailScreen(lesson: lesson),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Before toggle: no active lessons
+      final stateBefore = capturedVm.state.value!;
+      expect(stateBefore.activeLessonIds, isEmpty);
+
+      // Tap toggle to activate
+      await tester.tap(find.byIcon(Icons.style_rounded));
+      await tester.pump(); // start async _toggle
+      await tester.pump(const Duration(milliseconds: 200)); // _toggle + loadState complete
+
+      // After toggle: viewModel must have the lesson in activeLessonIds
+      expect(
+        capturedVm.state,
+        isA<AsyncData<ReviewState>>(),
+        reason: 'viewModel state must settle to data after toggle',
+      );
+      final stateAfter = capturedVm.state.value!;
+      expect(
+        stateAfter.activeLessonIds,
+        contains(lesson.id),
+        reason: '_toggle must await loadState() so ReviewsScreen gets the updated state',
+      );
+    });
+
+    // Regression: lessons with Q&A must show the toggle as active by default
+    // (synced via activateReviewIfNew — verified here via seedActive).
+    testWidgets(
+        'review toggle shows as active (white) when lesson is active by default after first sync',
+        (tester) async {
+      // Simulate what ContentSyncService does: activateReviewIfNew sets active=true on first sync.
+      final repo = _StubReviewRepo()..seedActive(true, lessonId: 7);
+      final lesson = Lesson(
+        id: 7,
+        title: 'Default Active',
+        localPdfPath: 'betelapp/lessons/7/lesson.pdf',
+        questionCount: 4,
+      );
+      await tester.pumpWidget(_wrapWithReview(LessonDetailScreen(lesson: lesson), repo));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.style_rounded));
+      expect(icon.color, Colors.white,
+          reason: 'toggle must be white (active) for a newly synced lesson with Q&A');
     });
   });
 }

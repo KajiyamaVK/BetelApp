@@ -14,7 +14,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
   @override
   Future<void> upsertCards(List<Flashcard> flashcards) async {
     final db = await _dbHelper.database;
-    final tomorrow = DateTime.now().add(const Duration(days: 1)).toIso8601String();
+    final today = DateTime.now().toIso8601String();
 
     for (final flashcard in flashcards) {
       final existing = await db.query(
@@ -27,7 +27,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
           'question_id': flashcard.id,
           'lesson_id': flashcard.lessonId,
           'bucket': 1,
-          'next_review_at': tomorrow,
+          'next_review_at': today,
           'question_text': flashcard.question,
           'answer_text': flashcard.answer,
         });
@@ -124,9 +124,30 @@ class ReviewRepositoryImpl implements ReviewRepository {
   }
 
   @override
+  Future<void> activateReviewIfNew({required int lessonId}) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'review_active',
+      {'lesson_id': lessonId, 'active': 1},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  @override
   Future<List<int>> getActiveLessonIds() async {
     final db = await _dbHelper.database;
     final rows = await db.query('review_active', where: 'active = 1');
     return rows.map((row) => row['lesson_id'] as int).toList();
+  }
+
+  @override
+  Future<void> resetAllProgress() async {
+    final db = await _dbHelper.database;
+    final now = DateTime.now().toIso8601String();
+    await db.update('card_progress', {
+      'bucket': 1,
+      'last_reviewed_at': null,
+      'next_review_at': now,
+    });
   }
 }

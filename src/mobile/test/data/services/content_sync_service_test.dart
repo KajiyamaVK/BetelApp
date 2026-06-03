@@ -11,6 +11,17 @@ import 'package:betelapp/data/models/manifest.dart';
 @GenerateMocks([RemoteContentService, ConnectivityService, DatabaseHelper])
 import 'content_sync_service_test.mocks.dart';
 
+Future<Database> _openFullSchema() => openDatabase(
+      inMemoryDatabasePath,
+      version: 3,
+      onCreate: (db, _) async {
+        await db.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
+        await db.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
+        await db.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
+        await db.execute('CREATE TABLE review_active (lesson_id INTEGER PRIMARY KEY, active INTEGER NOT NULL DEFAULT 1)');
+      },
+    );
+
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -241,11 +252,7 @@ void main() {
     Database? db;
     when(mockDb.database).thenAnswer((_) async {
       if (db != null) return db!;
-      db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
-        await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
-        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
-        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
-      });
+      db = await _openFullSchema();
       openedDb = db;
       return db!;
     });
@@ -258,6 +265,98 @@ void main() {
     expect(rows.any((r) => r['question_id'] == 10 && r['lesson_id'] == 1), true);
     expect(rows.any((r) => r['question_id'] == 11 && r['lesson_id'] == 1), true);
     expect(rows.every((r) => r['bucket'] == 1), true);
+  });
+
+  // Regression: lessons with Q&A must be activated for review by default on first sync.
+  test('sync activates review by default for new lessons that have Q&A', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 7,
+      updatedAt: '2026-06-03T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 1,
+          title: 'Lição com Q&A',
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          audio: null,
+          questions: [
+            ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
+          ],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('review_active', where: 'lesson_id = ?', whereArgs: [1]);
+    expect(rows.length, 1);
+    expect(rows.first['active'], 1,
+        reason: 'lesson with Q&A must be active by default after first sync');
+  });
+
+  // Regression: re-syncing a lesson must not override the user's explicit deactivation.
+  test('sync does NOT override explicit review deactivation on re-sync', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 8,
+      updatedAt: '2026-06-03T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 1,
+          title: 'Lição com Q&A',
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v2.pdf', checksum: 'new', history: []),
+          audio: null,
+          questions: [
+            ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
+          ],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      // User previously deactivated review for lesson 1
+      await db!.insert('review_active', {'lesson_id': 1, 'active': 0});
+      // Old checksum forces re-download
+      await db!.insert('sync_meta', {'id': 1, 'manifest_version': 7, 'last_sync_at': 0});
+      await db!.insert('lessons', {
+        'id': 1, 'title': 'Lição com Q&A',
+        'pdf_local_path': 'lessons/1/lesson_v1.pdf', 'pdf_checksum': 'old',
+        'synced_at': 0, 'question_count': 1,
+      });
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('review_active', where: 'lesson_id = ?', whereArgs: [1]);
+    expect(rows.first['active'], 0,
+        reason: 'user deactivated review — re-sync must not override that choice');
   });
 
   test('sync removes card_progress entries for Q&As removed from manifest', () async {
@@ -288,11 +387,7 @@ void main() {
     Database? db;
     when(mockDb.database).thenAnswer((_) async {
       if (db != null) return db!;
-      db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
-        await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
-        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
-        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
-      });
+      db = await _openFullSchema();
       // Pre-populate card_progress with TWO questions (11 is no longer in manifest)
       await db!.insert('card_progress', {'question_id': 10, 'lesson_id': 1, 'bucket': 3, 'next_review_at': '2026-06-10T00:00:00.000'});
       await db!.insert('card_progress', {'question_id': 11, 'lesson_id': 1, 'bucket': 2, 'next_review_at': '2026-06-08T00:00:00.000'});
