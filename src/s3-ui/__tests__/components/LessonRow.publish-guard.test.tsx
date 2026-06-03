@@ -17,6 +17,8 @@ const handlers = {
 beforeAll(() => {
   window.HTMLMediaElement.prototype.play = jest.fn().mockResolvedValue(undefined)
   window.HTMLMediaElement.prototype.pause = jest.fn()
+  // QASection fetches questions on mount when the row is expanded.
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => [] } as Response)
 })
 
 describe('LessonRow — Publicar guard', () => {
