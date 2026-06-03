@@ -19,3 +19,17 @@ O pipeline Jenkins sobe automaticamente para o Play Store internal track ao dete
 
 - Ao receber qualquer pedido de mudança no app mobile, verificar o `version:` atual em `pubspec.yaml` e incluir o bump no mesmo commit
 - Nunca separar "bump" em commit posterior — o bump deve estar junto com a mudança que o motivou
+
+## Changelog obrigatório (Play Store)
+
+Junto com o bump de versionCode, **sempre** criar o arquivo de changelog:
+
+```
+src/mobile/fastlane/metadata/android/pt-BR/changelogs/<versionCode>.txt
+```
+
+O `pre-push` do repo **bloqueia** o push para main se o arquivo estiver ausente ou vazio.
+
+- Máximo 500 caracteres (limite da Play Store)
+- Escrever em português, para o usuário final — o que mudou, não como
+- Exemplo: `Correção no player de áudio ao trocar de lição.`

@@ -8,7 +8,6 @@ platform :android do
       track: "internal",
       aab: "build/app/outputs/bundle/release/app-release.aab",
       release_status: "completed",
-      skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
     )

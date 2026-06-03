@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
+
+REPO_ROOT=/home/vkajiyama/src/BetelApp
+
+cd "$REPO_ROOT/src/mobile"
+/home/vkajiyama/development/flutter/bin/flutter test
+./scripts/run_integration_tests.sh
+
+cd "$REPO_ROOT/src/s3-ui"
+DATABASE_URL="postgresql://kajiyamavk:yRhbrBlOWVYaH6@homelab:5432/betelapp_test" \
+JWT_SECRET="zRJbzUO1jrUfjdmcoYq3O8JAzxXB75EeVBow4FOqVMc=" \
+npm test -- --no-coverage
+npm run test:e2e
+# TypeScript check — catches type errors that jest mocks can hide
+npx tsc --noEmit
+
+# ── Changelog gate ──────────────────────────────────────────────────────────
+# Blocks push to main if the Play Store changelog for the current versionCode
+# is missing or empty.
+cd "$REPO_ROOT"
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [[ "$BRANCH" == "main" ]]; then
+  PUBSPEC="src/mobile/pubspec.yaml"
+  VERSION_CODE=$(grep '^version:' "$PUBSPEC" | head -1 | sed 's/.*+//')
+  CHANGELOG="src/mobile/fastlane/metadata/android/pt-BR/changelogs/${VERSION_CODE}.txt"
+
+  if [[ ! -f "$CHANGELOG" ]] || [[ ! -s "$CHANGELOG" ]]; then
+    echo ""
+    echo "❌  PUSH BLOQUEADO — changelog ausente ou vazio para versionCode $VERSION_CODE"
+    echo ""
+    echo "   Crie/preencha o arquivo antes de fazer push:"
+    echo "   $CHANGELOG"
+    echo ""
+    exit 1
+  fi
+fi

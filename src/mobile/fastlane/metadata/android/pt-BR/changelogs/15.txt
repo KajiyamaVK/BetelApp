@@ -1,0 +1,5 @@
+Sistema de revisão com cartões de memorização (Leitner).
+
+- Aba Revisões com sessão diária de perguntas e respostas
+- Ative a revisão em cada lição pelo ícone de cartão
+- Perguntas e respostas sincronizadas automaticamente com o conteúdo
