@@ -75,11 +75,13 @@ class DatabaseHelper {
   Future<void> _createReviewTables(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS card_progress (
-        question_id     INTEGER PRIMARY KEY,
-        lesson_id       INTEGER NOT NULL,
-        bucket          INTEGER NOT NULL DEFAULT 1,
-        last_reviewed_at TEXT,
-        next_review_at  TEXT NOT NULL
+        question_id       INTEGER PRIMARY KEY,
+        lesson_id         INTEGER NOT NULL,
+        bucket            INTEGER NOT NULL DEFAULT 1,
+        last_reviewed_at  TEXT,
+        next_review_at    TEXT NOT NULL,
+        question_text     TEXT,
+        answer_text       TEXT
       )
     ''');
     await db.execute('''

@@ -28,6 +28,8 @@ class ReviewRepositoryImpl implements ReviewRepository {
           'lesson_id': flashcard.lessonId,
           'bucket': 1,
           'next_review_at': tomorrow,
+          'question_text': flashcard.question,
+          'answer_text': flashcard.answer,
         });
       }
       // Existing cards are left untouched — preserves Leitner progress
@@ -77,7 +79,19 @@ class ReviewRepositoryImpl implements ReviewRepository {
       'SELECT * FROM card_progress WHERE lesson_id IN ($placeholders) AND next_review_at <= ?',
       [...lessonIds, cutoff],
     );
-    return rows.map(CardProgress.fromMap).toList();
+    return rows.map((row) => CardProgress(
+      questionId: row['question_id'] as int,
+      lessonId: row['lesson_id'] as int,
+      bucket: row['bucket'] as int,
+      lastReviewedAt: row['last_reviewed_at'] != null
+          ? DateTime.parse(row['last_reviewed_at'] as String)
+          : null,
+      nextReviewAt: row['next_review_at'] != null
+          ? DateTime.parse(row['next_review_at'] as String)
+          : DateTime.now().add(const Duration(days: 1)),
+      questionText: row['question_text'] as String?,
+      answerText: row['answer_text'] as String?,
+    )).toList();
   }
 
   @override

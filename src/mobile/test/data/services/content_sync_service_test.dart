@@ -244,7 +244,7 @@ void main() {
       db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
         await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
         await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
-        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL)');
+        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
       });
       openedDb = db;
       return db!;
@@ -291,7 +291,7 @@ void main() {
       db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
         await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
         await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
-        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL)');
+        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
       });
       // Pre-populate card_progress with TWO questions (11 is no longer in manifest)
       await db!.insert('card_progress', {'question_id': 10, 'lesson_id': 1, 'bucket': 3, 'next_review_at': '2026-06-10T00:00:00.000'});
