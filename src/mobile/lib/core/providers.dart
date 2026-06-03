@@ -5,9 +5,11 @@ import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/data/repositories/content_repository.dart';
 import 'package:betelapp/data/repositories/favorites_repository_impl.dart';
+import 'package:betelapp/data/repositories/review_repository_impl.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 import 'package:betelapp/domain/repositories/favorites_repository.dart';
+import 'package:betelapp/presentation/screens/reviews/reviews_view_model.dart';
 
 // Core
 final databaseHelperProvider = Provider<DatabaseHelper>((ref) => DatabaseHelper());
@@ -39,4 +41,14 @@ final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
 // Overridden in main() after AudioService.init()
 final betelAudioHandlerProvider = Provider<BetelAudioHandler>(
   (ref) => throw UnimplementedError('betelAudioHandlerProvider must be overridden in main()'),
+);
+
+// Review
+final reviewRepositoryProvider = Provider<ReviewRepositoryImpl>((ref) {
+  return ReviewRepositoryImpl(ref.watch(databaseHelperProvider));
+});
+
+final reviewViewModelProvider =
+    StateNotifierProvider<ReviewViewModel, AsyncValue<ReviewState>>(
+  (ref) => ReviewViewModel(ref.read(reviewRepositoryProvider)),
 );
