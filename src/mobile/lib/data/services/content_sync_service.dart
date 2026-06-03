@@ -52,7 +52,7 @@ class ContentSyncService {
     late ContentManifest manifest;
     try {
       manifest = await _remote.fetchManifest();
-    } catch (_) {
+    } catch (e) {
       final meta = await db.query('sync_meta', limit: 1);
       return meta.isEmpty ? SyncResult.offlineFirstBoot : SyncResult.offlineWithData;
     }
