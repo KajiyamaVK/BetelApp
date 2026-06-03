@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'FORCE_MOBILE', defaultValue: false, description: 'Force mobile build & deploy even without pubspec/fastlane changes')
+    }
+
     triggers {
         githubPush()
     }
@@ -82,6 +86,7 @@ pipeline {
                 allOf {
                     expression { env.GIT_BRANCH == 'origin/main' }
                     anyOf {
+                        expression { params.FORCE_MOBILE == true }
                         changeset 'src/mobile/pubspec.yaml'
                         changeset 'src/mobile/fastlane/Fastfile'
                         changeset 'src/mobile/fastlane/metadata/android/pt-BR/changelogs/**'
