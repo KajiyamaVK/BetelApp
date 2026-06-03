@@ -83,7 +83,8 @@ pipeline {
                     expression { env.GIT_BRANCH == 'origin/main' }
                     anyOf {
                         changeset 'src/mobile/pubspec.yaml'
-                        changeset pattern: '.*src/mobile/fastlane/.*'
+                        changeset 'src/mobile/fastlane/Fastfile'
+                        changeset 'src/mobile/fastlane/metadata/android/pt-BR/changelogs/**'
                     }
                 }
             }
