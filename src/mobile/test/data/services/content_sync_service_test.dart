@@ -212,4 +212,100 @@ void main() {
     expect(remaining.length, 1);
     expect(remaining.first['id'], 1);
   });
+
+  test('sync persists Q&As from manifest to card_progress for new lessons', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 5,
+      updatedAt: '2026-06-02T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 1,
+          title: 'Lição 1',
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          audio: null,
+          questions: [
+            ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
+            ManifestQuestion(id: 11, question: 'Pergunta 2?', answer: 'Resposta 2.'),
+          ],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
+        await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
+        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
+        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL)');
+      });
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('card_progress');
+    expect(rows.length, 2);
+    expect(rows.any((r) => r['question_id'] == 10 && r['lesson_id'] == 1), true);
+    expect(rows.any((r) => r['question_id'] == 11 && r['lesson_id'] == 1), true);
+    expect(rows.every((r) => r['bucket'] == 1), true);
+  });
+
+  test('sync removes card_progress entries for Q&As removed from manifest', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 6,
+      updatedAt: '2026-06-02T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 1,
+          title: 'Lição 1',
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'xyz', history: []),
+          audio: null,
+          questions: [
+            ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
+            // question 11 was removed from the manifest
+          ],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+    when(mockRemote.downloadFile(remotePath: anyNamed('remotePath'), localPath: anyNamed('localPath')))
+        .thenAnswer((_) async {});
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
+        await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
+        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
+        await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL)');
+      });
+      // Pre-populate card_progress with TWO questions (11 is no longer in manifest)
+      await db!.insert('card_progress', {'question_id': 10, 'lesson_id': 1, 'bucket': 3, 'next_review_at': '2026-06-10T00:00:00.000'});
+      await db!.insert('card_progress', {'question_id': 11, 'lesson_id': 1, 'bucket': 2, 'next_review_at': '2026-06-08T00:00:00.000'});
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('card_progress');
+    expect(rows.length, 1);
+    expect(rows.first['question_id'], 10);
+    expect(rows.first['bucket'], 3, reason: 'existing progress should be preserved');
+  });
 }

@@ -4,7 +4,9 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/models/flashcard.dart';
 import 'package:betelapp/data/models/manifest.dart';
+import 'package:betelapp/data/repositories/review_repository_impl.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 
 enum SyncResult {
@@ -142,6 +144,34 @@ class ContentSyncService {
         },
         conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
       );
+
+      // Persist Q&As to card_progress (insert-only, preserves existing Leitner progress)
+      final reviewRepo = ReviewRepositoryImpl(_dbHelper);
+      final flashcards = lesson.questions
+          .map((q) => Flashcard(
+                id: q.id,
+                lessonId: lesson.id,
+                question: q.question,
+                answer: q.answer,
+              ))
+          .toList();
+      await reviewRepo.upsertCards(flashcards);
+
+      // Remove card_progress for Q&As no longer in the manifest
+      final manifestQuestionIds = lesson.questions.map((q) => q.id).toSet();
+      final existingRows = await db.query(
+        'card_progress',
+        columns: ['question_id'],
+        where: 'lesson_id = ?',
+        whereArgs: [lesson.id],
+      );
+      final removedIds = existingRows
+          .map((r) => r['question_id'] as int)
+          .where((id) => !manifestQuestionIds.contains(id))
+          .toList();
+      if (removedIds.isNotEmpty) {
+        await reviewRepo.deleteCardsForQuestionIds(removedIds);
+      }
     }
 
     await db.insert(
