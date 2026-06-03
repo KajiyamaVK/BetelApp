@@ -30,7 +30,8 @@ void main() {
     final columns = result.map((r) => r['name'] as String).toSet();
     expect(columns, containsAll([
       'id', 'title', 'audio_local_path', 'audio_ext',
-      'audio_checksum', 'pdf_local_path', 'pdf_checksum', 'synced_at'
+      'audio_checksum', 'pdf_local_path', 'pdf_checksum', 'synced_at',
+      'question_count'
     ]));
   });
 

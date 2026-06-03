@@ -1,3 +1,4 @@
+import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:betelapp/data/models/lesson.dart';
 import 'package:betelapp/presentation/providers/audio_provider.dart';
@@ -76,6 +77,8 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
           style: AppTheme.heading2.copyWith(color: Colors.white),
         ),
         actions: [
+          if (widget.lesson.questionCount > 0)
+            _ReviewToggleButton(lessonId: widget.lesson.id),
           IconButton(
             icon: _buildFavoriteIcon(),
             onPressed: () {
@@ -172,6 +175,53 @@ class _LessonAudioPlayerState extends ConsumerState<_LessonAudioPlayer> {
     return const AudioPlayerWidget(
       key: ValueKey('lesson-screen-player'),
       showShuffle: false,
+    );
+  }
+}
+
+class _ReviewToggleButton extends ConsumerStatefulWidget {
+  final int lessonId;
+
+  const _ReviewToggleButton({required this.lessonId});
+
+  @override
+  ConsumerState<_ReviewToggleButton> createState() => _ReviewToggleButtonState();
+}
+
+class _ReviewToggleButtonState extends ConsumerState<_ReviewToggleButton> {
+  bool? _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final repo = ref.read(reviewRepositoryProvider);
+    final active = await repo.isReviewActive(lessonId: widget.lessonId);
+    if (mounted) setState(() => _isActive = active);
+  }
+
+  Future<void> _toggle() async {
+    if (_isActive == null) return;
+    final repo = ref.read(reviewRepositoryProvider);
+    final newActive = !_isActive!;
+    await repo.setReviewActive(lessonId: widget.lessonId, active: newActive);
+    ref.read(reviewViewModelProvider.notifier).loadState();
+    if (mounted) setState(() => _isActive = newActive);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = _isActive ?? false;
+    return IconButton(
+      icon: Icon(
+        Icons.style_rounded,
+        color: isActive ? AppTheme.primaryColor : Colors.white54,
+      ),
+      tooltip: isActive ? 'Revisão ativa' : 'Ativar revisão',
+      onPressed: _isActive == null ? null : _toggle,
     );
   }
 }

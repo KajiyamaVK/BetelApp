@@ -49,6 +49,8 @@ class DatabaseHelper {
     }
     if (oldVersion < 3) {
       await _createReviewTables(db);
+      // Add question_count to lessons table if upgrading from v2
+      await db.execute('ALTER TABLE lessons ADD COLUMN question_count INTEGER NOT NULL DEFAULT 0');
     }
   }
 
@@ -102,7 +104,8 @@ class DatabaseHelper {
         audio_checksum   TEXT,
         pdf_local_path   TEXT NOT NULL,
         pdf_checksum     TEXT NOT NULL,
-        synced_at        INTEGER NOT NULL
+        synced_at        INTEGER NOT NULL,
+        question_count   INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('''

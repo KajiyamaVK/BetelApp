@@ -141,6 +141,7 @@ class ContentSyncService {
           'audio_ext': audioExt,
           'audio_checksum': lesson.audio?.checksum,
           'synced_at': DateTime.now().millisecondsSinceEpoch,
+          'question_count': lesson.questions.length,
         },
         conflictAlgorithm: sqflite.ConflictAlgorithm.replace,
       );

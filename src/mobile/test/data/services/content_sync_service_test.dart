@@ -141,7 +141,7 @@ void main() {
             id INTEGER PRIMARY KEY, title TEXT NOT NULL,
             pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL,
             audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT,
-            synced_at INTEGER NOT NULL
+            synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0
           )
         ''');
         // Lesson 1 exists locally but is no longer in the manifest
@@ -193,7 +193,7 @@ void main() {
             id INTEGER PRIMARY KEY, title TEXT NOT NULL,
             pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL,
             audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT,
-            synced_at INTEGER NOT NULL
+            synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.insert('lessons', {
@@ -243,7 +243,7 @@ void main() {
       if (db != null) return db!;
       db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
         await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
-        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
+        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
         await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
       });
       openedDb = db;
@@ -290,7 +290,7 @@ void main() {
       if (db != null) return db!;
       db = await openDatabase(inMemoryDatabasePath, version: 3, onCreate: (database, _) async {
         await database.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
-        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL)');
+        await database.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
         await database.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
       });
       // Pre-populate card_progress with TWO questions (11 is no longer in manifest)
