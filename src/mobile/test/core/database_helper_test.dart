@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:betelapp/core/database_helper.dart';
 
@@ -8,8 +9,14 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   });
 
+  setUp(() {
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
+  });
+
   tearDown(() async {
-    DatabaseHelper.resetForTesting();
+    final db = await DatabaseHelper().database;
+    await db.close();
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
   });
 
   test('database version is 3', () async {

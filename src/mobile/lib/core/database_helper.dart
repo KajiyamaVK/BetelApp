@@ -4,13 +4,15 @@ import 'package:path/path.dart';
 class DatabaseHelper {
   static DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static String? _testDbPath;
 
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static void resetForTesting() {
+  static void resetForTesting({String? dbPath}) {
     _database = null;
     _instance = DatabaseHelper._internal();
+    _testDbPath = dbPath;
   }
 
   Future<Database> get database async {
@@ -20,8 +22,13 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'betel.db');
+    final String path;
+    if (_testDbPath != null) {
+      path = _testDbPath!;
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, 'betel.db');
+    }
     return await openDatabase(
       path,
       version: 3,

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:betelapp/core/database_helper.dart';
 
@@ -9,10 +10,8 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   });
 
-  setUp(() async {
-    DatabaseHelper.resetForTesting();
-    final dbPath = await databaseFactoryFfi.getDatabasesPath();
-    await databaseFactoryFfi.deleteDatabase('$dbPath/betel.db');
+  setUp(() {
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
   });
 
   tearDown(() async {
@@ -20,7 +19,7 @@ void main() {
       final db = await DatabaseHelper().database;
       await db.close();
     } catch (_) {}
-    DatabaseHelper.resetForTesting();
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
   });
 
   test('database v3 creates card_progress table', () async {
