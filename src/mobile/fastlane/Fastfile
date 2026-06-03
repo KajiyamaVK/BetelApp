@@ -1,7 +1,7 @@
 default_platform(:android)
 
 platform :android do
-  desc "Build AAB and upload to internal testing track"
+  desc "Build AAB and upload to internal testing track (with changelog)"
   lane :internal do
     sh("flutter build appbundle --release")
     upload_to_play_store(
