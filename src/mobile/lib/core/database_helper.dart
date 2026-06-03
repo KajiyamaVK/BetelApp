@@ -24,7 +24,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'betel.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -33,11 +33,15 @@ class DatabaseHelper {
   Future<void> _onCreate(Database db, int version) async {
     await _createOriginalTables(db);
     await _createSyncTables(db);
+    await _createReviewTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _createSyncTables(db);
+    }
+    if (oldVersion < 3) {
+      await _createReviewTables(db);
     }
   }
 
@@ -57,6 +61,24 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         item_id TEXT NOT NULL,
         added_at INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createReviewTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS card_progress (
+        question_id     INTEGER PRIMARY KEY,
+        lesson_id       INTEGER NOT NULL,
+        bucket          INTEGER NOT NULL DEFAULT 1,
+        last_reviewed_at TEXT,
+        next_review_at  TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS review_active (
+        lesson_id INTEGER PRIMARY KEY,
+        active    INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }

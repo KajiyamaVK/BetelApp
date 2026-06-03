@@ -12,9 +12,9 @@ void main() {
     DatabaseHelper.resetForTesting();
   });
 
-  test('database version is 2', () async {
+  test('database version is 3', () async {
     final db = await DatabaseHelper().database;
-    expect(await db.getVersion(), 2);
+    expect(await db.getVersion(), 3);
   });
 
   test('lessons table exists with correct columns', () async {
