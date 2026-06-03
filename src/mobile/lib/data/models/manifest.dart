@@ -25,13 +25,34 @@ class ManifestAudioEntry extends ManifestFileEntry {
       );
 }
 
+class ManifestQuestion {
+  final int id;
+  final String question;
+  final String answer;
+
+  const ManifestQuestion({required this.id, required this.question, required this.answer});
+
+  factory ManifestQuestion.fromJson(Map<String, dynamic> json) => ManifestQuestion(
+        id: json['id'] as int,
+        question: json['q'] as String,
+        answer: json['a'] as String,
+      );
+}
+
 class ManifestLesson {
   final int id;
   final String title;
   final ManifestFileEntry pdf;
   final ManifestAudioEntry? audio;
+  final List<ManifestQuestion> questions;
 
-  ManifestLesson({required this.id, required this.title, required this.pdf, this.audio});
+  ManifestLesson({
+    required this.id,
+    required this.title,
+    required this.pdf,
+    this.audio,
+    this.questions = const [],
+  });
 
   factory ManifestLesson.fromJson(Map<String, dynamic> json) => ManifestLesson(
         id: json['id'] as int,
@@ -40,6 +61,11 @@ class ManifestLesson {
         audio: json['audio'] != null
             ? ManifestAudioEntry.fromJson(json['audio'] as Map<String, dynamic>)
             : null,
+        questions: json['questions'] != null
+            ? (json['questions'] as List)
+                .map((q) => ManifestQuestion.fromJson(q as Map<String, dynamic>))
+                .toList()
+            : const [],
       );
 }
 

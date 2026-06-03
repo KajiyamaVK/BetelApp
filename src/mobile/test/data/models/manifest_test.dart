@@ -45,4 +45,58 @@ void main() {
     final manifest = ContentManifest.fromJson(json.decode(_sampleJson));
     expect(manifest.lessons[1].audio, isNull);
   });
+
+  test('parses lesson with questions', () {
+    final json2 = json.decode('''
+    {
+      "version": 1,
+      "updated_at": "2026-05-27T12:00:00Z",
+      "lessons": [
+        {
+          "id": 3,
+          "title": "Lição com perguntas",
+          "pdf": {"active": "lessons/3/lesson_v1.pdf", "checksum": "abc", "history": []},
+          "audio": null,
+          "questions": [
+            {"id": 10, "q": "Pergunta 1?", "a": "Resposta 1."},
+            {"id": 11, "q": "Pergunta 2?", "a": "Resposta 2."}
+          ]
+        }
+      ]
+    }
+    ''');
+    final manifest = ContentManifest.fromJson(json2);
+    final lesson = manifest.lessons.first;
+    expect(lesson.questions.length, 2);
+    expect(lesson.questions[0].id, 10);
+    expect(lesson.questions[0].question, 'Pergunta 1?');
+    expect(lesson.questions[0].answer, 'Resposta 1.');
+  });
+
+  test('parses lesson with no questions field as empty list', () {
+    // The _sampleJson has no questions field — should default to []
+    final manifest = ContentManifest.fromJson(json.decode(_sampleJson));
+    expect(manifest.lessons[0].questions, isEmpty);
+    expect(manifest.lessons[1].questions, isEmpty);
+  });
+
+  test('parses lesson with empty questions array', () {
+    final json3 = json.decode('''
+    {
+      "version": 1,
+      "updated_at": "2026-05-27T12:00:00Z",
+      "lessons": [
+        {
+          "id": 4,
+          "title": "Lição sem perguntas",
+          "pdf": {"active": "lessons/4/lesson_v1.pdf", "checksum": "abc", "history": []},
+          "audio": null,
+          "questions": []
+        }
+      ]
+    }
+    ''');
+    final manifest = ContentManifest.fromJson(json3);
+    expect(manifest.lessons.first.questions, isEmpty);
+  });
 }
