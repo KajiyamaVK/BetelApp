@@ -1,7 +1,7 @@
 ---
 layer: ui
 project: mobile
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-03
 ---
 
 ## Propósito
@@ -15,12 +15,13 @@ Governa decisões de interface do usuário no app mobile — navegação, compon
 - **Navigator 1.0 imperativo** — sem GoRouter, sem Navigator 2.0, sem named routes. Toda navegação via `Navigator.push` / `pushReplacement` com `MaterialPageRoute`.
   - **Por quê:** App pequeno com poucas telas e fluxo linear. A complexidade de rotas declarativas não se justifica ainda.
 
-- **BottomNavigationBar com IndexedStack** — 3 tabs fixos: Lições (index 0), Músicas (index 1), Favoritos (index 2). `IndexedStack` mantém todas as telas montadas simultaneamente.
+- **BottomNavigationBar com IndexedStack** — 4 tabs fixos: Lições (index 0), Músicas (index 1), Revisões (index 2), Favoritos (index 3). `IndexedStack` mantém todas as telas montadas simultaneamente.
   - **Por quê:** Preserva scroll position e estado local ao trocar de tab sem reconstruir widgets.
 
 - **Splash → MainScaffold (one-way)** — `SplashScreen` usa `pushReplacement` para `MainScaffold` após sync. Não há como voltar ao splash.
 
 - **Audio stop on tab change** — sair do tab Músicas (index 1) para qualquer outro tab chama `audioNotifier.stop()`, parando a reprodução inteiramente.
+- **Review toggle no LessonDetailScreen** — ícone `Icons.style_rounded` no AppBar, visível apenas se `lesson.questionCount > 0`. Amarelo quando ativo, branco54 quando inativo. Toggle via `ReviewRepositoryImpl.setReviewActive()` e refresha `ReviewViewModel`.
   - **Por quê:** Decisão de UX para evitar áudio tocando "fantasma" enquanto o usuário navega lições/favoritos. O audio player só é visível na tela de músicas e no detalhe da lição.
 
 ### Design System / Theme
@@ -70,11 +71,13 @@ Governa decisões de interface do usuário no app mobile — navegação, compon
 | Tela | Arquivo | Função |
 |------|---------|--------|
 | SplashScreen | `screens/splash_screen.dart` | Entry point: sync, progress bar, aviso de dados móveis |
-| MainScaffold | `widgets/main_scaffold.dart` | Shell com 3 tabs + IndexedStack |
+| MainScaffold | `widgets/main_scaffold.dart` | Shell com 4 tabs + IndexedStack |
 | HomeScreen | `screens/home/home_screen.dart` | Lista lições do SQLite, pull-to-refresh, offline warning |
-| LessonDetailScreen | `screens/lesson/lesson_detail_screen.dart` | PDF inline (pdfrx) + audio player condicional + favorito toggle |
+| LessonDetailScreen | `screens/lesson/lesson_detail_screen.dart` | PDF inline (pdfrx) + audio player condicional + favorito toggle + toggle de revisão |
 | MusicScreen | `screens/music/music_screen.dart` | Lista músicas, play/pause por item, floating AudioPlayerWidget |
 | FavoritesScreen | `screens/favorites/favorites_screen.dart` | Lista favoritos (lições + músicas), navega para detalhe |
+| ReviewsScreen | `screens/reviews/reviews_screen.dart` | Tab Revisões: banner de revisão diária + lista de lições ativas |
+| ReviewSessionScreen | `screens/reviews/review_session_screen.dart` | Sessão de flashcard: progress bar, revelar resposta, Acertei/Errei, resumo |
 
 ### Splash screen
 
@@ -87,4 +90,5 @@ Governa decisões de interface do usuário no app mobile — navegação, compon
 - **Não criar cores/estilos inline** — sempre usar `AppTheme` como fonte única.
 - **Não usar fontes fora do Poppins** — a tipografia do app é consistente com uma única família.
 - **Não instalar APKs debug para teste manual em dispositivo** — builds debug no Samsung ativam otimizador JIT (`dex2oat`) que causa tela preta permanente. Sempre usar `flutter build apk --release` + `adb install`.
-- **Não implementar tela de Flashcards ainda** — a feature está planejada nos guidelines mas não foi implementada. Quando for, seguir os mockups em `guidelines/0-screens-designs/5_flashcards.png`–`7_flashcards.png`.
+- **Não usar GoRouter ou rotas declarativas** sem necessidade comprovada (a complexidade atual não justifica).
+- **ReviewsScreen** mostra lista de lições ativas — não exibir lista de cards individuais nessa tela (isso é responsabilidade da `ReviewSessionScreen`).

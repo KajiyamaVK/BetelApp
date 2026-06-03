@@ -1,7 +1,7 @@
 ---
 layer: data
 project: mobile
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-03
 ---
 
 ## Propósito
@@ -42,20 +42,22 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - **Por quê:** SQLite suporta queries relacionais (joins favorites + lessons) e é maduro no Flutter. O app não precisa de key-value store simples.
 
 - **DatabaseHelper singleton** — factory constructor com `_instance`/`_database` estáticos.
-- **Banco:** `betel.db`, schema version 2.
+- **Banco:** `betel.db`, schema version 3.
 
 - **Tabelas:**
   | Tabela | Propósito | Colunas chave |
   |--------|-----------|---------------|
-  | `lessons` | Metadata de lições sincronizadas | `id`, `title`, `audio_local_path`, `audio_ext`, `audio_checksum`, `pdf_local_path`, `pdf_checksum`, `synced_at` |
+  | `lessons` | Metadata de lições sincronizadas | `id`, `title`, `audio_local_path`, `audio_ext`, `audio_checksum`, `pdf_local_path`, `pdf_checksum`, `synced_at`, `question_count` |
   | `sync_meta` | Controle de versão do manifest | `id=1`, `manifest_version`, `last_sync_at` |
   | `favorites` | Favoritos do usuário | `id` (composite: `type_itemId`), `type`, `item_id`, `added_at` |
   | `lesson_progress` | Progresso de lições (esqueleto, não usado) | `lesson_id`, `is_completed`, `is_locked`, `last_accessed` |
+  | `card_progress` | Progresso Leitner por flashcard | `question_id` (PK), `lesson_id`, `bucket` (1-5), `last_reviewed_at`, `next_review_at`, `question_text`, `answer_text` |
+  | `review_active` | Toggle de revisão por lição | `lesson_id` (PK), `active` (0/1) |
 
 ### Modelos
 
 - **Estratégia mista de serialização:**
-  - `Lesson`, `Favorite`, `ContentManifest` → hand-written `fromMap()`/`toMap()` ou `fromJson()`
+  - `Lesson`, `Favorite`, `ContentManifest`, `Flashcard`, `CardProgress` → hand-written `fromMap()`/`toMap()` ou `fromJson()`
   - `Song` → `json_serializable` com `@JsonSerializable()` + `build_runner`
   - **Sem freezed** em nenhum lugar.
   - **Por quê:** O projeto começou hand-written e migrou parcialmente para codegen. Não há decisão explícita de padronizar.
@@ -83,8 +85,21 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 - **Modelo `ContentManifest`:**
   - `version` (int) — comparado com `sync_meta.manifest_version`
   - `updatedAt` (DateTime)
-  - `lessons[]` — cada uma com `ManifestLesson` contendo `ManifestFileEntry` (pdf) e `ManifestAudioEntry?` (audio)
-  - Cada entry tem `active`, `checksum`, `history`
+  - `lessons[]` — cada uma com `ManifestLesson` contendo `ManifestFileEntry` (pdf), `ManifestAudioEntry?` (audio), e `List<ManifestQuestion>` (questions, default `[]`)
+  - `ManifestQuestion`: `id`, `question` (de `"q"`), `answer` (de `"a"`)
+- **Sync de Q&As:** Após salvar cada lição, `ContentSyncService` chama `ReviewRepositoryImpl.upsertCards()` com as Q&As do manifest (insert-only, preserva progresso Leitner existente). Q&As removidas do manifest são deletadas via `deleteCardsForQuestionIds()`.
+- **`ReviewRepository`** — interface abstrata + `ReviewRepositoryImpl`:
+  | Método | O que faz |
+  |--------|-----------|
+  | `upsertCards(flashcards)` | Insere novas Q&As em `card_progress` com bucket=1; nunca sobrescreve existentes |
+  | `recordAnswer(questionId, correct, answeredAt?)` | Avança/reseta bucket Leitner; calcula `next_review_at` |
+  | `getDueCards(lessonIds, today?)` | Retorna cards com `next_review_at <= today` das lições ativas; popula `questionText`/`answerText` |
+  | `deleteCardsForQuestionIds(ids)` | Remove cards do `card_progress` |
+  | `isReviewActive(lessonId)` | Lê `review_active` |
+  | `setReviewActive(lessonId, active)` | Upsert em `review_active` |
+  | `getActiveLessonIds()` | Retorna lesson_ids com `active=1` |
+- **Algoritmo Leitner:** 5 buckets. Intervalo de dias por bucket: 1→1d, 2→2d, 3→4d, 4→8d, 5→16d. Resposta correta: bucket+1 (max 5). Resposta errada: bucket=1.
+- **Progresso local:** `card_progress` nunca é sincronizado com o backend — permanece local ao dispositivo.
 
 - **Files no filesystem:** PDFs e áudios são salvos em `getApplicationDocumentsDirectory()/betelapp/lessons/{id}/lesson.pdf` e `.../audio.{ext}`.
 - **DB armazena só paths e checksums** — conteúdo binário nunca fica no SQLite.
