@@ -95,7 +95,7 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    file(credentialsId: 'play-store-credentials-json', variable: 'PLAY_STORE_JSON'),
+                    file(credentialsId: 'betelapp-play-store-credentials-json', variable: 'PLAY_STORE_JSON'),
                     file(credentialsId: 'android-key-properties', variable: 'KEY_PROPERTIES'),
                     file(credentialsId: 'android-keystore', variable: 'KEYSTORE_FILE')
                 ]) {
