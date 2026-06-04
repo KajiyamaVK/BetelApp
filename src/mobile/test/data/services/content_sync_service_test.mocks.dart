@@ -65,12 +65,16 @@ class MockRemoteContentService extends _i1.Mock
     required String? remotePath,
     required String? localPath,
     void Function(int, int)? onProgress,
+    Duration? stallTimeout = const Duration(seconds: 3),
+    int? maxRetries = 3,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#downloadFile, [], {
               #remotePath: remotePath,
               #localPath: localPath,
               #onProgress: onProgress,
+              #stallTimeout: stallTimeout,
+              #maxRetries: maxRetries,
             }),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
