@@ -1,0 +1,1 @@
+Banner de conectividade: o app agora distingue "servidor indisponível" de "sem internet" e mostra uma mensagem no topo da tela enquanto verifica a conexão automaticamente.
