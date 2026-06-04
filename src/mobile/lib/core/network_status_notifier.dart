@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,10 +15,20 @@ const _pollInterval = Duration(minutes: 1);
 class NetworkStatusNotifier extends StateNotifier<NetworkStatus> {
   final Dio _dio;
   Timer? _pollTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
-  NetworkStatusNotifier({Dio? dio})
-      : _dio = dio ?? Dio(),
-        super(NetworkStatus.ok);
+  NetworkStatusNotifier({
+    Dio? dio,
+    Stream<List<ConnectivityResult>>? connectivityStream,
+  })  : _dio = dio ?? Dio(),
+        super(NetworkStatus.ok) {
+    final stream = connectivityStream ?? Connectivity().onConnectivityChanged;
+    _connectivitySub = stream.listen((results) {
+      if (results.every((r) => r == ConnectivityResult.none)) {
+        check();
+      }
+    });
+  }
 
   bool get isPolling => _pollTimer != null;
 
@@ -68,6 +79,7 @@ class NetworkStatusNotifier extends StateNotifier<NetworkStatus> {
 
   @override
   void dispose() {
+    _connectivitySub?.cancel();
     _stopPolling();
     super.dispose();
   }
