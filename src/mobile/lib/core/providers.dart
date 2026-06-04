@@ -1,4 +1,5 @@
 import 'package:betelapp/core/audio/betel_audio_handler.dart';
+import 'package:betelapp/core/network_status_notifier.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelapp/core/connectivity_service.dart';
@@ -17,8 +18,19 @@ final databaseHelperProvider = Provider<DatabaseHelper>((ref) => DatabaseHelper(
 final connectivityServiceProvider =
     Provider<ConnectivityService>((ref) => ConnectivityService());
 
+final networkStatusProvider =
+    StateNotifierProvider<NetworkStatusNotifier, NetworkStatus>((ref) {
+  return NetworkStatusNotifier();
+});
+
+Dio _buildDioWithInterceptor(Ref ref) {
+  final dio = Dio();
+  dio.interceptors.add(_NetworkCheckInterceptor(ref));
+  return dio;
+}
+
 final remoteContentServiceProvider =
-    Provider<RemoteContentService>((ref) => RemoteContentService(dio: Dio()));
+    Provider<RemoteContentService>((ref) => RemoteContentService(dio: _buildDioWithInterceptor(ref)));
 
 final contentSyncServiceProvider = Provider<ContentSyncService>((ref) {
   return ContentSyncService(
@@ -52,3 +64,29 @@ final reviewViewModelProvider =
     StateNotifierProvider<ReviewViewModel, AsyncValue<ReviewState>>(
   (ref) => ReviewViewModel(ref.read(reviewRepositoryProvider)),
 );
+
+class _NetworkCheckInterceptor extends Interceptor {
+  final Ref _ref;
+  _NetworkCheckInterceptor(this._ref);
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    _ref.read(networkStatusProvider.notifier).reportSuccess();
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (_isNetworkError(err)) {
+      _ref.read(networkStatusProvider.notifier).check();
+    }
+    handler.next(err);
+  }
+
+  bool _isNetworkError(DioException err) =>
+      err.type == DioExceptionType.connectionError ||
+      err.type == DioExceptionType.connectionTimeout ||
+      err.type == DioExceptionType.receiveTimeout ||
+      err.type == DioExceptionType.sendTimeout ||
+      err.type == DioExceptionType.unknown;
+}

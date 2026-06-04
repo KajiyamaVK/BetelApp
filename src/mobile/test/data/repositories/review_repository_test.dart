@@ -125,6 +125,28 @@ void main() {
       expect(due.first.questionId, 30);
     });
 
+    test('advanceOneDayForTesting subtracts 1 day from all next_review_at', () async {
+      final db = await DatabaseHelper().database;
+      await db.insert('card_progress', {
+        'question_id': 60,
+        'lesson_id': 1,
+        'bucket': 2,
+        'next_review_at': '2026-06-10T00:00:00.000',
+      });
+      await db.insert('card_progress', {
+        'question_id': 61,
+        'lesson_id': 1,
+        'bucket': 3,
+        'next_review_at': '2026-06-05T00:00:00.000',
+      });
+
+      await repo.advanceOneDayForTesting();
+
+      final rows = await db.query('card_progress', where: 'question_id IN (60, 61)', orderBy: 'question_id');
+      expect(DateTime.parse(rows[0]['next_review_at'] as String), DateTime(2026, 6, 9));
+      expect(DateTime.parse(rows[1]['next_review_at'] as String), DateTime(2026, 6, 4));
+    });
+
     test('deleteCardsForQuestionIds removes specified cards', () async {
       final db = await DatabaseHelper().database;
       await db.insert('card_progress', {'question_id': 40, 'lesson_id': 5, 'bucket': 1, 'next_review_at': '2026-06-02T00:00:00.000'});

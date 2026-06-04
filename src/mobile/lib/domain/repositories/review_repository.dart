@@ -20,4 +20,6 @@ abstract class ReviewRepository {
   Future<List<int>> getActiveLessonIds();
   /// Resets all card_progress to bucket=1 and next_review_at=now (dev/test only).
   Future<void> resetAllProgress();
+  /// Subtracts 1 day from every next_review_at, making tomorrow's cards due today (dev/test only).
+  Future<void> advanceOneDayForTesting();
 }

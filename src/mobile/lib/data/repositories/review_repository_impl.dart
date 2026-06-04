@@ -150,4 +150,12 @@ class ReviewRepositoryImpl implements ReviewRepository {
       'next_review_at': now,
     });
   }
+
+  @override
+  Future<void> advanceOneDayForTesting() async {
+    final db = await _dbHelper.database;
+    await db.rawUpdate(
+      "UPDATE card_progress SET next_review_at = datetime(next_review_at, '-1 day')",
+    );
+  }
 }
