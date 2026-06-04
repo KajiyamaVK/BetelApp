@@ -1,16 +1,14 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/vkajiyama/src/BetelApp/.claude/hooks/inject-specs.sh",
-            "timeout": 10,
-            "statusMessage": "Carregando specs do projeto..."
-          }
-        ]
-      }
-    ]
-  }
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "/home/vkajiyama/src/BetelApp/.claude/hooks/inject-specs.sh",
+          "timeout": 10,
+          "statusMessage": "Carregando specs do projeto..."
+        }
+      ]
+    }
+  ]
 }
