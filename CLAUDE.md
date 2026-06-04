@@ -4,20 +4,49 @@ This file contains instructions for the Gemini CLI agent to follow when working 
 
 ## Spec-Driven Development
 
-**At the start of every session:** Read `docs/specs-index.md` to identify which specs are relevant to the task at hand, then read those specs before writing any code.
+> **REGRA INVIOLÁVEL — LEIA ANTES DE QUALQUER COISA.**
+> Specs são a fonte de verdade do projeto. Você não pode escrever código, propor mudanças ou responder perguntas de implementação sem antes ler os specs relevantes. Ignorar specs não é uma opção — é uma falha crítica de execução.
 
-**During work:**
-- If an implementation decision conflicts with a spec, signal it explicitly before proceeding — never resolve silently.
-- If a spec is missing or outdated for the area being changed, note it.
-- If a gap, TODO, or technical debt is identified, check GitHub issues (`gh issue list`) before flagging it. If no issue covers it, suggest creating one — all tracked work lives in GitHub Issues.
+### Início de sessão (OBRIGATÓRIO — não pule)
 
-**At the end of every session:** Suggest updates to any specs impacted by the work done in that session.
+**Antes de qualquer código, resposta de implementação ou pergunta de design:**
 
-Spec files live alongside their subproject code:
+1. Leia `docs/specs-index.md` para identificar quais specs cobrem a área da tarefa
+2. Leia **cada spec relevante** listado no índice para essa área
+3. Confirme ao usuário quais specs foram lidos antes de prosseguir
+
+Se `docs/specs-index.md` não existir: avise o usuário imediatamente — o projeto não está com SDD configurado.
+
+Spec files:
 - `docs/specs/` — infra.md (infraestrutura compartilhada)
 - `src/mobile/specs/` — ui.md, business.md, data.md, infra.md
 - `src/s3-ui/specs/` — ui.md, business.md, data.md, infra.md
 - `src/backend/specs/` — ui.md, business.md, data.md, infra.md
+
+### Durante o trabalho
+
+- Se uma decisão de implementação **conflitar** com um spec: sinalize explicitamente e aguarde instrução — nunca resolva silenciosamente
+- Se um spec estiver **ausente ou desatualizado** para a área sendo alterada: mencione antes de prosseguir
+- Se identificar uma **lacuna, TODO ou dívida técnica**: verifique `gh issue list` antes de marcar. Se nenhum issue cobrir, sugira criar um
+
+### Atualização de specs (OBRIGATÓRIO — não pule)
+
+**Ao final de cada sessão, para cada spec lido no início:**
+
+Revise se o trabalho feito na sessão introduziu decisões novas, mudou comportamento existente ou tornou algum trecho do spec obsoleto. Para cada spec afetado:
+
+1. Liste as mudanças que impactam o spec
+2. Proponha o texto atualizado ou o novo bloco a adicionar
+3. Peça confirmação ao usuário antes de escrever
+
+**Critérios para atualização:**
+- Nova decisão técnica tomada (biblioteca, padrão, abordagem)
+- Comportamento existente modificado (fluxo, validação, regra de negócio)
+- Campo ou modelo de dados adicionado/removido/renomeado
+- Infra alterada (Dockerfile, env vars, deploy, CI)
+- Trecho do spec que descrevia algo que deixou de existir
+
+Se nenhum spec precisar de atualização: diga explicitamente "nenhum spec foi impactado por esta sessão" — não fique em silêncio.
 
 ## Instructions
 
@@ -50,6 +79,14 @@ We follow "Vibe Coding" principles where the AI acts as an Orchestrator and TDD 
 4. **Shadow Technical Debt Prevention**
    - Always check for existing tests before searching for files.
    - Never skip tests for speed.
+
+### When TDD is optional
+
+TDD may be skipped when **both** conditions are true:
+1. The test would require complex mocking of native platform APIs or third-party SDKs
+2. AND the logic is thin glue code with low risk of silent regression
+
+When skipping, document the reason with a code comment. If meaningful business logic is involved, TDD remains mandatory for that logic.
 
 ## Project Structure
 
