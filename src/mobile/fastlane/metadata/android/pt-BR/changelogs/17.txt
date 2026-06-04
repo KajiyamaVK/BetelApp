@@ -1,0 +1,1 @@
+Correção: o contador de revisões pendentes agora atualiza corretamente ao voltar da sessão de revisão.
