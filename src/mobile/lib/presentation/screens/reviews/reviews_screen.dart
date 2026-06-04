@@ -128,7 +128,13 @@ class _DailyReviewBanner extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => const ReviewSessionScreen(),
                   ),
-                );
+                ).then((_) {
+                  if (context.mounted) {
+                    ProviderScope.containerOf(context)
+                        .read(reviewViewModelProvider.notifier)
+                        .loadState();
+                  }
+                });
               },
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Começar Sessão'),
