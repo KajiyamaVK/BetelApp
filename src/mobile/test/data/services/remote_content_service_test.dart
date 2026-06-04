@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
 import 'package:mockito/annotations.dart';
@@ -219,6 +220,65 @@ void main() {
       );
 
       expect(callCount, 1);
+    });
+
+    test('retries when connection is dropped mid-download (DioExceptionType.unknown)',
+        () async {
+      var callCount = 0;
+      when(mockDio.download(
+        any,
+        any,
+        onReceiveProgress: anyNamed('onReceiveProgress'),
+        cancelToken: anyNamed('cancelToken'),
+        options: anyNamed('options'),
+      )).thenAnswer((inv) async {
+        callCount++;
+        if (callCount == 1) {
+          throw DioException(
+            requestOptions: RequestOptions(path: ''),
+            type: DioExceptionType.unknown,
+            error: const HttpException('Connection closed while receiving data'),
+          );
+        }
+        return _okResponse();
+      });
+
+      await service.downloadFile(
+        remotePath: 'lessons/1/lesson.pdf',
+        localPath: '/tmp/test.pdf',
+        stallTimeout: stallTimeout,
+      );
+
+      expect(callCount, 2);
+    });
+
+    test('throws RemoteContentException after 3 dropped connections', () async {
+      var callCount = 0;
+      when(mockDio.download(
+        any,
+        any,
+        onReceiveProgress: anyNamed('onReceiveProgress'),
+        cancelToken: anyNamed('cancelToken'),
+        options: anyNamed('options'),
+      )).thenAnswer((_) async {
+        callCount++;
+        throw DioException(
+          requestOptions: RequestOptions(path: ''),
+          type: DioExceptionType.unknown,
+          error: const HttpException('Connection closed while receiving data'),
+        );
+      });
+
+      await expectLater(
+        service.downloadFile(
+          remotePath: 'lessons/1/lesson.pdf',
+          localPath: '/tmp/test.pdf',
+          stallTimeout: stallTimeout,
+        ),
+        throwsA(isA<RemoteContentException>()),
+      );
+
+      expect(callCount, 3);
     });
   });
 }

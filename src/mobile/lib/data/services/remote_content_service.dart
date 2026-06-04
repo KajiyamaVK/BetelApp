@@ -60,7 +60,9 @@ class RemoteContentService {
         return;
       } on DioException catch (e) {
         stallTimer?.cancel();
-        if (e.type == DioExceptionType.cancel && attempt < maxRetries - 1) {
+        final isRetryable = e.type == DioExceptionType.cancel ||
+            e.type == DioExceptionType.unknown;
+        if (isRetryable && attempt < maxRetries - 1) {
           continue;
         }
         throw RemoteContentException('Failed to download $remotePath: $e');

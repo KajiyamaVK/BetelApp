@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:betelapp/core/network_status_notifier.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -9,12 +11,21 @@ import 'network_status_notifier_test.mocks.dart';
 @GenerateMocks([Dio])
 void main() {
   late MockDio mockDio;
+  late StreamController<List<ConnectivityResult>> connectivityController;
 
   setUp(() {
     mockDio = MockDio();
+    connectivityController = StreamController<List<ConnectivityResult>>.broadcast();
   });
 
-  NetworkStatusNotifier makeNotifier() => NetworkStatusNotifier(dio: mockDio);
+  tearDown(() {
+    connectivityController.close();
+  });
+
+  NetworkStatusNotifier makeNotifier() => NetworkStatusNotifier(
+        dio: mockDio,
+        connectivityStream: connectivityController.stream,
+      );
 
   group('initial state', () {
     test('starts as ok', () {
@@ -135,6 +146,54 @@ void main() {
       notifier.reportSuccess();
 
       expect(notifier.isPolling, isFalse);
+    });
+  });
+
+  group('connectivity stream', () {
+    test('emitting none triggers check() and sets noInternet when both HEADs fail', () async {
+      when(mockDio.head<dynamic>(any))
+          .thenThrow(DioException(requestOptions: RequestOptions(path: '')));
+
+      final notifier = makeNotifier();
+      expect(notifier.state, NetworkStatus.ok);
+
+      connectivityController.add([ConnectivityResult.none]);
+      // allow the async check() to complete
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(notifier.state, NetworkStatus.noInternet);
+
+      notifier.dispose();
+    });
+
+    test('emitting none when API is up but Google is up sets serverDown', () async {
+      var callCount = 0;
+      when(mockDio.head<dynamic>(any)).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) throw DioException(requestOptions: RequestOptions(path: ''));
+        return Response(requestOptions: RequestOptions(path: ''), statusCode: 200);
+      });
+
+      final notifier = makeNotifier();
+      connectivityController.add([ConnectivityResult.none]);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(notifier.state, NetworkStatus.serverDown);
+
+      notifier.dispose();
+    });
+
+    test('does not trigger check() when connectivity is wifi or mobile', () async {
+      final notifier = makeNotifier();
+
+      connectivityController.add([ConnectivityResult.wifi]);
+      await Future<void>.delayed(Duration.zero);
+
+      // no dio interaction — verifyNever would fail if head was called
+      verifyNever(mockDio.head<dynamic>(any));
+      expect(notifier.state, NetworkStatus.ok);
     });
   });
 }
