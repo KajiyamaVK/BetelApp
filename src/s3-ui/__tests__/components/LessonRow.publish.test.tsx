@@ -7,6 +7,7 @@ import { LessonRow } from '@/components/lessons/LessonRow'
 
 const baseLesson = {
   id: 1,
+  order: 1,
   title: 'Qual o Fim principal?',
   published: false,
   audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
@@ -19,7 +20,7 @@ const handlers = {
   onDelete: jest.fn(),
   onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
-  onTitleSave: jest.fn(),
+  onLessonSave: jest.fn().mockResolvedValue(null),
   onPublishToggle: jest.fn().mockResolvedValue(undefined),
 }
 
@@ -85,7 +86,7 @@ describe('LessonRow — publish toggle', () => {
 
   it('calls onPublishToggle prop and does not internally corrupt state on rejection', async () => {
     const lesson = {
-      id: 1, title: 'Test', published: false,
+      id: 1, order: 1, title: 'Test', published: false,
       audio: { active: null, ext: 'mp3', checksum: '', history: [] },
       pdf: { active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: [] },
     }
@@ -105,7 +106,7 @@ describe('LessonRow — publish toggle', () => {
         onDelete={jest.fn()}
         onDeleteLesson={jest.fn()}
         onPreview={jest.fn()}
-        onTitleSave={jest.fn()}
+        onLessonSave={jest.fn().mockResolvedValue(null)}
         onPublishToggle={onPublishToggle}
       />,
     )

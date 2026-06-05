@@ -10,7 +10,7 @@ const handlers = {
   onDelete: jest.fn(),
   onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
-  onTitleSave: jest.fn(),
+  onLessonSave: jest.fn().mockResolvedValue(null),
   onPublishToggle: jest.fn(),
 }
 
@@ -27,6 +27,7 @@ beforeEach(() => {
 
 const publishedLessonWithPdf = {
   id: 1,
+  order: 1,
   title: 'Lição publicada com PDF',
   published: true,
   audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },

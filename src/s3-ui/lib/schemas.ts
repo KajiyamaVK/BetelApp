@@ -18,6 +18,14 @@ export const updateTitleSchema = z.object({
   title: z.string().min(1, 'Title required'),
 })
 
+export const updateLessonSchema = z.object({
+  title: z.string().min(1, 'Title required').optional(),
+  order: z.number().int().nonnegative('Order must be a non-negative integer').optional(),
+}).refine(
+  (data) => data.title !== undefined || data.order !== undefined,
+  { message: 'At least one field (title or order) is required' },
+)
+
 export const togglePublishSchema = z.object({
   published: z.boolean(),
 })

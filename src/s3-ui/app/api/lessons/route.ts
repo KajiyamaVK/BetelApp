@@ -11,6 +11,7 @@ export async function GET() {
 
   const result = lessons.map((lesson) => ({
     id: lesson.id,
+    order: lesson.order,
     title: lesson.title,
     published: lesson.published,
     audio: lesson.audioActive
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const { id, title } = parsed.data
 
   try {
-    const lesson = await prisma.lesson.create({ data: { id, title } })
+    const lesson = await prisma.lesson.create({ data: { id, title, order: id } })
 
     return NextResponse.json({ id: lesson.id, title: lesson.title, published: lesson.published }, { status: 201 })
   } catch (error) {

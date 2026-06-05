@@ -36,7 +36,8 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 **Lesson:**
 | Campo | Tipo | Notas |
 |-------|------|-------|
-| `id` | `Int` | PK, **manual** (não autoincrement) |
+| `id` | `Int` | PK, **manual** (não autoincrement) — chave interna, usada nos paths do MinIO (`lessons/{id}/`) |
+| `order` | `Int` | default `0` — número de exibição da lição no app mobile e no painel |
 | `title` | `String` | — |
 | `published` | `Boolean` | default `false` |
 | `pdfActive` | `String?` | Path ativo no MinIO |
@@ -188,4 +189,5 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 - **Não criar migrations Prisma formais** para mudanças incrementais durante desenvolvimento rápido — usar `db push`. Migrations formais são para quando o schema estabilizar.
 - **Não servir arquivos via proxy Next.js** — o browser acessa MinIO diretamente via `NEXT_PUBLIC_S3_BASE_URL`.
 - **Não usar raw SQL** — todas as queries via Prisma Client API.
-- **Não tornar `Lesson.id` autoincrement** — os IDs são semânticos (números do catecismo) e usados nos paths do MinIO.
+- **Não tornar `Lesson.id` autoincrement** — os IDs são semânticos (números do catecismo) e usados nos paths do MinIO (`lessons/{id}/`).
+- **Não confundir `Lesson.id` com `Lesson.order`** — `id` é a chave interna imutável; `order` é o número de exibição editável pelo admin.

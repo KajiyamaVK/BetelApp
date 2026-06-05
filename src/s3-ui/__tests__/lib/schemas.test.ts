@@ -1,4 +1,4 @@
-import { loginSchema, createUserSchema, uploadQuerySchema, updateTitleSchema } from '@/lib/schemas'
+import { loginSchema, createUserSchema, uploadQuerySchema, updateTitleSchema, updateLessonSchema } from '@/lib/schemas'
 
 describe('loginSchema', () => {
   it('accepts valid credentials', () => {
@@ -44,5 +44,29 @@ describe('updateTitleSchema', () => {
   })
   it('rejects empty title', () => {
     expect(updateTitleSchema.safeParse({ title: '' }).success).toBe(false)
+  })
+})
+
+describe('updateLessonSchema', () => {
+  it('accepts title only', () => {
+    expect(updateLessonSchema.safeParse({ title: 'Lesson 1' }).success).toBe(true)
+  })
+  it('accepts order only', () => {
+    expect(updateLessonSchema.safeParse({ order: 3 }).success).toBe(true)
+  })
+  it('accepts both title and order', () => {
+    expect(updateLessonSchema.safeParse({ title: 'Lesson 1', order: 3 }).success).toBe(true)
+  })
+  it('rejects empty title', () => {
+    expect(updateLessonSchema.safeParse({ title: '' }).success).toBe(false)
+  })
+  it('rejects negative order', () => {
+    expect(updateLessonSchema.safeParse({ order: -1 }).success).toBe(false)
+  })
+  it('rejects non-integer order', () => {
+    expect(updateLessonSchema.safeParse({ order: 1.5 }).success).toBe(false)
+  })
+  it('rejects empty object (at least one field required)', () => {
+    expect(updateLessonSchema.safeParse({}).success).toBe(false)
   })
 })

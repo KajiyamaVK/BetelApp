@@ -19,6 +19,7 @@ model User {
 
 model Lesson {
   id            Int      @id
+  order         Int      @default(0) @unique
   title         String
   published     Boolean  @default(false)
   pdfActive     String?

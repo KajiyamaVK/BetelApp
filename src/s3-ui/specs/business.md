@@ -52,11 +52,13 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 
 - **Criar lição:** `id` (int positivo) + `title` (non-empty). O `id` é manual, não autoincrement. Duplicação retorna 409.
 
+- **`id` vs `order`:** `id` é a chave interna (usada nos paths do MinIO). `order` é o número de exibição da lição no app mobile e no painel admin. São independentes — o admin pode reordenar sem alterar os paths de arquivo.
+
 - **Publicar/despublicar:**
   - **Publicar:** Reconstrói a entrada no `manifest.json` a partir dos metadados do DB. Requer que `pdfActive` exista.
   - **Despublicar:** Remove a lição inteiramente do manifest. A lição desaparece do app mobile imediatamente.
 
-- **Editar título:** Atualiza o DB e o `manifest.json` via `renameLesson`. A version do manifest é incrementada para que o app mobile sincronize o novo título na próxima abertura.
+- **Editar lição (título e/ou ordem):** `PUT /api/lessons/[id]` aceita `{ title?, order? }` (ao menos um obrigatório). Se `title` foi alterado, atualiza o `manifest.json` via `renameLesson` e incrementa `version`. Alteração de `order` não afeta o manifest — é apenas um número de exibição no painel e no app.
 
 - **Hard-delete de arquivo:** Remove o path `active` do DB, seta `active: null`, e **deleta o arquivo real do MinIO** via `deleteObject`. Não há mais soft-delete — arquivos deletados não são recuperáveis.
   - **Por quê:** Comportamento esperado pelo admin; soft-delete adicionava complexidade sem benefício real para este contexto.

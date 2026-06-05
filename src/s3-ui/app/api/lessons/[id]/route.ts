@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getObjectText, uploadObject, deleteFolder } from '@/lib/minio'
 import { parseManifest, renameLesson, removeLesson } from '@/lib/manifest'
-import { updateTitleSchema } from '@/lib/schemas'
+import { updateLessonSchema } from '@/lib/schemas'
 import { requireAuth, requireAdmin } from '@/lib/auth'
 
 export async function PUT(
@@ -19,30 +20,43 @@ export async function PUT(
   if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
 
   const body = await req.json()
-  const parsed = updateTitleSchema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
+  const parsed = updateLessonSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
 
-  const lesson = await prisma.lesson.update({
-    where: { id },
-    data: { title: parsed.data.title },
-  })
+  let lesson
+  try {
+    lesson = await prisma.lesson.update({
+      where: { id },
+      data: {
+        ...(parsed.data.title !== undefined && { title: parsed.data.title }),
+        ...(parsed.data.order !== undefined && { order: parsed.data.order }),
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Esse número de lição já está em uso' }, { status: 409 })
+    }
+    throw error
+  }
 
   // Keep manifest in sync so the mobile app sees the new title without a full republish.
   // This is best-effort: a MinIO failure must never prevent the DB rename from returning 200.
-  try {
-    const manifestText = await getObjectText('manifest.json')
-    const manifest = parseManifest(manifestText)
-    const existingEntry = manifest.lessons.find((entry) => entry.id === id)
-    if (existingEntry) {
-      const updatedManifest = renameLesson(manifest, id, lesson.title)
-      await uploadObject(
-        'manifest.json',
-        Buffer.from(JSON.stringify(updatedManifest, null, 2)),
-        'application/json',
-      )
+  if (parsed.data.title !== undefined) {
+    try {
+      const manifestText = await getObjectText('manifest.json')
+      const manifest = parseManifest(manifestText)
+      const existingEntry = manifest.lessons.find((entry) => entry.id === id)
+      if (existingEntry) {
+        const updatedManifest = renameLesson(manifest, id, lesson.title)
+        await uploadObject(
+          'manifest.json',
+          Buffer.from(JSON.stringify(updatedManifest, null, 2)),
+          'application/json',
+        )
+      }
+    } catch (err) {
+      console.error('Failed to update manifest after title rename:', err)
     }
-  } catch (err) {
-    console.error('Failed to update manifest after title rename:', err)
   }
 
   return NextResponse.json(lesson)

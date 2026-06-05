@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import { FileRow } from './FileRow'
 import { QASection } from './QASection'
+import { EditLessonDialog } from './EditLessonDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,7 @@ import {
 
 interface Lesson {
   id: number
+  order: number
   title: string
   published: boolean
   audio: { active: string | null; ext: string; checksum: string; history: string[] }
@@ -31,25 +33,17 @@ interface LessonRowProps {
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onDeleteLesson: (lessonId: number) => void
   onPreview: (path: string) => void
-  onTitleSave: (lessonId: number, title: string) => void
+  onLessonSave: (lessonId: number, title: string, order: number) => Promise<string | null>
   onPublishToggle: (lessonId: number, published: boolean) => Promise<void>
 }
 
-export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, onDeleteLesson, onPreview, onTitleSave, onPublishToggle }: LessonRowProps) {
+export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, onDeleteLesson, onPreview, onLessonSave, onPublishToggle }: LessonRowProps) {
   const [expanded, setExpanded] = useState(false)
-  const [editing, setEditing] = useState(false)
-  const [title, setTitle] = useState(lesson.title)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null)
   const [publishing, setPublishing] = useState(false)
   const [pendingPdfDelete, setPendingPdfDelete] = useState(false)
   const [pendingLessonDelete, setPendingLessonDelete] = useState(false)
-
-  function saveTitle() {
-    setEditing(false)
-    if (title.trim() && title !== lesson.title) {
-      onTitleSave(lesson.id, title.trim())
-    }
-  }
 
   function handlePublishClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -59,8 +53,6 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
   async function handleConfirm() {
     if (pendingPublish !== null) {
       setPublishing(true)
-      // Always close the dialog after confirmation, regardless of outcome.
-      // Error surfacing is the parent page's responsibility.
       await onPublishToggle(lesson.id, pendingPublish).catch(() => undefined)
       setPublishing(false)
     }
@@ -97,31 +89,18 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
       <div data-testid="lesson-row" className="bg-surface rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div
           className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => !editing && setExpanded(!expanded)}
+          onClick={() => setExpanded(!expanded)}
         >
           <span className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-text-main flex-shrink-0">
-            {lesson.id}
+            {lesson.order}
           </span>
 
-          {editing ? (
-            <input
-              className="flex-1 text-sm font-medium border-b border-primary outline-none bg-transparent"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={(e) => e.key === 'Enter' && saveTitle()}
-              autoFocus
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <span
-              data-testid="lesson-title"
-              className="flex-1 text-sm font-medium text-text-main hover:text-primary transition-colors"
-              onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
-            >
-              {title}
-            </span>
-          )}
+          <span
+            data-testid="lesson-title"
+            className="flex-1 text-sm font-medium text-text-main hover:text-primary transition-colors"
+          >
+            {lesson.title}
+          </span>
 
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <span>🎵 {audioBadge}</span>
@@ -129,9 +108,9 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
           </div>
 
           <button
-            data-testid="edit-title-btn"
-            onClick={(e) => { e.stopPropagation(); setEditing(true) }}
-            title="Editar título"
+            data-testid="edit-lesson-btn"
+            onClick={(e) => { e.stopPropagation(); setEditDialogOpen(true) }}
+            title="Editar lição"
             className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <Pencil size={15} />
@@ -192,6 +171,15 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
           </div>
         )}
       </div>
+
+      <EditLessonDialog
+        open={editDialogOpen}
+        lessonId={lesson.id}
+        initialTitle={lesson.title}
+        initialOrder={lesson.order}
+        onSave={onLessonSave}
+        onClose={() => setEditDialogOpen(false)}
+      />
 
       <AlertDialog open={pendingPdfDelete} onOpenChange={(open) => !open && setPendingPdfDelete(false)}>
         <AlertDialogContent>

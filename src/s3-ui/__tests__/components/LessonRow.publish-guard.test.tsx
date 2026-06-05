@@ -10,7 +10,7 @@ const handlers = {
   onDelete: jest.fn(),
   onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
-  onTitleSave: jest.fn(),
+  onLessonSave: jest.fn().mockResolvedValue(null),
   onPublishToggle: jest.fn(),
 }
 
@@ -25,6 +25,7 @@ describe('LessonRow — Publicar guard', () => {
   it('disables Publicar button when pdf is absent', () => {
     const lesson = {
       id: 1,
+      order: 1,
       title: 'Lição sem PDF',
       published: false,
       audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
@@ -38,6 +39,7 @@ describe('LessonRow — Publicar guard', () => {
   it('enables Publicar button when pdf is present', () => {
     const lesson = {
       id: 2,
+      order: 2,
       title: 'Lição com PDF',
       published: false,
       audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
@@ -51,6 +53,7 @@ describe('LessonRow — Publicar guard', () => {
   it('shows a tooltip hint when Publicar is disabled due to missing PDF', () => {
     const lesson = {
       id: 3,
+      order: 3,
       title: 'Lição sem PDF',
       published: false,
       audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },

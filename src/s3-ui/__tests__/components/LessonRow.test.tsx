@@ -6,6 +6,7 @@ import { LessonRow } from '@/components/lessons/LessonRow'
 
 const baseLesson = {
   id: 1,
+  order: 3,
   title: 'Qual o Fim principal?',
   published: false,
   audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
@@ -18,7 +19,7 @@ const handlers = {
   onDelete: jest.fn(),
   onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
-  onTitleSave: jest.fn(),
+  onLessonSave: jest.fn().mockResolvedValue(null),
   onPublishToggle: jest.fn(),
 }
 
@@ -30,9 +31,9 @@ beforeAll(() => {
 })
 
 describe('LessonRow', () => {
-  it('renders lesson number and title', () => {
+  it('renders lesson order (display number) and title', () => {
     render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
     expect(screen.getByText('Qual o Fim principal?')).toBeInTheDocument()
   })
 

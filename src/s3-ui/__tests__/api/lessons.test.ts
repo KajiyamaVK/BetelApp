@@ -39,6 +39,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await prisma.lesson.update({ where: { id: 1 }, data: { title: 'Test Lesson', order: 1 } })
   await prisma.$disconnect()
 })
 
@@ -48,6 +49,14 @@ describe('GET /api/lessons', () => {
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(Array.isArray(data)).toBe(true)
+  })
+
+  it('includes order field in each lesson', async () => {
+    const res = await getLessons()
+    const data = await res.json()
+    const lesson = data.find((l: { id: number }) => l.id === 1)
+    expect(lesson).toBeDefined()
+    expect(typeof lesson.order).toBe('number')
   })
 })
 
@@ -108,6 +117,38 @@ describe('PUT /api/lessons/[id]', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.title).toBe('Safe Title')
+  })
+
+  it('updates order successfully', async () => {
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { order: 900 })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.order).toBe(900)
+  })
+
+  it('updates both title and order in a single call', async () => {
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { title: 'New Title With Order', order: 901 })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.title).toBe('New Title With Order')
+    expect(body.order).toBe(901)
+  })
+
+  it('returns 409 when order conflicts with an existing lesson', async () => {
+    // lesson id=2 already has order=2; trying to set id=1 to order=2 must fail
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', { order: 2 })
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toMatch(/número de lição/i)
+  })
+
+  it('returns 400 when body is empty (no fields to update)', async () => {
+    const req = await makeAuthRequest('PUT', 'http://localhost/api/lessons/1', {})
+    const res = await updateTitle(req, { params: Promise.resolve({ id: '1' }) })
+    expect(res.status).toBe(400)
   })
 
   it('does NOT write manifest when lesson is not in the manifest (unpublished)', async () => {

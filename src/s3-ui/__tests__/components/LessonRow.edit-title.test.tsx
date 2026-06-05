@@ -1,11 +1,12 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { LessonRow } from '@/components/lessons/LessonRow'
 
 const baseLesson = {
   id: 1,
+  order: 3,
   title: 'Qual o Fim principal?',
   published: false,
   audio: { active: null as string | null, ext: 'mp3', checksum: '', history: [] as string[] },
@@ -18,7 +19,7 @@ const handlers = {
   onDelete: jest.fn(),
   onDeleteLesson: jest.fn(),
   onPreview: jest.fn(),
-  onTitleSave: jest.fn(),
+  onLessonSave: jest.fn().mockResolvedValue(null),
   onPublishToggle: jest.fn(),
 }
 
@@ -28,34 +29,73 @@ beforeAll(() => {
   global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => [] } as Response)
 })
 
-describe('LessonRow — edit title button', () => {
-  it('renders a pencil button visible alongside publish and delete buttons', () => {
+describe('LessonRow — edit lesson button', () => {
+  it('renders a pencil button alongside publish and delete buttons', () => {
     render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
-    expect(screen.getByTestId('edit-title-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-lesson-btn')).toBeInTheDocument()
   })
 
-  it('clicking the pencil button activates inline title editing', () => {
+  it('clicking the pencil button opens the edit dialog', async () => {
     render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
-    fireEvent.click(screen.getByTestId('edit-title-btn'))
-    expect(screen.getByDisplayValue('Qual o Fim principal?')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
   })
 
-  it('saves the new title when Enter is pressed', () => {
-    const onTitleSave = jest.fn()
-    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onTitleSave={onTitleSave} />)
-    fireEvent.click(screen.getByTestId('edit-title-btn'))
-    const input = screen.getByDisplayValue('Qual o Fim principal?')
-    fireEvent.change(input, { target: { value: 'Novo Título' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
-    expect(onTitleSave).toHaveBeenCalledWith(1, 'Novo Título')
+  it('dialog pre-fills title and order from the lesson', async () => {
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} />)
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Qual o Fim principal?')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('3')).toBeInTheDocument()
+    })
   })
 
-  it('does not call onTitleSave when title is unchanged', () => {
-    const onTitleSave = jest.fn()
-    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onTitleSave={onTitleSave} />)
-    fireEvent.click(screen.getByTestId('edit-title-btn'))
-    const input = screen.getByDisplayValue('Qual o Fim principal?')
-    fireEvent.keyDown(input, { key: 'Enter' })
-    expect(onTitleSave).not.toHaveBeenCalled()
+  it('calls onLessonSave with updated title and order on save', async () => {
+    const onLessonSave = jest.fn().mockResolvedValue(null)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onLessonSave={onLessonSave} />)
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => screen.getByRole('dialog'))
+
+    const titleInput = screen.getByDisplayValue('Qual o Fim principal?')
+    fireEvent.change(titleInput, { target: { value: 'Novo Título' } })
+
+    const orderInput = screen.getByDisplayValue('3')
+    fireEvent.change(orderInput, { target: { value: '5' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }))
+    expect(onLessonSave).toHaveBeenCalledWith(1, 'Novo Título', 5)
+  })
+
+  it('does not call onLessonSave when nothing changes and save is clicked', async () => {
+    const onLessonSave = jest.fn().mockResolvedValue(null)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onLessonSave={onLessonSave} />)
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => screen.getByRole('dialog'))
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }))
+    expect(onLessonSave).not.toHaveBeenCalled()
+  })
+
+  it('keeps dialog open and shows error message when onLessonSave returns an error', async () => {
+    const onLessonSave = jest.fn().mockResolvedValue('Esse número de lição já está em uso')
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onLessonSave={onLessonSave} />)
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => screen.getByRole('dialog'))
+
+    const orderInput = screen.getByDisplayValue('3')
+    fireEvent.change(orderInput, { target: { value: '5' } })
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }))
+
+    await waitFor(() => expect(screen.getByText('Esse número de lição já está em uso')).toBeInTheDocument())
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('closes dialog on cancel without calling onLessonSave', async () => {
+    const onLessonSave = jest.fn().mockResolvedValue(null)
+    render(<LessonRow uploadingKey={null} lesson={baseLesson} {...handlers} onLessonSave={onLessonSave} />)
+    fireEvent.click(screen.getByTestId('edit-lesson-btn'))
+    await waitFor(() => screen.getByRole('dialog'))
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(onLessonSave).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 })

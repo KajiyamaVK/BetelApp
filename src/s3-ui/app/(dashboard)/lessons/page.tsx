@@ -18,6 +18,7 @@ import {
 
 interface Lesson {
   id: number
+  order: number
   title: string
   published: boolean
   audio: { active: string | null; ext: string; checksum: string; history: string[] }
@@ -91,15 +92,18 @@ export default function LessonsPage() {
     await loadLessons()
   }
 
-  async function handleTitleSave(lessonId: number, title: string) {
+  async function handleLessonSave(lessonId: number, title: string, order: number): Promise<string | null> {
     const res = await fetch(`/api/lessons/${lessonId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ title, order }),
     })
     if (res.ok) {
-      setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title } : lesson)))
+      setLessons((prev) => prev.map((lesson) => (lesson.id === lessonId ? { ...lesson, title, order } : lesson)))
+      return null
     }
+    const body = await res.json().catch(() => ({}))
+    return body.error ?? 'Erro ao salvar lição. Tente novamente.'
   }
 
   async function handleDeleteLesson(lessonId: number) {
@@ -166,7 +170,7 @@ export default function LessonsPage() {
           onDelete={handleDeleteRequest}
           onDeleteLesson={handleDeleteLesson}
           onPreview={setPdfPath}
-          onTitleSave={handleTitleSave}
+          onLessonSave={handleLessonSave}
           onPublishToggle={handlePublishToggle}
         />
       </div>
