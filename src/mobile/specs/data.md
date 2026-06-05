@@ -96,17 +96,29 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | Título **e** Q&As diferentes | Ambas as ações acima (independentes) |
 
 - **Sync de Q&As:** Após salvar cada lição, `ContentSyncService` chama `ReviewRepositoryImpl.upsertCards()` com as Q&As do manifest (insert-only, preserva progresso Leitner existente). Q&As removidas do manifest são deletadas via `deleteCardsForQuestionIds()`.
+  - **O sync NÃO altera `review_active`** — o toggle de revisão por lição é escolha exclusivamente do usuário. Lições novas ficam com toggle **desligado por padrão** até o usuário ativar manualmente.
+  - **Por quê:** Ativar revisão automaticamente forçava o usuário a estudar todas as lições sincronizadas, sem controle. A ativação manual preserva a autonomia do usuário.
+
 - **`ReviewRepository`** — interface abstrata + `ReviewRepositoryImpl`:
   | Método | O que faz |
   |--------|-----------|
   | `upsertCards(flashcards)` | Insere novas Q&As em `card_progress` com bucket=1; nunca sobrescreve existentes |
   | `recordAnswer(questionId, correct, answeredAt?)` | Avança/reseta bucket Leitner; calcula `next_review_at` |
-  | `getDueCards(lessonIds, today?)` | Retorna cards com `next_review_at <= today` das lições ativas; popula `questionText`/`answerText` |
+  | `getDueCards(lessonIds, today?)` | Retorna cards com `next_review_at <= today` das lições passadas; popula `questionText`/`answerText` |
   | `deleteCardsForQuestionIds(ids)` | Remove cards do `card_progress` |
-  | `isReviewActive(lessonId)` | Lê `review_active` |
-  | `setReviewActive(lessonId, active)` | Upsert em `review_active` |
+  | `isReviewActive(lessonId)` | Retorna `true` se há linha em `review_active` com `active=1`; retorna `false` se linha ausente |
+  | `setReviewActive(lessonId, active)` | Upsert em `review_active` com `ConflictAlgorithm.replace` |
+  | `activateReviewIfNew(lessonId)` | Insert em `review_active` com `active=1` e `ConflictAlgorithm.ignore` — usado apenas onde se quer ativar sem sobrescrever escolha existente. **Não é chamado pelo sync.** |
   | `getActiveLessonIds()` | Retorna lesson_ids com `active=1` |
-- **Algoritmo Leitner:** 5 buckets. Intervalo de dias por bucket: 1→1d, 2→2d, 3→4d, 4→8d, 5→16d. Resposta correta: bucket+1 (max 5). Resposta errada: bucket=1.
+  | `resetAllProgress()` | Zera buckets de todos os cards; não altera `review_active` |
+
+- **Tabela `review_active` — semântica de ausência:**
+  - Linha ausente = toggle desligado (`isReviewActive` retorna `false`)
+  - `active = 0` = toggle explicitamente desligado pelo usuário
+  - `active = 1` = toggle ligado pelo usuário
+  - O sync nunca insere nessa tabela — é território exclusivo do usuário
+
+- **Algoritmo Leitner:** 5 buckets. Intervalo de dias por bucket: 1→1d, 2→2d, 3→4d, 4→8d, 5→16d. Resposta correta: bucket+1 (max 5). Resposta errada: bucket=1. Novos cards entram em bucket=1 com `next_review_at = today`.
 - **Progresso local:** `card_progress` nunca é sincronizado com o backend — permanece local ao dispositivo.
 
 - **Files no filesystem:** PDFs e áudios são salvos em `getApplicationDocumentsDirectory()/betelapp/lessons/{id}/lesson.pdf` e `.../audio.{ext}`.

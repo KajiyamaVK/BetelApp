@@ -105,9 +105,6 @@ class ContentSyncService {
           .map((q) => Flashcard(id: q.id, lessonId: lesson.id, question: q.question, answer: q.answer))
           .toList();
       await reviewRepo.upsertCards(flashcards);
-      if (flashcards.isNotEmpty) {
-        await reviewRepo.activateReviewIfNew(lessonId: lesson.id);
-      }
       final manifestQuestionIds = lesson.questions.map((q) => q.id).toSet();
       final existingRows = await db.query('card_progress', columns: ['question_id'],
           where: 'lesson_id = ?', whereArgs: [lesson.id]);
@@ -191,9 +188,6 @@ class ContentSyncService {
               ))
           .toList();
       await reviewRepo.upsertCards(flashcards);
-      if (flashcards.isNotEmpty) {
-        await reviewRepo.activateReviewIfNew(lessonId: lesson.id);
-      }
 
       // Remove card_progress for Q&As no longer in the manifest
       final manifestQuestionIds = lesson.questions.map((q) => q.id).toSet();

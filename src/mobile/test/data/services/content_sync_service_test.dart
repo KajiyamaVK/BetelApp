@@ -267,8 +267,8 @@ void main() {
     expect(rows.every((r) => r['bucket'] == 1), true);
   });
 
-  // Regression: lessons with Q&A must be activated for review by default on first sync.
-  test('sync activates review by default for new lessons that have Q&A', () async {
+  // Review toggle is OFF by default — sync must NOT auto-activate review for new lessons.
+  test('sync does NOT activate review for new lessons that have Q&A', () async {
     when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
     when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
 
@@ -304,9 +304,8 @@ void main() {
 
     final database = await mockDb.database;
     final rows = await database.query('review_active', where: 'lesson_id = ?', whereArgs: [1]);
-    expect(rows.length, 1);
-    expect(rows.first['active'], 1,
-        reason: 'lesson with Q&A must be active by default after first sync');
+    expect(rows.isEmpty, true,
+        reason: 'sync must not insert a review_active row — toggle starts OFF by default');
   });
 
   // Regression: re-syncing a lesson must not override the user's explicit deactivation.

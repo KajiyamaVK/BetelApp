@@ -1,7 +1,7 @@
 ---
 layer: business
 project: mobile
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-05
 ---
 
 ## Propósito
@@ -78,6 +78,39 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
 - **Sem controle de acesso por usuário** — todo conteúdo sincronizado é acessível livremente.
 
 - **Audio availability gate** — tela de Músicas e Favoritos só mostram lições que possuem `audio_local_path IS NOT NULL`. Lições sem áudio baixado são silenciosamente excluídas dessas views.
+
+### Sistema de Revisão (Leitner / Flashcards)
+
+- **Propósito:** Permite ao usuário estudar as Q&As de uma lição via sessões de revisão com repetição espaçada (algoritmo Leitner de 5 buckets).
+
+- **Toggle por lição:** Cada lição pode ser ativada ou desativada para revisão de forma independente. O estado fica em `review_active` (SQLite local). **O toggle começa DESLIGADO por padrão** — o usuário deve ativar manualmente as lições que quer estudar.
+  - **Por quê:** Ativar automaticamente todas as lições no primeiro sync sobrecarrega o usuário com sessões de revisão antes que ele conheça o conteúdo. O usuário decide quando quer iniciar a revisão de cada lição.
+
+- **Ativação manual:** Na tela `LessonDetailScreen`, há um toggle que chama `ReviewRepository.setReviewActive()`.
+
+- **Algoritmo Leitner:**
+  - 5 buckets (1-5). Intervalo de revisão por bucket:
+    | Bucket | Próxima revisão |
+    |--------|----------------|
+    | 1 | 1 dia |
+    | 2 | 2 dias |
+    | 3 | 4 dias |
+    | 4 | 8 dias |
+    | 5 | 16 dias |
+  - Resposta correta: `bucket = min(bucket + 1, 5)`
+  - Resposta errada: `bucket = 1` (volta ao início)
+  - Novos cards entram em `bucket = 1` com `next_review_at = today`
+
+- **Sessão de revisão:**
+  - Carrega todos os cards com `next_review_at <= today` das lições ativas (`getActiveLessonIds()` + `getDueCards()`)
+  - Progresso (`card_progress`) é **local** — nunca sincronizado com o backend
+
+- **Sync e cards:**
+  - Ao sincronizar Q&As, `upsertCards()` insere novos cards com bucket=1; nunca sobrescreve progresso existente
+  - Q&As removidas do manifest são deletadas de `card_progress` (`deleteCardsForQuestionIds()`)
+  - O sync **não altera `review_active`** — a escolha do usuário é preservada entre re-syncs
+
+- **Invariante de reset:** `resetAllProgress()` zera buckets e seta `next_review_at = now` para todos os cards, mas **não altera os toggles** — lições ativas continuam ativas.
 
 ### Lesson Progress (esqueleto)
 

@@ -1,0 +1,1 @@
+Revisões agora ficam desativadas por padrão ao sincronizar novas lições. Ative manualmente quando quiser estudar.
