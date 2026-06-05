@@ -58,7 +58,6 @@ export function QASection({ lessonId }: QASectionProps) {
       body: JSON.stringify({
         question: adding.question.trim(),
         answer: adding.answer.trim(),
-        order: questions.length,
       }),
     })
     setSaving(false)

@@ -1,7 +1,7 @@
 ---
 layer: ui
 project: s3-ui
-last_reviewed: 2026-06-03
+last_reviewed: 2026-06-05
 ---
 
 ## Propósito
@@ -66,7 +66,7 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 ### Componentes de lições
 
 - **`LessonList`** — container da lista de lições.
-- **`LessonRow`** — linha expandível para cada lição. Inline edit (double-click no título), toggle publish, indicadores de status de áudio/PDF.
+- **`LessonRow`** — linha expandível para cada lição. Inline edit (double-click no título **ou botão lápis**), toggle publish, botão lápis (editar título), botão lixeira (deletar lição), indicadores de status de áudio/PDF.
 - **`FileRow`** — linha de upload/ação para cada tipo de arquivo (áudio ou PDF) dentro de uma LessonRow.
 - **`CreateLessonDialog`** — dialog para criar nova lição (com upload opcional de arquivos).
 - **`MiniPlayer`** — player de áudio inline com play/pause, barra de progresso, display de tempo.
@@ -80,7 +80,7 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 
 ### Padrões de interação
 
-- **Inline editing:** Double-click no título da lição ativa input inline. Enter salva, Escape cancela.
+- **Inline editing:** Double-click no título da lição **ou clique no botão lápis** ativa input inline. Enter salva, Escape cancela.
 - **Publish guard:** Botão de publicar desabilitado se a lição não tem PDF ativo.
 - **Delete+unpublish warning:** Ao deletar PDF de uma lição publicada, dialog de confirmação avisa que a lição será despublicada também.
 - **Confirmações destructivas:** Todas as ações de exclusão (arquivo, usuário, Q&A) usam `AlertDialog` do shadcn com texto explícito do impacto.

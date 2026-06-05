@@ -96,7 +96,7 @@ describe('PUT /api/lessons/[id]', () => {
     const uploaded = JSON.parse((manifestCallArgs![1] as Buffer).toString())
     const updatedLesson = uploaded.lessons.find((lesson: { id: number }) => lesson.id === 1)
     expect(updatedLesson?.title).toBe('New Title')
-    expect(uploaded.version).toBe(1) // version must NOT be bumped on title rename
+    expect(uploaded.version).toBe(2) // version increments so mobile clients re-sync the new title
   })
 
   it('returns 200 even when manifest fetch fails (manifest is best-effort)', async () => {

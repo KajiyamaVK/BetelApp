@@ -83,9 +83,17 @@ class ContentSyncService {
         if (row['pdf_checksum'] != lesson.pdf.checksum ||
             row['audio_checksum'] != lesson.audio?.checksum) {
           lessonsToDownload.add(lesson);
-        } else if ((row['question_count'] as int? ?? 0) != lesson.questions.length) {
-          // Files unchanged but Q&As changed — sync cards without re-downloading files
-          lessonsWithUpdatedQAs.add(lesson);
+        } else {
+          final titleChanged = row['title'] != lesson.title;
+          final questionsChanged = (row['question_count'] as int? ?? 0) != lesson.questions.length;
+          if (titleChanged) {
+            await db.update('lessons', {'title': lesson.title},
+                where: 'id = ?', whereArgs: [lesson.id]);
+          }
+          if (questionsChanged) {
+            // Files unchanged but Q&As changed — sync cards without re-downloading files
+            lessonsWithUpdatedQAs.add(lesson);
+          }
         }
       }
     }

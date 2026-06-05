@@ -115,6 +115,37 @@ describe('POST /api/lessons/[id]/questions', () => {
     const res = await POST(req, { params: Promise.resolve({ id: String(LESSON_ID) }) })
     expect(res.status).toBe(401)
   })
+
+  it('assigns order as MAX(order)+1 of active questions, ignoring gaps from deletions', async () => {
+    await prisma.question.deleteMany({ where: { lessonId: LESSON_ID } })
+    await prisma.question.createMany({
+      data: [
+        { lessonId: LESSON_ID, question: 'Q1', answer: 'A1', order: 0 },
+        { lessonId: LESSON_ID, question: 'Q2', answer: 'A2', order: 1, deletedAt: new Date() },
+        { lessonId: LESSON_ID, question: 'Q3', answer: 'A3', order: 2 },
+      ],
+    })
+    const req = await makeAuthRequest('POST', `http://localhost/api/lessons/${LESSON_ID}/questions`, {
+      question: 'Nova depois de gap',
+      answer: 'Resposta.',
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: String(LESSON_ID) }) })
+    expect(res.status).toBe(201)
+    const data = await res.json()
+    expect(data.order).toBe(3)
+  })
+
+  it('assigns order 0 when no active questions exist', async () => {
+    await prisma.question.deleteMany({ where: { lessonId: LESSON_ID } })
+    const req = await makeAuthRequest('POST', `http://localhost/api/lessons/${LESSON_ID}/questions`, {
+      question: 'Primeira pergunta',
+      answer: 'Resposta.',
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: String(LESSON_ID) }) })
+    expect(res.status).toBe(201)
+    const data = await res.json()
+    expect(data.order).toBe(0)
+  })
 })
 
 describe('PATCH /api/lessons/[id]/questions/[qid]', () => {

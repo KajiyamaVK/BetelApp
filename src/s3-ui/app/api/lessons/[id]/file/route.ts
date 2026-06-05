@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadObject, getObjectText } from '@/lib/minio'
+import { uploadObject, getObjectText, deleteObject } from '@/lib/minio'
 import { parseManifest, softDeleteFile } from '@/lib/manifest'
 import { uploadQuerySchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
@@ -24,11 +24,18 @@ export async function DELETE(
 
   const type = parsed.data.type
 
+  const lesson = await prisma.lesson.findUnique({ where: { id } })
+  const activePath = type === 'audio' ? lesson?.audioActive : lesson?.pdfActive
+
   const dbUpdate = type === 'audio'
     ? { audioActive: null, audioChecksum: null, audioExt: null }
     : { pdfActive: null, pdfChecksum: null }
 
   await prisma.lesson.update({ where: { id }, data: dbUpdate })
+
+  if (activePath) {
+    await deleteObject(activePath)
+  }
 
   const manifestText = await getObjectText('manifest.json')
   const manifest = parseManifest(manifestText)

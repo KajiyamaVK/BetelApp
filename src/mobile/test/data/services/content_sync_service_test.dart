@@ -404,6 +404,50 @@ void main() {
     expect(rows.first['bucket'], 3, reason: 'existing progress should be preserved');
   });
 
+  // Regression: a title-only change in the manifest must update the local lesson title.
+  // Previously, sync only checked checksum and question_count — title changes were silently ignored.
+  test('sync updates title in local db when only the title changed in the manifest', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 5,
+      updatedAt: '2026-06-05T00:00:00Z',
+      lessons: [
+        ManifestLesson(
+          id: 1,
+          title: 'Título Corrigido',
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          audio: null,
+          questions: [],
+        ),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      await db!.insert('sync_meta', {'id': 1, 'manifest_version': 4, 'last_sync_at': 0});
+      await db!.insert('lessons', {
+        'id': 1, 'title': 'Título Antigo',
+        'pdf_local_path': 'betelapp/lessons/1/lesson.pdf', 'pdf_checksum': 'abc',
+        'synced_at': 0, 'question_count': 0,
+      });
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('lessons', where: 'id = ?', whereArgs: [1]);
+    expect(rows.first['title'], 'Título Corrigido',
+        reason: 'title change in manifest must be reflected in local db after sync');
+  });
+
   // Regression: Q&As added to a published lesson must appear in the app even when
   // the lesson's file checksums did not change (add→delete→re-add cycle on portal).
   test('sync upserts Q&As for existing lessons whose questions changed in manifest', () async {

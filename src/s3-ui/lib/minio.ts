@@ -38,6 +38,12 @@ export async function uploadObject(
   })
 }
 
+/** Deletes a single object from MinIO by its exact name. */
+export async function deleteObject(objectName: string): Promise<void> {
+  const client = getMinioClient()
+  await client.removeObject(getBucket(), objectName)
+}
+
 /**
  * Deletes all objects whose names start with `prefix`.
  * Used to remove all lesson files when a lesson is deleted.

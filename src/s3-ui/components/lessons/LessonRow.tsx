@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import { FileRow } from './FileRow'
 import { QASection } from './QASection'
 import {
@@ -127,6 +127,15 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
             <span>🎵 {audioBadge}</span>
             <span>📄 {pdfBadge}</span>
           </div>
+
+          <button
+            data-testid="edit-title-btn"
+            onClick={(e) => { e.stopPropagation(); setEditing(true) }}
+            title="Editar título"
+            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <Pencil size={15} />
+          </button>
 
           <button
             onClick={handlePublishClick}

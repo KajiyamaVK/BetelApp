@@ -62,11 +62,11 @@ export async function DELETE(
   const lesson = await prisma.lesson.findUnique({ where: { id } })
   if (!lesson) return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
 
-  // Write audit log before deleting so the record is preserved permanently
   await prisma.lessonAuditLog.create({
     data: { lessonId: id, userId: authResult.userId, action: 'delete' },
   })
 
+  await prisma.question.deleteMany({ where: { lessonId: id } })
   await prisma.lesson.delete({ where: { id } })
 
   // Remove from manifest (best-effort — manifest may not contain the lesson if unpublished)

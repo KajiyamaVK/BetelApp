@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { signToken, TOKEN_COOKIE } from '@/lib/auth'
 import { NextRequest } from 'next/server'
 
+const mockDeleteObject = jest.fn().mockResolvedValue(undefined)
+
 jest.mock('@/lib/minio', () => ({
   getObjectText: jest.fn().mockResolvedValue(
     JSON.stringify({
@@ -22,6 +24,7 @@ jest.mock('@/lib/minio', () => ({
     }),
   ),
   uploadObject: jest.fn().mockResolvedValue(undefined),
+  deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
 }))
 
 async function makeDeleteRequest(lessonId: number, type: 'audio' | 'pdf'): Promise<NextRequest> {
@@ -63,7 +66,32 @@ afterAll(async () => {
   await prisma.$disconnect()
 })
 
+beforeEach(() => {
+  mockDeleteObject.mockClear()
+})
+
 describe('DELETE /api/lessons/[id]/file', () => {
+  it('hard-deletes the audio file from MinIO when deleting audio', async () => {
+    await prisma.lesson.update({ where: { id: 1 }, data: { audioActive: 'lessons/1/audio_v1.mp3', audioChecksum: 'def' } })
+    const req = await makeDeleteRequest(1, 'audio')
+    await deleteFile(req, { params: Promise.resolve({ id: '1' }) })
+    expect(mockDeleteObject).toHaveBeenCalledWith('lessons/1/audio_v1.mp3')
+  })
+
+  it('hard-deletes the pdf file from MinIO when deleting pdf', async () => {
+    await prisma.lesson.update({ where: { id: 1 }, data: { pdfActive: 'lessons/1/lesson_v1.pdf', pdfChecksum: 'abc' } })
+    const req = await makeDeleteRequest(1, 'pdf')
+    await deleteFile(req, { params: Promise.resolve({ id: '1' }) })
+    expect(mockDeleteObject).toHaveBeenCalledWith('lessons/1/lesson_v1.pdf')
+  })
+
+  it('does not call deleteObject when active path is already null', async () => {
+    await prisma.lesson.update({ where: { id: 1 }, data: { audioActive: null, audioChecksum: null } })
+    const req = await makeDeleteRequest(1, 'audio')
+    await deleteFile(req, { params: Promise.resolve({ id: '1' }) })
+    expect(mockDeleteObject).not.toHaveBeenCalled()
+  })
+
   it('clears audioActive in the database when deleting audio', async () => {
     const req = await makeDeleteRequest(1, 'audio')
     const res = await deleteFile(req, { params: Promise.resolve({ id: '1' }) })

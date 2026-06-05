@@ -1,7 +1,7 @@
 ---
 layer: data
 project: mobile
-last_reviewed: 2026-06-03
+last_reviewed: 2026-06-05
 ---
 
 ## Propósito
@@ -87,6 +87,14 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - `updatedAt` (DateTime)
   - `lessons[]` — cada uma com `ManifestLesson` contendo `ManifestFileEntry` (pdf), `ManifestAudioEntry?` (audio), e `List<ManifestQuestion>` (questions, default `[]`)
   - `ManifestQuestion`: `id`, `question` (de `"q"`), `answer` (de `"a"`)
+- **Lógica de detecção de mudanças por lição:**
+  | Mudança detectada | Ação |
+  |-------------------|------|
+  | Checksum de PDF ou áudio diferente | Re-download dos arquivos + sync de Q&As |
+  | Apenas título diferente | `UPDATE lessons SET title = ?` sem re-download |
+  | Apenas `question_count` diferente | Sync de Q&As sem re-download |
+  | Título **e** Q&As diferentes | Ambas as ações acima (independentes) |
+
 - **Sync de Q&As:** Após salvar cada lição, `ContentSyncService` chama `ReviewRepositoryImpl.upsertCards()` com as Q&As do manifest (insert-only, preserva progresso Leitner existente). Q&As removidas do manifest são deletadas via `deleteCardsForQuestionIds()`.
 - **`ReviewRepository`** — interface abstrata + `ReviewRepositoryImpl`:
   | Método | O que faz |

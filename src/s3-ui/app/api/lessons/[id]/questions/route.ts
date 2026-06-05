@@ -40,12 +40,18 @@ export async function POST(
   const parsed = createQuestionSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
+  const maxOrderResult = await prisma.question.aggregate({
+    where: { lessonId, deletedAt: null },
+    _max: { order: true },
+  })
+  const nextOrder = (maxOrderResult._max.order ?? -1) + 1
+
   const question = await prisma.question.create({
     data: {
       lessonId,
       question: parsed.data.question,
       answer: parsed.data.answer,
-      order: parsed.data.order ?? 0,
+      order: nextOrder,
     },
   })
 

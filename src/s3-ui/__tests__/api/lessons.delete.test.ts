@@ -133,6 +133,21 @@ describe('DELETE /api/lessons/[id] — happy path', () => {
   })
 })
 
+describe('DELETE /api/lessons/[id] — questions cleanup', () => {
+  it('hard-deletes all questions belonging to the lesson', async () => {
+    await prisma.question.createMany({
+      data: [
+        { lessonId: 900, question: 'Q1?', answer: 'A1.', order: 0 },
+        { lessonId: 900, question: 'Q2?', answer: 'A2.', order: 1, deletedAt: new Date() },
+      ],
+    })
+    const req = await makeAdminRequest()
+    await deleteLesson(req, { params: Promise.resolve({ id: '900' }) })
+    const remaining = await prisma.question.findMany({ where: { lessonId: 900 } })
+    expect(remaining).toHaveLength(0)
+  })
+})
+
 describe('DELETE /api/lessons/[id] — edge cases', () => {
   it('returns 404 when lesson does not exist', async () => {
     const req = await makeAdminRequest()

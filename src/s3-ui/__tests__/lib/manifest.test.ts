@@ -116,14 +116,14 @@ describe('upsertLesson', () => {
 })
 
 describe('renameLesson', () => {
-  it('updates the title of an existing lesson without bumping version', () => {
+  it('updates the title of an existing lesson and increments version so mobile clients re-sync', () => {
     const manifest: Manifest = {
       version: 3,
       updated_at: '2024-01-01T00:00:00Z',
       lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null, questions: [] }],
     }
     const result = renameLesson(manifest, 1, 'New Title')
-    expect(result.version).toBe(3)
+    expect(result.version).toBe(4)
     expect(result.lessons[0].title).toBe('New Title')
     expect(result.updated_at).not.toBe('2024-01-01T00:00:00Z')
   })

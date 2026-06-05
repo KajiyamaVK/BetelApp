@@ -1,0 +1,1 @@
+Sincronização corrigida: títulos de lições atualizados no portal agora aparecem no app imediatamente na próxima abertura.

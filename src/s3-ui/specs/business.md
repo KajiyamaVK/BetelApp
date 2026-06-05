@@ -1,7 +1,7 @@
 ---
 layer: business
 project: s3-ui
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-05
 ---
 
 ## Propósito
@@ -56,10 +56,12 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
   - **Publicar:** Reconstrói a entrada no `manifest.json` a partir dos metadados do DB. Requer que `pdfActive` exista.
   - **Despublicar:** Remove a lição inteiramente do manifest. A lição desaparece do app mobile imediatamente.
 
-- **Editar título:** Atualiza apenas o DB. ⚠️ **O `manifest.json` não é atualizado** — o título no manifest pode ficar stale até o próximo publish/upload.
+- **Editar título:** Atualiza o DB e o `manifest.json` via `renameLesson`. A version do manifest é incrementada para que o app mobile sincronize o novo título na próxima abertura.
 
-- **Soft-delete de arquivo:** Move o path `active` para `history`, seta `active: null`. O arquivo real permanece no MinIO (nunca é deletado do bucket).
-  - **Por quê:** Permite rollback e auditoria. Storage é barato; a complexidade de cleanup não se justifica.
+- **Hard-delete de arquivo:** Remove o path `active` do DB, seta `active: null`, e **deleta o arquivo real do MinIO** via `deleteObject`. Não há mais soft-delete — arquivos deletados não são recuperáveis.
+  - **Por quê:** Comportamento esperado pelo admin; soft-delete adicionava complexidade sem benefício real para este contexto.
+
+- **Delete de lição:** Remove a lição do DB, do manifest, **todas as questões associadas** (hard-delete), e todos os arquivos do MinIO via `deleteFolder`.
 
 - **Delete PDF + auto-unpublish:** Se o PDF de uma lição publicada é deletado, a lição é automaticamente despublicada (confirmação obrigatória no dialog).
 
@@ -80,8 +82,11 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 - **Formato:** `{ version: number, updated_at: string, lessons: ManifestLesson[] }`.
 - **Evolução in-place:** Nunca é regenerado do zero — sempre read-then-modify do MinIO.
 - **`version` incrementa** em: criar lição, publicar, despublicar.
-- **`version` NÃO incrementa** em: upload de arquivo, soft-delete de arquivo (apenas `updated_at` é bumped).
+- **`version` NÃO incrementa** em: upload de arquivo, delete de arquivo (apenas `updated_at` é bumped).
   - **Por quê:** O app mobile usa `version` para decidir se faz sync. Upload/delete de arquivo sem incrementar `version` significa que o mobile só pega mudanças quando a lição é (re-)publicada.
+
+- **`version` INCREMENTA** em: criar lição, publicar, despublicar, **renomear título**.
+  - **Por quê:** Sem o bump no rename, o app mobile nunca sincroniza mudanças de título (o sync é baseado apenas em `version`).
 
 ### Usuários
 
@@ -90,6 +95,13 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 - **Self-delete bloqueado:** Admin não pode deletar o próprio usuário (403).
 - **Sem edição de usuário** — não existe `PUT /api/users/[id]`. As únicas mutations são: criar, deletar, reset senha.
 - **Reset de senha:** Volta para `123456` com `mustChangePassword: true`.
+
+### Q&A (perguntas e respostas)
+
+- **Campo `order`:** Calculado no backend via `MAX(order) + 1` das questões ativas da lição. O frontend não envia `order` no POST.
+  - **Por quê:** `order: questions.length` no frontend falha quando há gaps de deleções — duas questões podem receber o mesmo `order`. O backend é a única fonte confiável.
+
+- **Delete de questão:** Soft-delete (seta `deletedAt`). O registro permanece no banco para auditoria via `QuestionAuditLog`.
 
 ### Input validation
 
@@ -107,5 +119,5 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 - **Não confiar no middleware Edge para proteção de admin** — ele usa claims stale do JWT. A proteção real é `requireAdmin()` nas API routes.
 - **Não criar endpoint de edição de `isAdmin` via API** sem redesenhar o fluxo — atualmente a única forma de revogar admin é diretamente no DB.
 - **Não gerar manifest do zero** — sempre ler o existente do MinIO e modificar. A geração from-scratch pode perder histórico de versões de arquivos.
-- **Não implementar hard-delete no MinIO** sem sistema de backup — arquivos soft-deleted podem ser necessários para rollback.
+- **Não implementar soft-delete de arquivo** — o projeto usa hard-delete. Arquivos deletados não são recuperáveis; essa é a decisão tomada conscientemente.
 - **Não aceitar tipos de áudio além de MP3** sem atualizar o content type no upload e o client mobile.
