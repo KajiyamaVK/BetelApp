@@ -71,9 +71,10 @@ Governa decisões de infraestrutura do s3-ui — Dockerfile, build stages, Docke
   |---------|------|--------|-----------|
   | `.env.example` | template | template | Sim |
   | `.env.development` | `betelapp_dev` | `betelapp-content-dev` | Sim |
-  | `.env.local` | = dev | = dev | Não |
   | `.env.test` | `betelapp_test` | `betelapp-content-dev` | Sim |
   | `.env.production` | `betelapp` | `betelapp-content` | Não (host-managed) |
+
+  - **`.env.local` não existe e não deve ser criado.** O ambiente dev usa exclusivamente `.env.development`. O Next.js prioriza `.env.local` sobre `.env.development`, o que causava divergências silenciosas entre seed e runtime (senhas diferentes no banco vs. no servidor).
 
 ### Testes (infra)
 
@@ -86,6 +87,7 @@ Governa decisões de infraestrutura do s3-ui — Dockerfile, build stages, Docke
 - **Não usar `migrate deploy`** em vez de `db push` sem antes estabilizar o schema e criar migrations formais.
 - **Não remover o placeholder `DATABASE_URL` do Dockerfile** — `prisma generate` falha sem uma connection string sintacticamente válida.
 - **Não commitar `.env.production`** — segredos de produção são gerenciados no host, nunca no repo.
+- **Não criar `.env.local`** — o Next.js o prioriza sobre `.env.development`, quebrando a paridade seed/runtime. Toda configuração dev vai em `.env.development`.
 - **Não expor o container diretamente** sem reverse proxy — a porta 3001 é interna ao homelab.
 - **Não rodar `migrator` automaticamente em prod** sem validação — o profile gate existe por segurança.
 - **Não alterar a porta do container (3000)** sem atualizar `docker-compose.yml`, `docker-compose.prod.yml`, e o reverse proxy.
