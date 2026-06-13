@@ -13,6 +13,7 @@ class BetelHeader extends StatefulWidget {
 class _BetelHeaderState extends State<BetelHeader> {
   bool _updateAvailable = false;
   String _version = '';
+  bool _isSideloaded = false;
 
   @override
   void initState() {
@@ -23,7 +24,12 @@ class _BetelHeaderState extends State<BetelHeader> {
 
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
-    if (mounted) setState(() => _version = info.version);
+    if (mounted) {
+      setState(() {
+        _version = info.version;
+        _isSideloaded = info.installerStore != 'com.android.vending';
+      });
+    }
   }
 
   Future<void> _checkForUpdate() async {
@@ -68,13 +74,36 @@ class _BetelHeaderState extends State<BetelHeader> {
                     Positioned(
                       right: 0,
                       bottom: 0,
-                      child: Text(
-                        _version,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: Color(0xFFAAAAAA),
-                          fontWeight: FontWeight.w400,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_isSideloaded)
+                            Container(
+                              margin: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF6B00),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: const Text(
+                                'DEV',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          Text(
+                            _version,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFFAAAAAA),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
