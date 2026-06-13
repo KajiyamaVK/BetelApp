@@ -1,7 +1,7 @@
 ---
 layer: ui
 project: mobile
-last_reviewed: 2026-06-03
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -58,6 +58,28 @@ Governa decisões de interface do usuário no app mobile — navegação, compon
   - `showShuffle: true/false` — shuffle só aparece na tela de músicas, não no detalhe da lição.
   - `showPrevNext: true/false` — prev/next buttons só na tela de músicas.
   - Subwidgets privados: `_CircleButton`, `_RepeatButton`, `_ToggleButton`.
+
+- **`BetelDialog`** — dialog overlay centralizado, reutilizável em qualquer tela do app. Suporta paginação horizontal (swipe) e dois modos visuais. Arquivo: `lib/presentation/widgets/betel_dialog.dart`.
+  - **Props:**
+    - `pages: List<Widget>` — conteúdo de cada página. Se 1 item, sem paginação.
+    - `showBackButton: bool` (default `false`) — botão ‹ no canto superior esquerdo.
+    - `showCloseButton: bool` (default `true`) — botão ✕ no canto superior direito.
+    - `showPagination: bool?` (default `null` = auto) — dots de paginação. Auto = visível quando `pages.length > 1`.
+    - `isVideoOnly: bool` (default `false`) — sem container branco, overlay escuro direto.
+    - `barrierDismissible: bool` (default `true`) — fecha ao tocar fora.
+  - **Modos visuais:**
+    - `isVideoOnly: false` → container branco, border-radius 20px, fundo `Colors.white`.
+    - `isVideoOnly: true` → sem container (transparente), para exibir vídeo diretamente.
+  - **Paginação:** `PageView` horizontal, dots animados (`AnimatedContainer`). Dot ativo = `AppTheme.primaryColor` com largura 20px (pill). Dot inativo = grey 40%, 8x8px (círculo).
+  - **Bottom padding:** 36px quando paginação não é exibida.
+  - **Uso:** `BetelDialog.show(context, pages: [...])` — helper estático que chama `showDialog` com barrier escuro (60% alpha).
+  - Subwidgets privados: `_TopBar`, `_CircleIconButton`, `_PaginationDots`, `_DotIndicator`, `_VideoContentPage`, `_TextContentPage`.
+  - **Por quê:** O app não tinha dialog reutilizável — os usos anteriores eram `AlertDialog` cru. Este componente padroniza avisos, listas de ações, vídeos e onboarding multi-página.
+  - **`showContent(context, Content content)`** — convenience method que recebe um `Content` e monta o dialog automaticamente:
+    - **VIDEO:** `_VideoContentPage` com `youtube_player_flutter` (v10, API iframe). Extrai `videoId` da URL, `YoutubePlayerController.fromVideoId()`.
+    - **TEXT:** `_TextContentPage` com `flutter_widget_from_html_core` (`HtmlWidget`). ScrollView com padding, renderiza HTML do Tiptap como widgets nativos.
+    - Se conteúdo não tem dados renderizáveis, `showContent` retorna silenciosamente.
+  - **Uso pelo dev:** buscar conteúdo via `contentRepository.loadContentBySlug('slug')`, depois `BetelDialog.showContent(context, content)`. O **onde** cada conteúdo aparece é hardcoded pelo dev.
 
 ### Padrões de widget
 

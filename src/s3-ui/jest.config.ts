@@ -23,9 +23,8 @@ const createConfig = async () => {
   return {
     ...nextConfig,
     transformIgnorePatterns: [
-      // Allow the SWC transform to process jose (ESM-only) and any other
-      // ESM packages we add in the future.
-      '/node_modules/(?!(jose)/)',
+      // Allow the SWC transform to process ESM-only packages (jose, @tiptap).
+      '/node_modules/(?!(jose|@tiptap)/)',
       '^.+\\.module\\.(css|sass|scss)$',
     ],
   }

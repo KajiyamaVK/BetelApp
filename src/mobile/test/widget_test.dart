@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:betelapp/main.dart';
 import 'presentation/providers/audio_provider_test.mocks.dart';
@@ -60,6 +62,19 @@ class _FakeSyncService extends ContentSyncService {
 // ---------------------------------------------------------------------------
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
+  setUp(() {
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
+  });
+
+  tearDown(() async {
+    DatabaseHelper.resetForTesting();
+  });
+
   testWidgets('App starts and displays SplashScreen', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(

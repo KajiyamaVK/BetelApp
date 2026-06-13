@@ -1,0 +1,1 @@
+Novo atalho de desenvolvedor: mantenha pressionado o botão Revisões por 10 segundos para avançar a fila de revisões em 1 dia.

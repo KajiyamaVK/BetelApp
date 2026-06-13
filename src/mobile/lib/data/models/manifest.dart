@@ -69,12 +69,52 @@ class ManifestLesson {
       );
 }
 
+class ManifestContent {
+  final int id;
+  final String slug;
+  final String title;
+  final String type;
+  final String? youtubeUrl;
+  final String? html;
+  // Multi-page TEXT content: each element is one page's HTML.
+  // Null for single-page TEXT (uses html) and VIDEO content.
+  final List<String>? pages;
+
+  ManifestContent({
+    required this.id,
+    required this.slug,
+    required this.title,
+    required this.type,
+    this.youtubeUrl,
+    this.html,
+    this.pages,
+  });
+
+  factory ManifestContent.fromJson(Map<String, dynamic> json) => ManifestContent(
+        id: json['id'] as int,
+        slug: json['slug'] as String,
+        title: json['title'] as String,
+        type: json['type'] as String,
+        youtubeUrl: json['youtubeUrl'] as String?,
+        html: json['html'] as String?,
+        pages: json['pages'] != null
+            ? List<String>.from(json['pages'] as List)
+            : null,
+      );
+}
+
 class ContentManifest {
   final int version;
   final String updatedAt;
   final List<ManifestLesson> lessons;
+  final List<ManifestContent> contents;
 
-  ContentManifest({required this.version, required this.updatedAt, required this.lessons});
+  ContentManifest({
+    required this.version,
+    required this.updatedAt,
+    required this.lessons,
+    this.contents = const [],
+  });
 
   factory ContentManifest.fromJson(Map<String, dynamic> json) => ContentManifest(
         version: json['version'] as int,
@@ -82,5 +122,11 @@ class ContentManifest {
         lessons: (json['lessons'] as List)
             .map((l) => ManifestLesson.fromJson(l as Map<String, dynamic>))
             .toList(),
+        // Backward compat: manifests without contents field default to empty list
+        contents: json['contents'] != null
+            ? (json['contents'] as List)
+                .map((c) => ManifestContent.fromJson(c as Map<String, dynamic>))
+                .toList()
+            : const [],
       );
 }

@@ -31,7 +31,7 @@ class DatabaseHelper {
     }
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -41,6 +41,7 @@ class DatabaseHelper {
     await _createOriginalTables(db);
     await _createSyncTables(db);
     await _createReviewTables(db);
+    await _createContentTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -51,6 +52,12 @@ class DatabaseHelper {
       await _createReviewTables(db);
       // Add question_count to lessons table if upgrading from v2
       await db.execute('ALTER TABLE lessons ADD COLUMN question_count INTEGER NOT NULL DEFAULT 0');
+    }
+    if (oldVersion < 4) {
+      await _createContentTables(db);
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE contents ADD COLUMN pages_html TEXT');
     }
   }
 
@@ -90,6 +97,21 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS review_active (
         lesson_id INTEGER PRIMARY KEY,
         active    INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+  }
+
+  Future<void> _createContentTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS contents (
+        id          INTEGER PRIMARY KEY,
+        slug        TEXT NOT NULL UNIQUE,
+        title       TEXT NOT NULL,
+        type        TEXT NOT NULL,
+        youtube_url TEXT,
+        html        TEXT,
+        pages_html  TEXT,
+        synced_at   INTEGER NOT NULL
       )
     ''');
   }

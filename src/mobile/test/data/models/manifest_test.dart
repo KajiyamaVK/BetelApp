@@ -99,4 +99,121 @@ void main() {
     final manifest = ContentManifest.fromJson(json3);
     expect(manifest.lessons.first.questions, isEmpty);
   });
+
+  group('ManifestContent', () {
+    test('parses VIDEO content from JSON', () {
+      final contentJson = {
+        'id': 1,
+        'slug': 'welcome-video',
+        'title': 'Bem-vindo',
+        'type': 'VIDEO',
+        'youtubeUrl': 'https://youtube.com/watch?v=abc',
+      };
+      final content = ManifestContent.fromJson(contentJson);
+      expect(content.id, 1);
+      expect(content.slug, 'welcome-video');
+      expect(content.title, 'Bem-vindo');
+      expect(content.type, 'VIDEO');
+      expect(content.youtubeUrl, 'https://youtube.com/watch?v=abc');
+      expect(content.html, isNull);
+    });
+
+    test('parses TEXT content from JSON', () {
+      final contentJson = {
+        'id': 2,
+        'slug': 'about-course',
+        'title': 'Sobre o curso',
+        'type': 'TEXT',
+        'html': '<p>Bem-vindo ao curso!</p>',
+      };
+      final content = ManifestContent.fromJson(contentJson);
+      expect(content.id, 2);
+      expect(content.slug, 'about-course');
+      expect(content.type, 'TEXT');
+      expect(content.html, '<p>Bem-vindo ao curso!</p>');
+      expect(content.youtubeUrl, isNull);
+    });
+
+    test('parses multi-page TEXT content with pages array', () {
+      final contentJson = {
+        'id': 3,
+        'slug': 'multi-page',
+        'title': 'Tutorial',
+        'type': 'TEXT',
+        'pages': ['<p>Page 1</p>', '<p>Page 2</p>', '<p>Page 3</p>'],
+      };
+      final content = ManifestContent.fromJson(contentJson);
+      expect(content.id, 3);
+      expect(content.type, 'TEXT');
+      expect(content.pages, isNotNull);
+      expect(content.pages!.length, 3);
+      expect(content.pages![0], '<p>Page 1</p>');
+      expect(content.pages![2], '<p>Page 3</p>');
+      expect(content.html, isNull);
+    });
+
+    test('pages is null for single-page TEXT content (backward compat)', () {
+      final contentJson = {
+        'id': 4,
+        'slug': 'single',
+        'title': 'Single',
+        'type': 'TEXT',
+        'html': '<p>Only page</p>',
+      };
+      final content = ManifestContent.fromJson(contentJson);
+      expect(content.pages, isNull);
+      expect(content.html, '<p>Only page</p>');
+    });
+
+    test('pages is null for VIDEO content', () {
+      final contentJson = {
+        'id': 5,
+        'slug': 'video',
+        'title': 'Video',
+        'type': 'VIDEO',
+        'youtubeUrl': 'https://youtube.com/watch?v=abc',
+      };
+      final content = ManifestContent.fromJson(contentJson);
+      expect(content.pages, isNull);
+    });
+  });
+
+  group('ContentManifest with contents', () {
+    test('parses manifest with contents array', () {
+      final manifestJson = json.decode('''
+      {
+        "version": 2,
+        "updated_at": "2026-06-13T12:00:00Z",
+        "lessons": [],
+        "contents": [
+          {"id": 1, "slug": "test-video", "title": "Video", "type": "VIDEO", "youtubeUrl": "https://youtube.com/watch?v=x"},
+          {"id": 2, "slug": "test-text", "title": "Text", "type": "TEXT", "html": "<p>Hello</p>"}
+        ]
+      }
+      ''');
+      final manifest = ContentManifest.fromJson(manifestJson);
+      expect(manifest.contents.length, 2);
+      expect(manifest.contents[0].type, 'VIDEO');
+      expect(manifest.contents[1].type, 'TEXT');
+    });
+
+    test('defaults to empty list when contents field is absent (backward compat)', () {
+      // _sampleJson has no contents field — should default to []
+      final manifest = ContentManifest.fromJson(json.decode(_sampleJson));
+      expect(manifest.contents, isEmpty);
+    });
+
+    test('handles empty contents array', () {
+      final manifestJson = json.decode('''
+      {
+        "version": 1,
+        "updated_at": "2026-06-13T12:00:00Z",
+        "lessons": [],
+        "contents": []
+      }
+      ''');
+      final manifest = ContentManifest.fromJson(manifestJson);
+      expect(manifest.contents, isEmpty);
+    });
+  });
 }

@@ -1,7 +1,7 @@
 ---
 layer: business
 project: mobile
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -113,6 +113,22 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
   - O sync **não altera `review_active`** — a escolha do usuário é preservada entre re-syncs
 
 - **Invariante de reset:** `resetAllProgress()` zera buckets e seta `next_review_at = now` para todos os cards, mas **não altera os toggles** — lições ativas continuam ativas.
+
+### Conteúdos dinâmicos (headless CMS)
+
+- **Padrão headless CMS:** O portal cria conteúdos (VIDEO ou TEXT). O mobile os sincroniza e o dev hardcoda onde cada conteúdo aparece por slug.
+  - **O admin no portal decide** o que o conteúdo diz.
+  - **O dev no código decide** onde o conteúdo aparece — hardcoded por slug (ex: `contentRepository.loadContentBySlug('welcome-video')`).
+
+- **Tipos de conteúdo:**
+  - **VIDEO:** URL do YouTube, renderizado via `youtube_player_flutter` embutido no `BetelDialog`.
+  - **TEXT:** HTML gerado pelo editor Tiptap no portal, renderizado nativamente via `flutter_widget_from_html_core` no `BetelDialog`.
+
+- **Publish/unpublish:** Não há campo `published` no mobile. A presença do conteúdo no array `contents[]` do `manifest.json` significa publicado; a ausência significa despublicado. O sync reflete isso automaticamente — conteúdos removidos do manifest são deletados do SQLite local.
+
+- **Slug:** Identificador estável e único. Gerado automaticamente no portal a partir do título (lowercase, espaços→dashes, sem acentos). O dev usa o slug para referenciar conteúdo no código Flutter.
+
+- **Sem download de arquivo:** Conteúdo VIDEO é apenas um `youtubeUrl`; conteúdo TEXT tem HTML inline no manifest. Nenhum binário é baixado para o filesystem local.
 
 ### Lesson Progress (esqueleto)
 

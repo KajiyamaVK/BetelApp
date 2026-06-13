@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../providers/audio_provider_test.mocks.dart';
 
@@ -86,6 +88,23 @@ Widget _buildApp({
 // ---------------------------------------------------------------------------
 
 void main() {
+  // sqflite needs FFI on desktop — _FakeSyncService's super constructor
+  // instantiates DatabaseHelper() which may trigger a DB open later.
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
+  // Use in-memory DB so MainScaffold's HomeViewModel.loadLessons
+  // doesn't create a stale on-disk file or fail after widget dispose.
+  setUp(() {
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
+  });
+
+  tearDown(() async {
+    DatabaseHelper.resetForTesting();
+  });
+
   testWidgets('SplashScreen displays splash image', (tester) async {
     await tester.pumpWidget(_buildApp());
     await tester.pump();

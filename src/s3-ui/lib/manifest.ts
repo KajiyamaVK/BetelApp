@@ -12,15 +12,48 @@ export interface ManifestLesson {
   questions: ManifestQuestion[]
 }
 
+export interface ManifestContentVideo {
+  id: number
+  slug: string
+  title: string
+  type: 'VIDEO'
+  youtubeUrl: string
+}
+
+export interface ManifestContentText {
+  id: number
+  slug: string
+  title: string
+  type: 'TEXT'
+  html: string
+}
+
+// Multi-page TEXT content: pages array replaces the single html field.
+// The mobile app renders each element as a separate swipeable page in BetelDialog.
+export interface ManifestContentMultiText {
+  id: number
+  slug: string
+  title: string
+  type: 'TEXT'
+  pages: string[]
+}
+
+export type ManifestContent = ManifestContentVideo | ManifestContentText | ManifestContentMultiText
+
 export interface Manifest {
   version: number
   updated_at: string
   lessons: ManifestLesson[]
+  contents: ManifestContent[]
 }
 
-/** Parses a JSON string into a Manifest; throws SyntaxError on malformed input */
+/** Parses a JSON string into a Manifest; throws SyntaxError on malformed input.
+ *  Normalizes the contents field to [] for backward compat with old manifests
+ *  that predate the contents feature.
+ */
 export function parseManifest(json: string): Manifest {
-  return JSON.parse(json) as Manifest
+  const raw = JSON.parse(json) as Partial<Manifest> & Pick<Manifest, 'version' | 'updated_at' | 'lessons'>
+  return { ...raw, contents: raw.contents ?? [] }
 }
 
 /**
@@ -132,4 +165,27 @@ export function applyUpload(
   entry.checksum = checksum
 
   return { ...manifest, updated_at: new Date().toISOString() }
+}
+
+/** Adds or replaces a content entry in the manifest and increments version. */
+export function upsertContent(manifest: Manifest, content: ManifestContent): Manifest {
+  const exists = manifest.contents.some((existing) => existing.id === content.id)
+  return {
+    ...manifest,
+    version: manifest.version + 1,
+    updated_at: new Date().toISOString(),
+    contents: exists
+      ? manifest.contents.map((existing) => (existing.id === content.id ? content : existing))
+      : [...manifest.contents, content],
+  }
+}
+
+/** Removes a content entry from the manifest by id and increments version. */
+export function removeContent(manifest: Manifest, contentId: number): Manifest {
+  return {
+    ...manifest,
+    version: manifest.version + 1,
+    updated_at: new Date().toISOString(),
+    contents: manifest.contents.filter((content) => content.id !== contentId),
+  }
 }

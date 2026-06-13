@@ -62,3 +62,28 @@ model QuestionAuditLog {
   deletedBy  String
   deletedAt  DateTime @default(now())
 }
+
+// Dynamic content managed via the portal and consumed by the mobile app's BetelDialog.
+// type is a plain String ('TEXT' or 'VIDEO') rather than an enum for extensibility.
+// slug is auto-generated from title (lowercase, spaces→dashes, accents stripped).
+// Multi-page TEXT: parent row is metadata-only (title, slug, published);
+// child rows hold per-page HTML via parentId + pageIndex.
+model Content {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  type        String   // 'TEXT' or 'VIDEO'
+  youtubeUrl  String?
+  htmlPath    String?  // MinIO path: contents/{id}/content.html
+  published   Boolean  @default(false)
+  order       Int      @default(0)
+  parentId    Int?
+  pageIndex   Int?     // 0-based page position within a multi-page group
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Content?  @relation("ContentPages", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Content[] @relation("ContentPages")
+
+  @@index([parentId])
+}

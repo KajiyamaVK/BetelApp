@@ -1,4 +1,4 @@
-import { loginSchema, createUserSchema, uploadQuerySchema, updateTitleSchema, updateLessonSchema } from '@/lib/schemas'
+import { loginSchema, createUserSchema, uploadQuerySchema, updateTitleSchema, updateLessonSchema, createContentSchema, updateContentSchema, slugify } from '@/lib/schemas'
 
 describe('loginSchema', () => {
   it('accepts valid credentials', () => {
@@ -68,5 +68,93 @@ describe('updateLessonSchema', () => {
   })
   it('rejects empty object (at least one field required)', () => {
     expect(updateLessonSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('createContentSchema', () => {
+  it('accepts valid VIDEO content', () => {
+    const result = createContentSchema.safeParse({
+      slug: 'welcome-video', title: 'Bem-vindo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=abc',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts valid TEXT content', () => {
+    const result = createContentSchema.safeParse({
+      slug: 'about-catechism', title: 'Sobre', type: 'TEXT',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects VIDEO without youtubeUrl', () => {
+    const result = createContentSchema.safeParse({
+      title: 'Test', type: 'VIDEO',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty title', () => {
+    const result = createContentSchema.safeParse({
+      title: '', type: 'TEXT',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid type', () => {
+    const result = createContentSchema.safeParse({
+      title: 'Test', type: 'IMAGE',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts optional order field', () => {
+    const result = createContentSchema.safeParse({
+      title: 'Test', type: 'TEXT', order: 5,
+    })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('updateContentSchema', () => {
+  it('accepts title only', () => {
+    expect(updateContentSchema.safeParse({ title: 'Updated' }).success).toBe(true)
+  })
+
+  it('accepts youtubeUrl only', () => {
+    expect(updateContentSchema.safeParse({ youtubeUrl: 'https://youtube.com/watch?v=xyz' }).success).toBe(true)
+  })
+
+  it('accepts order only', () => {
+    expect(updateContentSchema.safeParse({ order: 3 }).success).toBe(true)
+  })
+
+  it('rejects empty object', () => {
+    expect(updateContentSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('slugify', () => {
+  it('converts title to lowercase with dashes', () => {
+    expect(slugify('Bem Vindo ao Curso')).toBe('bem-vindo-ao-curso')
+  })
+
+  it('strips accents', () => {
+    expect(slugify('Lição de Português')).toBe('licao-de-portugues')
+  })
+
+  it('removes special characters', () => {
+    expect(slugify('Hello, World! (2024)')).toBe('hello-world-2024')
+  })
+
+  it('collapses consecutive dashes', () => {
+    expect(slugify('foo - - bar')).toBe('foo-bar')
+  })
+
+  it('trims leading and trailing dashes', () => {
+    expect(slugify('  -hello- ')).toBe('hello')
+  })
+
+  it('returns empty string for non-alphanumeric input', () => {
+    expect(slugify('!@#$%')).toBe('')
   })
 })

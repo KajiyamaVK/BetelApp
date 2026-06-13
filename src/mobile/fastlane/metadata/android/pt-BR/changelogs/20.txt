@@ -1,0 +1,1 @@
+Banner de conectividade agora aparece imediatamente ao desligar o wifi, dados móveis ou ativar o modo avião — sem precisar aguardar uma ação do usuário.

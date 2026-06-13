@@ -1,7 +1,7 @@
 ---
 layer: ui
 project: s3-ui
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -39,6 +39,8 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 
 - **Componentes shadcn/ui em uso:** accordion, alert-dialog, badge, button, checkbox, dialog, drawer, input, label, table.
 
+- **Tiptap (WYSIWYG editor):** `@tiptap/react` + `@tiptap/starter-kit` + `@tiptap/extension-image`. Usado no editor de conteúdo texto. Configurado em `jest.config.ts` via `transformIgnorePatterns` (ESM-only).
+
 ### Layout
 
 - **Desktop (≥768px):** Sidebar fixa + conteúdo à direita.
@@ -61,6 +63,7 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 | `/login` | `(auth)/login/page.tsx` | Pública | Login com username/password |
 | `/change-password` | `(auth)/change-password/page.tsx` | JWT | Troca obrigatória de senha |
 | `/lessons` | `(dashboard)/lessons/page.tsx` | JWT | Lista, upload, publish, preview de lições |
+| `/contents` | `(dashboard)/contents/page.tsx` | JWT | Criação e edição de conteúdos (headless CMS) |
 | `/users` | `(dashboard)/users/page.tsx` | Admin | Gerenciamento de usuários |
 
 ### Componentes de lições
@@ -78,6 +81,23 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 - **`CreateUserForm`** — formulário de criação de usuário (username + isAdmin toggle).
 - **`UserTable`** — tabela com ações (delete, reset password). Botão delete escondido para o usuário atual.
 
+### Componentes de conteúdos
+
+- **`ContentList`** — container da lista de conteúdos, mapeia `contents[]` → `ContentCard`.
+- **`ContentCard`** — card para cada conteúdo. Mostra título, badge de tipo (VIDEO/TEXT com ícone), slug, botões de editar/publicar/deletar. Publish desabilitado se VIDEO sem `youtubeUrl` ou TEXT sem `htmlPath`. AlertDialogs de confirmação inline no card (mesmo padrão de `LessonRow`).
+- **`ContentForm`** — formulário de criação/edição. Dois modos por tipo:
+  - **VIDEO:** inputs de título + slug + URL do YouTube. Preview via iframe responsivo (16:9) quando URL válida.
+  - **TEXT:** inputs de título + slug + editor `TiptapEditor` com galeria de imagens.
+  - Em edição de TEXT, o HTML existente é carregado do MinIO via URL pública.
+  - Slug é auto-sanitizado no `onChange` (lowercase + strip invalid chars).
+  - Full-screen form: substitui a lista (sem rota separada `/contents/new`).
+- **`TiptapEditor`** — editor WYSIWYG baseado em Tiptap. Toolbar: Bold, Italic, H2, H3, Image. Imagens ocupam 100% width com height proporcional. Sync bidirecional via `useEffect`.
+- **`ImageGallery`** — dialog com grid de imagens do MinIO. Upload + seleção. Click na imagem insere no editor.
+
+### Componentes de navegação
+
+- **Sidebar / MobileDrawer:** Item "Conteúdos" (ícone `FileText`) entre "Lições" e "Usuários". Sem gating de admin — mesma visibilidade que Lições.
+
 ### Padrões de interação
 
 - **Inline editing:** Double-click no título da lição **ou clique no botão lápis** ativa input inline. Enter salva, Escape cancela.
@@ -85,6 +105,8 @@ Governa decisões de interface do s3-ui — componentes, layouts, padrões visua
 - **Delete+unpublish warning:** Ao deletar PDF de uma lição publicada, dialog de confirmação avisa que a lição será despublicada também.
 - **Confirmações destructivas:** Todas as ações de exclusão (arquivo, usuário, Q&A) usam `AlertDialog` do shadcn com texto explícito do impacto.
 - **Q&A inline editing:** Cards de Q&A em `LessonRow` mostram pergunta e resposta. Clicar no ícone de edição substitui o card por inputs inline. Salvar chama PATCH; cancelar restaura o card. Deletar abre AlertDialog mostrando o texto da pergunta.
+- **Conteúdo — type picker:** Ao criar novo conteúdo, AlertDialog com 2 botões ícone (🎬 Vídeo, 📝 Texto). Seleção abre `ContentForm` em full-screen.
+- **Conteúdo — publish guard:** Publicar desabilitado se VIDEO sem `youtubeUrl` ou TEXT sem `htmlPath`. Mesma UX tristate do `LessonRow` (gray disabled → gray unpublished → green published).
 
 ## O que NÃO fazer
 

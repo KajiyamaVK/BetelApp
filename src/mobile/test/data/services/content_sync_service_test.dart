@@ -13,12 +13,13 @@ import 'content_sync_service_test.mocks.dart';
 
 Future<Database> _openFullSchema() => openDatabase(
       inMemoryDatabasePath,
-      version: 3,
+      version: 5,
       onCreate: (db, _) async {
         await db.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
         await db.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
         await db.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
         await db.execute('CREATE TABLE review_active (lesson_id INTEGER PRIMARY KEY, active INTEGER NOT NULL DEFAULT 1)');
+        await db.execute('CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, pages_html TEXT, synced_at INTEGER NOT NULL)');
       },
     );
 
@@ -155,6 +156,7 @@ void main() {
             synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await db.execute('CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, synced_at INTEGER NOT NULL)');
         // Lesson 1 exists locally but is no longer in the manifest
         await db.insert('lessons', {
           'id': 1, 'title': 'Lesson 1',
@@ -207,6 +209,7 @@ void main() {
             synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0
           )
         ''');
+        await db.execute('CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, synced_at INTEGER NOT NULL)');
         await db.insert('lessons', {
           'id': 1, 'title': 'Lesson 1',
           'pdf_local_path': 'betelapp/lessons/1/lesson.pdf', 'pdf_checksum': 'aaa',
@@ -496,5 +499,114 @@ void main() {
     expect(rows.length, 1,
         reason: 'Q&A added to existing lesson must appear in card_progress even when file checksums unchanged');
     expect(rows.first['question_id'], 4);
+  });
+
+  test('sync inserts contents from manifest into local db', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    final manifest = ContentManifest(
+      version: 5,
+      updatedAt: '2026-06-13T00:00:00Z',
+      lessons: [],
+      contents: [
+        ManifestContent(id: 1, slug: 'welcome', title: 'Bem-vindo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=abc'),
+        ManifestContent(id: 2, slug: 'about', title: 'Sobre', type: 'TEXT', html: '<p>Hello</p>'),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      openedDb = db;
+      return db!;
+    });
+
+    final result = await service.sync(getDocsDir: () async => '/tmp');
+    expect(result, SyncResult.updated);
+
+    final database = await mockDb.database;
+    final rows = await database.query('contents', orderBy: 'id ASC');
+    expect(rows.length, 2);
+    expect(rows[0]['slug'], 'welcome');
+    expect(rows[0]['type'], 'VIDEO');
+    expect(rows[0]['youtube_url'], 'https://youtube.com/watch?v=abc');
+    expect(rows[1]['slug'], 'about');
+    expect(rows[1]['type'], 'TEXT');
+    expect(rows[1]['html'], '<p>Hello</p>');
+  });
+
+  test('sync removes contents no longer in manifest', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    // Manifest no longer has content id=1
+    final manifest = ContentManifest(
+      version: 6,
+      updatedAt: '2026-06-13T00:00:00Z',
+      lessons: [],
+      contents: [
+        ManifestContent(id: 2, slug: 'about', title: 'Sobre', type: 'TEXT', html: '<p>Hello</p>'),
+      ],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      await db!.insert('sync_meta', {'id': 1, 'manifest_version': 5, 'last_sync_at': 0});
+      // Content id=1 exists locally but was unpublished from the manifest
+      await db!.insert('contents', {
+        'id': 1, 'slug': 'welcome', 'title': 'Bem-vindo', 'type': 'VIDEO',
+        'youtube_url': 'https://youtube.com/watch?v=abc', 'synced_at': 0,
+      });
+      await db!.insert('contents', {
+        'id': 2, 'slug': 'about', 'title': 'Sobre', 'type': 'TEXT',
+        'html': '<p>Hello</p>', 'synced_at': 0,
+      });
+      openedDb = db;
+      return db!;
+    });
+
+    await service.sync(getDocsDir: () async => '/tmp');
+
+    final database = await mockDb.database;
+    final rows = await database.query('contents');
+    expect(rows.length, 1);
+    expect(rows.first['id'], 2);
+  });
+
+  test('sync handles manifest with no contents field (backward compat)', () async {
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+
+    // Old manifest without contents field — ContentManifest defaults to empty list
+    final manifest = ContentManifest(
+      version: 2,
+      updatedAt: '2026-05-27T00:00:00Z',
+      lessons: [],
+    );
+
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => manifest);
+
+    Database? db;
+    when(mockDb.database).thenAnswer((_) async {
+      if (db != null) return db!;
+      db = await _openFullSchema();
+      openedDb = db;
+      return db!;
+    });
+
+    final result = await service.sync(getDocsDir: () async => '/tmp');
+    expect(result, SyncResult.updated);
+
+    final database = await mockDb.database;
+    final rows = await database.query('contents');
+    expect(rows, isEmpty);
   });
 }

@@ -1,7 +1,7 @@
 ---
 layer: data
 project: s3-ui
-last_reviewed: 2026-06-03
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -70,7 +70,21 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 | `deletedBy` | `String` | Username de quem deletou |
 | `deletedAt` | `DateTime` | default `now()` |
 
-- **Sem relações** entre User e Lesson — modelos independentes.
+**Content:**
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `id` | `Int` | PK, autoincrement |
+| `slug` | `String` | `@unique` — identificador para uso no código mobile |
+| `title` | `String` | Título do conteúdo |
+| `type` | `String` | `'TEXT'` ou `'VIDEO'` — String para extensibilidade |
+| `youtubeUrl` | `String?` | URL do YouTube (apenas VIDEO) |
+| `htmlPath` | `String?` | Path no MinIO: `contents/{id}/content.html` |
+| `published` | `Boolean` | default `false` |
+| `order` | `Int` | default `0` — ordenação na listagem |
+| `createdAt` | `DateTime` | default `now()` |
+| `updatedAt` | `DateTime` | `@updatedAt` |
+
+- **Sem relações** entre User, Lesson e Content — modelos independentes.
 - **Lesson.id manual** — o ID é fornecido pelo admin na criação, não é autoincrement.
   - **Por quê:** Os IDs correspondem aos números das lições do catecismo (1-24), são semânticos e usados no path do MinIO (`lessons/{id}/`).
 
@@ -99,8 +113,12 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   |----------|--------|--------|
   | Upload | `client.putObject()` | Upload de arquivo e manifest |
   | Download como stream | `client.getObject()` | Leitura de manifest |
+  | Download como texto | `getObjectText()` | Leitura de HTML de conteúdo para inlining no manifest |
+  | List objects | `client.listObjectsV2()` | Listagem de imagens na galeria (`contents/images/`) |
+  | Delete object | `client.removeObject()` | Hard-delete de arquivos de lição e conteúdo |
+  | Delete folder | `deleteFolder()` | Remove recursivamente uma pasta MinIO (ex: `contents/{id}/`) |
 
-- **Sem operação de delete** — soft-delete apenas (null no active, path movido para history).
+- **Operações de delete:** Hard-delete via `deleteObject()` e `deleteFolder()`. Usado para lições e conteúdos.
 
 ### Manifest como artefato de dados
 
@@ -120,9 +138,16 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
           { "id": 10, "q": "Qual o fim principal...", "a": "Glorificar a Deus..." }
         ]
       }
+    ],
+    "contents": [
+      { "id": 1, "slug": "welcome-video", "title": "Bem-vindo", "type": "VIDEO", "youtubeUrl": "https://..." },
+      { "id": 2, "slug": "about-course", "title": "Sobre o curso", "type": "TEXT", "html": "<p>Conteúdo...</p>" }
     ]
   }
   ```
+- **`contents` — tipos discriminados:**
+  - `ManifestContentVideo`: `{ id, slug, title, type: 'VIDEO', youtubeUrl }`
+  - `ManifestContentText`: `{ id, slug, title, type: 'TEXT', html }` — HTML inline (não referência a arquivo)
 
 - **Q&As no manifest:** Campo `questions` (array) presente em cada lição. Contém apenas Q&As ativas (não soft-deletadas). Chaves `"q"` e `"a"` são abreviadas para reduzir tamanho. Array vazio `[]` quando a lição não tem Q&As.
 - **Resync automático:** Mutações via CRUD de Q&As em lições publicadas disparam `resyncLessonInManifestIfPublished()` de forma best-effort (try/catch — falha no MinIO não bloqueia a resposta da API).
@@ -132,6 +157,8 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   |--------|-----------|----------------------|
   | `upsertLesson` | Adiciona ou substitui lição | Sim |
   | `removeLesson` | Remove lição do array | Sim |
+  | `upsertContent` | Adiciona ou substitui conteúdo | Sim |
+  | `removeContent` | Remove conteúdo do array | Sim |
   | `applyUpload` | Versiona path, move active para history | Não (só `updated_at`) |
   | `softDeleteFile` | Nula active, move para history | Não (só `updated_at`) |
   | `nextVersion` | Calcula próxima versão via regex no histórico | — |
@@ -153,6 +180,20 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 ### Backfill
 
 - **`scripts/backfill-manifest-to-db.ts`** — utilitário one-time que lê `manifest.json` do MinIO e popula campos de arquivo no DB onde `pdfActive IS NULL`. Idempotente (safe to re-run).
+
+### MinIO — estrutura de pastas para conteúdos
+
+```
+contents/
+  images/                 ← galeria compartilhada (não deletada com content)
+    {uuid}.jpg
+    {uuid}.png
+  {contentId}/
+    content.html          ← HTML do Tiptap
+```
+
+- Imagens em `contents/images/` são compartilhadas — delete de conteúdo deleta `contents/{id}/` mas NÃO `contents/images/`.
+- `listImageObjects(prefix)` lista objetos sob um prefixo e retorna `{name, url}[]`.
 
 ### API patterns
 
@@ -185,7 +226,7 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 
 - **Não alterar o schema Prisma sem rodar `db:setup:dev` e `db:setup:test`** — a regra em `.claude/rules/database-setup.md` é non-negotiable.
 - **Não usar `aws-sdk`** para MinIO — o projeto usa o SDK nativo `minio`.
-- **Não fazer delete real no MinIO** — o padrão é soft-delete. Arquivos antigos ficam no bucket para rollback.
+- **Não confundir delete de lição/conteúdo com imagens compartilhadas** — `deleteFolder('contents/{id}/')` remove o HTML do conteúdo, mas `contents/images/` é compartilhada e nunca é deletada junto.
 - **Não criar migrations Prisma formais** para mudanças incrementais durante desenvolvimento rápido — usar `db push`. Migrations formais são para quando o schema estabilizar.
 - **Não servir arquivos via proxy Next.js** — o browser acessa MinIO diretamente via `NEXT_PUBLIC_S3_BASE_URL`.
 - **Não usar raw SQL** — todas as queries via Prisma Client API.

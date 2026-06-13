@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -115,6 +116,28 @@ class ContentSyncService {
       if (removedIds.isNotEmpty) await reviewRepo.deleteCardsForQuestionIds(removedIds);
       await db.update('lessons', {'question_count': lesson.questions.length},
           where: 'id = ?', whereArgs: [lesson.id]);
+    }
+
+    // Sync contents — inline data, no file downloads needed
+    final manifestContentIds = manifest.contents.map((content) => content.id).toSet();
+    final localContents = await db.query('contents', columns: ['id']);
+    for (final row in localContents) {
+      final localId = row['id'] as int;
+      if (!manifestContentIds.contains(localId)) {
+        await db.delete('contents', where: 'id = ?', whereArgs: [localId]);
+      }
+    }
+    for (final content in manifest.contents) {
+      await db.insert('contents', {
+        'id': content.id,
+        'slug': content.slug,
+        'title': content.title,
+        'type': content.type,
+        'youtube_url': content.youtubeUrl,
+        'html': content.html,
+        'pages_html': content.pages != null ? jsonEncode(content.pages) : null,
+        'synced_at': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
     }
 
     if (lessonsToDownload.isEmpty && lessonsWithUpdatedQAs.isEmpty) {

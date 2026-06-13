@@ -49,3 +49,39 @@ export const updateQuestionSchema = z.object({
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field required' },
 )
+
+/** Generates a URL-safe slug from a title: strips accents, lowercases, replaces spaces with dashes */
+export function slugify(title: string): string {
+  return title
+    .normalize('NFD')                       // decompose accents (é → e + combining accent)
+    .replace(/[̀-ͯ]/g, '')        // strip combining diacritical marks
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')           // remove non-alphanumeric except spaces and dashes
+    .replace(/\s+/g, '-')                   // spaces → dashes
+    .replace(/-+/g, '-')                    // collapse consecutive dashes
+    .replace(/^-|-$/g, '')                  // trim leading/trailing dashes
+}
+
+export const createContentSchema = z.discriminatedUnion('type', [
+  z.object({
+    title: z.string().min(1, 'Título obrigatório'),
+    type: z.literal('VIDEO'),
+    youtubeUrl: z.string().url('URL inválida').min(1, 'URL do YouTube obrigatória'),
+    order: z.number().int().nonnegative().optional(),
+  }),
+  z.object({
+    title: z.string().min(1, 'Título obrigatório'),
+    type: z.literal('TEXT'),
+    order: z.number().int().nonnegative().optional(),
+  }),
+])
+
+export const updateContentSchema = z.object({
+  title: z.string().min(1).optional(),
+  youtubeUrl: z.string().url().optional(),
+  order: z.number().int().nonnegative().optional(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field required' },
+)

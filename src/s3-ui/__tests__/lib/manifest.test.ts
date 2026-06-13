@@ -6,7 +6,10 @@ import {
   removeLesson,
   upsertLesson,
   renameLesson,
+  upsertContent,
+  removeContent,
   type Manifest,
+  type ManifestContent,
 } from '@/lib/manifest'
 
 const baseManifest = {
@@ -152,5 +155,92 @@ describe('applyUpload', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifest))
     const result = applyUpload(manifest, 1, 'pdf', 'xyz')
     expect(result.lessons[0].pdf.active).toBe('lessons/1/lesson_v2.pdf')
+  })
+})
+
+const baseManifestWithContents: Manifest = {
+  version: 1,
+  updated_at: '2026-01-01T00:00:00Z',
+  lessons: [],
+  contents: [
+    { id: 1, slug: 'welcome-video', title: 'Bem-vindo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=abc' },
+    { id: 2, slug: 'about-catechism', title: 'Sobre o Catecismo', type: 'TEXT', html: '<p>Conteúdo</p>' },
+  ],
+}
+
+describe('parseManifest — backward compat with contents', () => {
+  it('defaults contents to empty array when field is absent', () => {
+    // Simulates an old manifest.json that predates the contents feature
+    const oldManifest = { version: 5, updated_at: '2026-01-01', lessons: [] }
+    const result = parseManifest(JSON.stringify(oldManifest))
+    expect(result.contents).toEqual([])
+  })
+
+  it('preserves existing contents array when present', () => {
+    const result = parseManifest(JSON.stringify(baseManifestWithContents))
+    expect(result.contents).toHaveLength(2)
+    expect(result.contents[0].slug).toBe('welcome-video')
+  })
+})
+
+describe('upsertContent', () => {
+  it('adds a new content entry to the manifest', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const newContent: ManifestContent = {
+      id: 3, slug: 'new-content', title: 'Novo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=xyz',
+    }
+    const result = upsertContent(manifest, newContent)
+    expect(result.contents).toHaveLength(3)
+    expect(result.contents[2].slug).toBe('new-content')
+  })
+
+  it('replaces an existing content entry by id', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const updated: ManifestContent = {
+      id: 1, slug: 'welcome-video', title: 'Atualizado', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=new',
+    }
+    const result = upsertContent(manifest, updated)
+    expect(result.contents).toHaveLength(2)
+    expect(result.contents[0].title).toBe('Atualizado')
+  })
+
+  it('increments manifest version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const newContent: ManifestContent = {
+      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>',
+    }
+    const result = upsertContent(manifest, newContent)
+    expect(result.version).toBe(2)
+  })
+
+  it('updates updated_at timestamp', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const newContent: ManifestContent = {
+      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>',
+    }
+    const result = upsertContent(manifest, newContent)
+    expect(result.updated_at).not.toBe('2026-01-01T00:00:00Z')
+  })
+})
+
+describe('removeContent', () => {
+  it('removes a content entry by id', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const result = removeContent(manifest, 1)
+    expect(result.contents).toHaveLength(1)
+    expect(result.contents[0].id).toBe(2)
+  })
+
+  it('increments manifest version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const result = removeContent(manifest, 1)
+    expect(result.version).toBe(2)
+  })
+
+  it('is a no-op for unknown content id but still increments version', () => {
+    const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
+    const result = removeContent(manifest, 999)
+    expect(result.contents).toHaveLength(2)
+    expect(result.version).toBe(2)
   })
 })

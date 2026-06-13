@@ -65,6 +65,26 @@ export async function deleteFolder(prefix: string): Promise<void> {
 }
 
 /**
+ * Lists all objects under a prefix and returns their names and public URLs.
+ * Used by the image gallery in the Contents editor.
+ */
+export async function listImageObjects(prefix: string): Promise<{ name: string; url: string }[]> {
+  const client = getMinioClient()
+  const bucket = getBucket()
+  const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL ?? ''
+
+  return new Promise((resolve, reject) => {
+    const results: { name: string; url: string }[] = []
+    const stream = client.listObjectsV2(bucket, prefix, true)
+    stream.on('data', (obj) => {
+      if (obj.name) results.push({ name: obj.name, url: `${baseUrl}/${obj.name}` })
+    })
+    stream.on('end', () => resolve(results))
+    stream.on('error', reject)
+  })
+}
+
+/**
  * Downloads a MinIO object and returns its content as a UTF-8 string.
  * Used primarily for JSON manifest files.
  */

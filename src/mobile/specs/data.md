@@ -1,7 +1,7 @@
 ---
 layer: data
 project: mobile
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -42,7 +42,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - **Por quê:** SQLite suporta queries relacionais (joins favorites + lessons) e é maduro no Flutter. O app não precisa de key-value store simples.
 
 - **DatabaseHelper singleton** — factory constructor com `_instance`/`_database` estáticos.
-- **Banco:** `betel.db`, schema version 3.
+- **Banco:** `betel.db`, schema version 4.
 
 - **Tabelas:**
   | Tabela | Propósito | Colunas chave |
@@ -53,11 +53,12 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | `lesson_progress` | Progresso de lições (esqueleto, não usado) | `lesson_id`, `is_completed`, `is_locked`, `last_accessed` |
   | `card_progress` | Progresso Leitner por flashcard | `question_id` (PK), `lesson_id`, `bucket` (1-5), `last_reviewed_at`, `next_review_at`, `question_text`, `answer_text` |
   | `review_active` | Toggle de revisão por lição | `lesson_id` (PK), `active` (0/1) |
+  | `contents` | Conteúdos dinâmicos sincronizados do portal | `id` (PK), `slug` (UNIQUE), `title`, `type`, `youtube_url`, `html`, `synced_at` |
 
 ### Modelos
 
 - **Estratégia mista de serialização:**
-  - `Lesson`, `Favorite`, `ContentManifest`, `Flashcard`, `CardProgress` → hand-written `fromMap()`/`toMap()` ou `fromJson()`
+  - `Lesson`, `Content`, `Favorite`, `ContentManifest`, `Flashcard`, `CardProgress` → hand-written `fromMap()`/`toMap()` ou `fromJson()`
   - `Song` → `json_serializable` com `@JsonSerializable()` + `build_runner`
   - **Sem freezed** em nenhum lugar.
   - **Por quê:** O projeto começou hand-written e migrou parcialmente para codegen. Não há decisão explícita de padronizar.
@@ -87,6 +88,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - `updatedAt` (DateTime)
   - `lessons[]` — cada uma com `ManifestLesson` contendo `ManifestFileEntry` (pdf), `ManifestAudioEntry?` (audio), e `List<ManifestQuestion>` (questions, default `[]`)
   - `ManifestQuestion`: `id`, `question` (de `"q"`), `answer` (de `"a"`)
+  - `contents[]` — cada um com `ManifestContent` contendo `id`, `slug`, `title`, `type` ('VIDEO'/'TEXT'), `youtubeUrl?`, `html?`. Default `[]` para backward compat com manifests antigos.
 - **Lógica de detecção de mudanças por lição:**
   | Mudança detectada | Ação |
   |-------------------|------|
@@ -120,6 +122,14 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 
 - **Algoritmo Leitner:** 5 buckets. Intervalo de dias por bucket: 1→1d, 2→2d, 3→4d, 4→8d, 5→16d. Resposta correta: bucket+1 (max 5). Resposta errada: bucket=1. Novos cards entram em bucket=1 com `next_review_at = today`.
 - **Progresso local:** `card_progress` nunca é sincronizado com o backend — permanece local ao dispositivo.
+
+- **Sync de conteúdos:** Após o sync de lessons, `ContentSyncService` sincroniza `contents[]` do manifest:
+  - Remove conteúdos locais cujos IDs não estão no manifest
+  - Upsert de cada conteúdo com `ConflictAlgorithm.replace`
+  - **Sem download de arquivo** — conteúdo VIDEO tem só `youtubeUrl`; conteúdo TEXT tem HTML inline no manifest
+  - Mecanismo de publish: presença no `contents[]` = publicado, ausência = despublicado (sem campo `published`)
+
+- **ContentRepository** — `loadContents()` (todos, ordenados por id), `loadContentBySlug(slug)` (busca por slug, retorna null se não encontrado). O dev usa `loadContentBySlug` para vincular conteúdo hardcoded no app.
 
 - **Files no filesystem:** PDFs e áudios são salvos em `getApplicationDocumentsDirectory()/betelapp/lessons/{id}/lesson.pdf` e `.../audio.{ext}`.
 - **DB armazena só paths e checksums** — conteúdo binário nunca fica no SQLite.

@@ -1,7 +1,7 @@
 ---
 layer: business
 project: s3-ui
-last_reviewed: 2026-06-05
+last_reviewed: 2026-06-13
 ---
 
 ## Propósito
@@ -81,7 +81,8 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 
 ### Manifest
 
-- **Formato:** `{ version: number, updated_at: string, lessons: ManifestLesson[] }`.
+- **Formato:** `{ version: number, updated_at: string, lessons: ManifestLesson[], contents: ManifestContent[] }`.
+- **Backward compat:** Manifests existentes podem não ter `contents`. Normalizado em `parseManifest` com `contents: raw.contents ?? []`.
 - **Evolução in-place:** Nunca é regenerado do zero — sempre read-then-modify do MinIO.
 - **`version` incrementa** em: criar lição, publicar, despublicar.
 - **`version` NÃO incrementa** em: upload de arquivo, delete de arquivo (apenas `updated_at` é bumped).
@@ -105,9 +106,39 @@ Governa regras de negócio do s3-ui — fluxos de autenticação, permissões, v
 
 - **Delete de questão:** Soft-delete (seta `deletedAt`). O registro permanece no banco para auditoria via `QuestionAuditLog`.
 
+### Conteúdos — regras de negócio
+
+- **Headless CMS minimalista:** O portal cria e edita conteúdos. O dev do app mobile decide onde cada conteúdo aparece, hardcoded por slug (ex: `BetelDialog.show(context, contentSlug: 'welcome-video')`).
+
+- **Dois tipos:** `VIDEO` (YouTube URL) e `TEXT` (HTML com imagens via editor WYSIWYG).
+  - `type` não pode ser alterado após criação — delete + recreate se necessário.
+
+- **Slug:** Identificador único imutável para uso no código mobile. Regex `/^[a-z0-9-]+$/` — apenas letras minúsculas, números e hífens. Único no banco (409 se duplicado).
+
+- **Criar conteúdo:** `slug` + `title` + `type` (+ `youtubeUrl` se VIDEO). `id` é autoincrement (diferente de Lesson). Criar não toca o manifest — conteúdo precisa ser publicado separadamente.
+
+- **Editar conteúdo:** `PUT /api/contents/[id]`. Aceita `slug`, `title`, `youtubeUrl`, `order` + campo `html` (string). O `html` é enviado como JSON, mas o backend o salva como arquivo no MinIO (`contents/{id}/content.html`). Se o conteúdo está publicado, a edição sincroniza o manifest automaticamente (best-effort).
+
+- **Publicar/despublicar:**
+  - **Publicar VIDEO:** Monta `ManifestContentVideo` com `youtubeUrl` e chama `upsertContent`.
+  - **Publicar TEXT:** Lê HTML do MinIO via `getObjectText(htmlPath)`, inline no manifest como campo `html` do `ManifestContentText`, chama `upsertContent`.
+  - **Publish guard:** TEXT sem `htmlPath` → 400 (análogo a lição sem PDF). VIDEO sem `youtubeUrl` → desabilitado na UI.
+  - **Despublicar:** Chama `removeContent` — conteúdo desaparece do app mobile imediatamente.
+
+- **HTML inlined no manifest:** O HTML do conteúdo TEXT é armazenado como arquivo no MinIO para edição, mas é **inlined diretamente** no `manifest.json` ao publicar. O mobile lê um único arquivo e tem todo o conteúdo.
+  - **Por quê:** Evita requests extras no mobile. O manifest é leve o suficiente para incluir HTML inline.
+
+- **Galeria de imagens:** Imagens compartilhadas em `contents/images/` — não vinculadas a um conteúdo específico. Delete de conteúdo deleta `contents/{id}/` mas NÃO `contents/images/`.
+  - **Tipos aceitos:** JPEG, PNG, GIF, WebP. Nomes gerados com `crypto.randomUUID()`.
+  - **Sem limite de tamanho** — ⚠️ gap conhecido (mesmo que lições).
+
+- **Delete de conteúdo:** Remove do DB, do manifest (best-effort), e deleta pasta `contents/{id}/` do MinIO. Hard-delete irreversível.
+
 ### Input validation
 
-- **Zod** em todas as API routes — `loginSchema`, `createUserSchema`, `uploadQuerySchema`, `updateTitleSchema`, `togglePublishSchema`, `createLessonSchema` em `lib/schemas.ts`.
+- **Zod** em todas as API routes — `loginSchema`, `createUserSchema`, `uploadQuerySchema`, `updateTitleSchema`, `togglePublishSchema`, `createLessonSchema`, `createContentSchema`, `updateContentSchema` em `lib/schemas.ts`.
+- **`createContentSchema`** usa `z.discriminatedUnion('type', [...])` para validar VIDEO vs TEXT separadamente.
+- **`updateContentSchema`** não permite alterar `type`.
 - Erro de validação retorna 400 com a primeira mensagem do Zod.
 
 ### Error handling

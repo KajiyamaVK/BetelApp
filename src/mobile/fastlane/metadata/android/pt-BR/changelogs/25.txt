@@ -1,0 +1,1 @@
+Suporte a conteúdo com múltiplas páginas. Textos longos agora podem ser divididos em páginas com navegação por swipe e indicadores de página.

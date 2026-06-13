@@ -1,4 +1,5 @@
 import 'package:betelapp/core/database_helper.dart';
+import 'package:betelapp/data/models/content.dart';
 import 'package:betelapp/data/models/lesson.dart';
 
 class ContentRepository {
@@ -20,5 +21,22 @@ class ContentRepository {
       orderBy: 'id ASC',
     );
     return rows.map(Lesson.fromMap).toList();
+  }
+
+  Future<List<Content>> loadContents() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('contents', orderBy: 'id ASC');
+    return rows.map(Content.fromMap).toList();
+  }
+
+  Future<Content?> loadContentBySlug(String slug) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'contents',
+      where: 'slug = ?',
+      whereArgs: [slug],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : Content.fromMap(rows.first);
   }
 }

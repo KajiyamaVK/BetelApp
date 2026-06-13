@@ -3,17 +3,43 @@ import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:betelapp/data/models/lesson.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/presentation/screens/home/home_view_model.dart';
+import 'package:betelapp/presentation/widgets/betel_dialog.dart';
 import 'package:betelapp/presentation/widgets/betel_header.dart';
 import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final SyncResult? syncResult;
   const HomeScreen({super.key, this.syncResult});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _contentDialogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show content dialog once after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showContentDialogOnce());
+  }
+
+  Future<void> _showContentDialogOnce() async {
+    if (_contentDialogShown) return;
+    _contentDialogShown = true;
+
+    final repository = ref.read(contentRepositoryProvider);
+    final content = await repository.loadContentBySlug('conteudo-teste');
+    if (content != null && mounted) {
+      BetelDialog.showContent(context, content);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lessonsState = ref.watch(homeViewModelProvider);
 
     return Scaffold(
@@ -30,7 +56,7 @@ class HomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const BetelHeader(),
-                  if (syncResult == SyncResult.offlineWithData)
+                  if (widget.syncResult == SyncResult.offlineWithData)
                     Container(
                       color: Colors.orange.shade100,
                       padding: const EdgeInsets.symmetric(
@@ -71,7 +97,7 @@ class HomeScreen extends ConsumerWidget {
             lessonsState.when(
               data: (lessons) {
                 if (lessons.isEmpty &&
-                    syncResult == SyncResult.offlineFirstBoot) {
+                    widget.syncResult == SyncResult.offlineFirstBoot) {
                   return const SliverFillRemaining(
                     child: Center(
                       child: Padding(

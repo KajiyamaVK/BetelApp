@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BookOpen, Users, LogOut } from 'lucide-react'
+import { BookOpen, FileText, Users, LogOut } from 'lucide-react'
 
 interface SidebarProps {
   username: string
@@ -43,6 +43,7 @@ export function Sidebar({ username, isAdmin }: SidebarProps) {
 
       <nav className="flex flex-col gap-1 flex-1">
         {navItem('/lessons', <BookOpen size={18} />, 'Lições')}
+        {navItem('/contents', <FileText size={18} />, 'Conteúdos')}
         {isAdmin && navItem('/users', <Users size={18} />, 'Usuários')}
       </nav>
 

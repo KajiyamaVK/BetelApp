@@ -19,9 +19,9 @@ void main() {
     DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
   });
 
-  test('database version is 3', () async {
+  test('database version is 5', () async {
     final db = await DatabaseHelper().database;
-    expect(await db.getVersion(), 3);
+    expect(await db.getVersion(), 5);
   });
 
   test('lessons table exists with correct columns', () async {
@@ -40,5 +40,14 @@ void main() {
     final result = await db.rawQuery("PRAGMA table_info(sync_meta)");
     final columns = result.map((r) => r['name'] as String).toSet();
     expect(columns, containsAll(['id', 'manifest_version', 'last_sync_at']));
+  });
+
+  test('contents table exists with correct columns', () async {
+    final db = await DatabaseHelper().database;
+    final result = await db.rawQuery("PRAGMA table_info(contents)");
+    final columns = result.map((r) => r['name'] as String).toSet();
+    expect(columns, containsAll([
+      'id', 'slug', 'title', 'type', 'youtube_url', 'html', 'pages_html', 'synced_at',
+    ]));
   });
 }
