@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 
 interface ImageGalleryProps {
   open: boolean
@@ -78,27 +77,21 @@ export function ImageGallery({ open, onClose, onSelect }: ImageGalleryProps) {
         </DialogHeader>
 
         <div className="flex justify-end mb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={uploading}
-            asChild
-          >
-            <label className="cursor-pointer">
-              {uploading ? (
-                <Loader2 size={16} className="animate-spin mr-2" />
-              ) : (
-                <Upload size={16} className="mr-2" />
-              )}
-              {uploading ? 'Enviando...' : 'Upload'}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                className="hidden"
-                onChange={handleUpload}
-              />
-            </label>
-          </Button>
+          <label className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md cursor-pointer hover:bg-accent ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            {uploading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Upload size={16} />
+            )}
+            {uploading ? 'Enviando...' : 'Upload'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </label>
         </div>
 
         {loading ? (
