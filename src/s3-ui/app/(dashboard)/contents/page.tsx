@@ -7,7 +7,6 @@ import { ContentForm } from '@/components/contents/ContentForm'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,

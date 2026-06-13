@@ -50,6 +50,7 @@ export async function PUT(
     typeof body.html === 'string' && body.html.length > 0 ? body.html : undefined
 
   // Remove html from the body before schema validation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { html: _html, ...schemaBody } = body
 
   // If no schema fields AND no html, it's a bad request
