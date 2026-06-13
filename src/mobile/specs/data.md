@@ -107,7 +107,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | `getDueCards(lessonIds, today?)` | Retorna cards com `next_review_at <= today` das lições passadas; popula `questionText`/`answerText` |
   | `deleteCardsForQuestionIds(ids)` | Remove cards do `card_progress` |
   | `isReviewActive(lessonId)` | Retorna `true` se há linha em `review_active` com `active=1`; retorna `false` se linha ausente |
-  | `setReviewActive(lessonId, active)` | Upsert em `review_active` com `ConflictAlgorithm.replace` |
+  | `setReviewActive(lessonId, active)` | Upsert em `review_active` com `ConflictAlgorithm.replace`. Quando `active=true`, também reseta todos os cards da lição em `card_progress` para bucket=1, `last_reviewed_at=null`, `next_review_at=now` — mecanismo de "recomeçar do zero" via toggle |
   | `activateReviewIfNew(lessonId)` | Insert em `review_active` com `active=1` e `ConflictAlgorithm.ignore` — usado apenas onde se quer ativar sem sobrescrever escolha existente. **Não é chamado pelo sync.** |
   | `getActiveLessonIds()` | Retorna lesson_ids com `active=1` |
   | `resetAllProgress()` | Zera buckets de todos os cards; não altera `review_active` |

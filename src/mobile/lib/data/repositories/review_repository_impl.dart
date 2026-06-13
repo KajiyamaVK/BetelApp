@@ -121,6 +121,18 @@ class ReviewRepositoryImpl implements ReviewRepository {
       {'lesson_id': lessonId, 'active': active ? 1 : 0},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    // Toggling ON resets all cards for this lesson to bucket 1 / today,
+    // so the user can use off→on as a manual "start over" mechanism.
+    if (active) {
+      final now = DateTime.now().toIso8601String();
+      await db.update(
+        'card_progress',
+        {'bucket': 1, 'last_reviewed_at': null, 'next_review_at': now},
+        where: 'lesson_id = ?',
+        whereArgs: [lessonId],
+      );
+    }
   }
 
   @override

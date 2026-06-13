@@ -88,6 +88,8 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
 
 - **Ativação manual:** Na tela `LessonDetailScreen`, há um toggle que chama `ReviewRepository.setReviewActive()`.
 
+- **Reset via toggle:** Ao ativar a revisão de uma lição (`setReviewActive(active: true)`), todos os cards daquela lição são resetados para bucket=1 com `next_review_at = hoje`. Isso permite ao usuário usar desligar→ligar como mecanismo de "recomeçar do zero". Desativar (`active: false`) não altera o progresso dos cards.
+
 - **Algoritmo Leitner:**
   - 5 buckets (1-5). Intervalo de revisão por bucket:
     | Bucket | Próxima revisão |

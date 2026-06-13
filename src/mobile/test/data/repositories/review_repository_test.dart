@@ -190,6 +190,84 @@ void main() {
     });
 
     // Regression: new lessons with Q&A must default to active after first sync.
+    test('setReviewActive(true) resets card_progress for that lesson to bucket 1 and next_review_at=today', () async {
+      // Arrange: insert cards at advanced buckets with future review dates
+      final db = await DatabaseHelper().database;
+      await db.insert('card_progress', {
+        'question_id': 100,
+        'lesson_id': 5,
+        'bucket': 4,
+        'next_review_at': '2026-06-20T00:00:00.000',
+        'last_reviewed_at': '2026-06-10T00:00:00.000',
+        'question_text': 'Q1?',
+        'answer_text': 'A1.',
+      });
+      await db.insert('card_progress', {
+        'question_id': 101,
+        'lesson_id': 5,
+        'bucket': 3,
+        'next_review_at': '2026-06-15T00:00:00.000',
+        'last_reviewed_at': '2026-06-08T00:00:00.000',
+        'question_text': 'Q2?',
+        'answer_text': 'A2.',
+      });
+      // Card from a DIFFERENT lesson — must NOT be affected
+      await db.insert('card_progress', {
+        'question_id': 200,
+        'lesson_id': 99,
+        'bucket': 5,
+        'next_review_at': '2026-07-01T00:00:00.000',
+        'question_text': 'Other?',
+        'answer_text': 'Other.',
+      });
+
+      // Act: toggle review ON for lesson 5
+      await repo.setReviewActive(lessonId: 5, active: true);
+
+      // Assert: lesson 5 cards are reset
+      final lesson5Cards = await db.query('card_progress',
+          where: 'lesson_id = ?', whereArgs: [5], orderBy: 'question_id');
+      expect(lesson5Cards.length, 2);
+      for (final card in lesson5Cards) {
+        expect(card['bucket'], 1, reason: 'card ${card['question_id']} bucket should be 1');
+        final nextReview = DateTime.parse(card['next_review_at'] as String);
+        final now = DateTime.now();
+        // next_review_at should be today (within a few seconds of now)
+        expect(nextReview.year, now.year);
+        expect(nextReview.month, now.month);
+        expect(nextReview.day, now.day);
+      }
+
+      // Assert: lesson 99 card is untouched
+      final otherCards = await db.query('card_progress',
+          where: 'lesson_id = ?', whereArgs: [99]);
+      expect(otherCards.first['bucket'], 5);
+      expect(otherCards.first['next_review_at'], '2026-07-01T00:00:00.000');
+    });
+
+    test('setReviewActive(false) does NOT reset card_progress', () async {
+      // Arrange: card at bucket 4
+      final db = await DatabaseHelper().database;
+      await db.insert('card_progress', {
+        'question_id': 110,
+        'lesson_id': 6,
+        'bucket': 4,
+        'next_review_at': '2026-06-20T00:00:00.000',
+        'question_text': 'Q?',
+        'answer_text': 'A.',
+      });
+
+      // Act: toggle review OFF
+      await repo.setReviewActive(lessonId: 6, active: false);
+
+      // Assert: card is untouched
+      final rows = await db.query('card_progress',
+          where: 'question_id = ?', whereArgs: [110]);
+      expect(rows.first['bucket'], 4);
+      expect(rows.first['next_review_at'], '2026-06-20T00:00:00.000');
+    });
+
+    // Regression: new lessons with Q&A must default to active after first sync.
     test('activateReviewIfNew sets active=true when no row exists', () async {
       await repo.activateReviewIfNew(lessonId: 10);
       expect(await repo.isReviewActive(lessonId: 10), isTrue);
