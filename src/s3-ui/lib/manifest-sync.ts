@@ -1,7 +1,28 @@
 import { prisma } from '@/lib/prisma'
 import { getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, upsertLesson, ManifestLesson } from '@/lib/manifest'
+import { Manifest, parseManifest, upsertLesson, ManifestLesson } from '@/lib/manifest'
 import type { Lesson, Question } from '@prisma/client'
+
+export const MANIFEST_OBJECT = 'manifest.json'
+
+/** Reads and parses the manifest from MinIO without writing. */
+export async function readManifest(): Promise<Manifest> {
+  return parseManifest(await getObjectText(MANIFEST_OBJECT))
+}
+
+/**
+ * Reads the manifest from MinIO, applies a transform, and writes the result back.
+ * Skips the write when the transform returns the same object reference (no-op).
+ * Returns the resulting manifest.
+ */
+export async function updateManifest(transform: (manifest: Manifest) => Manifest): Promise<Manifest> {
+  const before = await readManifest()
+  const after = transform(before)
+  if (after !== before) {
+    await uploadObject(MANIFEST_OBJECT, Buffer.from(JSON.stringify(after, null, 2)), 'application/json')
+  }
+  return after
+}
 
 /**
  * Builds a ManifestLesson from a Prisma Lesson record and its active questions.
@@ -49,10 +70,6 @@ export async function resyncLessonInManifestIfPublished(lessonId: number): Promi
     orderBy: { order: 'asc' },
   })
 
-  const manifestText = await getObjectText('manifest.json')
-  const manifest = parseManifest(manifestText)
-
   const manifestLesson = buildManifestLesson(lesson, activeQuestions)
-  const updatedManifest = upsertLesson(manifest, manifestLesson)
-  await uploadObject('manifest.json', Buffer.from(JSON.stringify(updatedManifest, null, 2)), 'application/json')
+  await updateManifest((manifest) => upsertLesson(manifest, manifestLesson))
 }

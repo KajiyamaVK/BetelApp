@@ -1,8 +1,9 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { uploadObject, getObjectText, deleteObject } from '@/lib/minio'
-import { parseManifest, softDeleteFile } from '@/lib/manifest'
+import { deleteObject } from '@/lib/minio'
+import { softDeleteFile } from '@/lib/manifest'
+import { updateManifest } from '@/lib/manifest-sync'
 import { uploadQuerySchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -37,10 +38,7 @@ export async function DELETE(
     await deleteObject(activePath)
   }
 
-  const manifestText = await getObjectText('manifest.json')
-  const manifest = parseManifest(manifestText)
-  const updated = softDeleteFile(manifest, id, type)
-  await uploadObject('manifest.json', Buffer.from(JSON.stringify(updated, null, 2)), 'application/json')
+  await updateManifest((manifest) => softDeleteFile(manifest, id, type))
 
   return NextResponse.json({ ok: true })
 }

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { createUserSchema } from '@/lib/schemas'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, DEFAULT_PASSWORD } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   const authResult = await requireAdmin(req)
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
   const { username, isAdmin } = parsed.data
-  const passwordHash = await bcrypt.hash('123456', 12)
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12)
 
   try {
     const user = await prisma.user.create({

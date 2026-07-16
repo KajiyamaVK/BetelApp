@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { signToken, TOKEN_COOKIE } from '@/lib/auth'
+import { signToken, setAuthCookie } from '@/lib/auth'
 import { loginSchema } from '@/lib/schemas'
 
 export async function POST(req: NextRequest) {
@@ -32,12 +32,6 @@ export async function POST(req: NextRequest) {
   })
 
   const res = NextResponse.json({ ok: true, mustChangePassword: user.mustChangePassword })
-  res.cookies.set(TOKEN_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  })
+  setAuthCookie(res, token)
   return res
 }

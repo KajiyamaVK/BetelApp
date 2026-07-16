@@ -1,19 +1,19 @@
 import { Client } from 'minio'
 
-/** Creates a fresh MinIO client from environment variables */
-function createClient(): Client {
-  return new Client({
-    endPoint: process.env.MINIO_ENDPOINT!,
-    port: Number(process.env.MINIO_PORT ?? 443),
-    useSSL: process.env.MINIO_USE_SSL === 'true',
-    accessKey: process.env.MINIO_ACCESS_KEY!,
-    secretKey: process.env.MINIO_SECRET_KEY!,
-  })
-}
+let _client: Client | undefined
 
-/** Returns a configured MinIO client */
+/** Returns the shared MinIO client instance (lazy singleton) */
 export function getMinioClient(): Client {
-  return createClient()
+  if (!_client) {
+    _client = new Client({
+      endPoint: process.env.MINIO_ENDPOINT!,
+      port: Number(process.env.MINIO_PORT ?? 443),
+      useSSL: process.env.MINIO_USE_SSL === 'true',
+      accessKey: process.env.MINIO_ACCESS_KEY!,
+      secretKey: process.env.MINIO_SECRET_KEY!,
+    })
+  }
+  return _client
 }
 
 /** Returns the configured bucket name; throws if MINIO_BUCKET is not set */

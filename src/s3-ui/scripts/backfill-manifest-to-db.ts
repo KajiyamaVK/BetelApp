@@ -8,7 +8,7 @@
 import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { Client } from 'minio'
+import { getObjectText } from '../lib/minio'
 
 config({ path: '.env.local' })
 config()
@@ -20,23 +20,8 @@ if (!process.env.MINIO_BUCKET) throw new Error('MINIO_BUCKET env var is required
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
-const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT,
-  port: Number(process.env.MINIO_PORT ?? 443),
-  useSSL: process.env.MINIO_USE_SSL === 'true',
-  accessKey: process.env.MINIO_ACCESS_KEY!,
-  secretKey: process.env.MINIO_SECRET_KEY!,
-})
-
 async function fetchManifest() {
-  const stream = await minioClient.getObject(process.env.MINIO_BUCKET!, 'manifest.json')
-  const chunks: Buffer[] = []
-  await new Promise<void>((resolve, reject) => {
-    stream.on('data', (chunk: Buffer) => chunks.push(chunk))
-    stream.on('end', resolve)
-    stream.on('error', reject)
-  })
-  return JSON.parse(Buffer.concat(chunks).toString('utf-8'))
+  return JSON.parse(await getObjectText('manifest.json'))
 }
 
 async function main() {

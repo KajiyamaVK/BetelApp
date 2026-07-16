@@ -70,13 +70,24 @@ export function softDeleteFile(
   if (!lesson) return manifest
 
   const entry = lesson[type]
-  if (!entry) return manifest
-  if (entry.active) {
-    entry.history = [...entry.history, entry.active]
-    entry.active = null
-  }
+  if (!entry || !entry.active) return manifest
 
-  return { ...manifest, updated_at: new Date().toISOString() }
+  return {
+    ...manifest,
+    version: manifest.version + 1,
+    updated_at: new Date().toISOString(),
+    lessons: manifest.lessons.map((l) =>
+      l.id !== lessonId
+        ? l
+        : {
+            ...l,
+            [type]:
+              type === 'audio'
+                ? { ...(l.audio!), history: [...l.audio!.history, l.audio!.active!], active: null }
+                : { ...l.pdf, history: [...l.pdf.history, l.pdf.active!], active: null },
+          },
+    ),
+  }
 }
 
 /**
@@ -155,16 +166,26 @@ export function applyUpload(
 
   const entry = lesson[type]
   if (!entry) return manifest
+
   const version = nextVersion(entry.active, entry.history)
   const extension = type === 'audio' ? 'mp3' : 'pdf'
   const filePrefix = type === 'audio' ? 'audio' : 'lesson'
   const newPath = `lessons/${lessonId}/${filePrefix}_v${version}.${extension}`
+  const newHistory = entry.active ? [...entry.history, entry.active] : entry.history
 
-  if (entry.active) entry.history = [...entry.history, entry.active]
-  entry.active = newPath
-  entry.checksum = checksum
+  const updatedEntry =
+    type === 'audio'
+      ? { ...(entry as NonNullable<ManifestLesson['audio']>), active: newPath, checksum, history: newHistory }
+      : { ...entry, active: newPath, checksum, history: newHistory }
 
-  return { ...manifest, updated_at: new Date().toISOString() }
+  return {
+    ...manifest,
+    version: manifest.version + 1,
+    updated_at: new Date().toISOString(),
+    lessons: manifest.lessons.map((l) =>
+      l.id !== lessonId ? l : { ...l, [type]: updatedEntry },
+    ),
+  }
 }
 
 /** Adds or replaces a content entry in the manifest and increments version. */

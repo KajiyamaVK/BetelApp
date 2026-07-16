@@ -1,23 +1,16 @@
-import { SignJWT, jwtVerify } from 'jose'
+import { SignJWT } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { TOKEN_COOKIE, TokenPayload, getSecret, verifyToken } from '@/lib/auth-token'
 
-/** Cookie name used to store the auth token */
-export const TOKEN_COOKIE = 'token'
+export { TOKEN_COOKIE, verifyToken }
+export type { TokenPayload }
 
-interface TokenPayload {
-  id: number
-  username: string
-  isAdmin: boolean
-  mustChangePassword: boolean
-}
+/** Cookie max-age in seconds — must match the JWT expiry of 7d */
+export const TOKEN_MAX_AGE = 60 * 60 * 24 * 7
 
-/** Encodes the JWT_SECRET env variable into a byte array for jose */
-function getSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET
-  if (!secret) throw new Error('JWT_SECRET not set')
-  return new TextEncoder().encode(secret)
-}
+/** Default password assigned to new users and after a password reset; users must change it on first login */
+export const DEFAULT_PASSWORD = '123456'
 
 /** Signs a JWT with HS256 and 7-day expiry */
 export async function signToken(payload: TokenPayload): Promise<string> {
@@ -27,10 +20,15 @@ export async function signToken(payload: TokenPayload): Promise<string> {
     .sign(getSecret())
 }
 
-/** Verifies a JWT and returns the decoded payload; throws on invalid/expired tokens */
-export async function verifyToken(token: string): Promise<TokenPayload> {
-  const { payload } = await jwtVerify(token, getSecret())
-  return payload as unknown as TokenPayload
+/** Sets the auth cookie on an existing NextResponse */
+export function setAuthCookie(res: NextResponse, token: string): void {
+  res.cookies.set(TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: TOKEN_MAX_AGE,
+    path: '/',
+  })
 }
 
 /**

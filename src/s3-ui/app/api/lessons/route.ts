@@ -1,7 +1,7 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-
-export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import { createLessonSchema } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'

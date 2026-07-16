@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { deleteFolder, getObjectText, uploadObject } from '@/lib/minio'
-import { parseManifest, removeContent } from '@/lib/manifest'
+import { deleteFolder } from '@/lib/minio'
+import { removeContent } from '@/lib/manifest'
+import { updateManifest } from '@/lib/manifest-sync'
 
 type RouteContext = { params: Promise<{ id: string; pageId: string }> }
 
@@ -64,14 +65,7 @@ export async function DELETE(
       data: { published: false },
     })
     try {
-      const manifestJson = await getObjectText('manifest.json')
-      let manifest = parseManifest(manifestJson)
-      manifest = removeContent(manifest, parentId)
-      await uploadObject(
-        'manifest.json',
-        Buffer.from(JSON.stringify(manifest, null, 2)),
-        'application/json',
-      )
+      await updateManifest((manifest) => removeContent(manifest, parentId))
     } catch { /* best-effort */ }
   }
 
