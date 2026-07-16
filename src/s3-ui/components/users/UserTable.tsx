@@ -1,13 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-
-interface User {
-  id: number
-  username: string
-  isAdmin: boolean
-  mustChangePassword: boolean
-  createdAt: string
-}
+import type { User } from '@/types/api'
 
 interface UserTableProps {
   users: User[]

@@ -2,8 +2,7 @@
 
 import { X, ExternalLink } from 'lucide-react'
 import { useEffect } from 'react'
-
-const S3_BASE = process.env.NEXT_PUBLIC_S3_BASE_URL ?? 'https://s3.kajiyama.com.br/betelapp-content'
+import { S3_BASE } from '@/lib/constants'
 
 interface PdfViewerProps {
   path: string

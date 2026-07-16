@@ -12,18 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-interface Content {
-  id: number
-  slug: string
-  title: string
-  type: 'VIDEO' | 'TEXT'
-  youtubeUrl: string | null
-  htmlPath: string | null
-  published: boolean
-  order: number
-  pageCount?: number
-}
+import type { Content } from '@/types/api'
 
 interface ContentCardProps {
   content: Content

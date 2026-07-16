@@ -1,15 +1,7 @@
 'use client'
 
 import { LessonRow } from './LessonRow'
-
-interface Lesson {
-  id: number
-  order: number
-  title: string
-  published: boolean
-  audio: { active: string | null; ext: string; checksum: string; history: string[] }
-  pdf: { active: string | null; checksum: string; history: string[] }
-}
+import type { Lesson } from '@/types/api'
 
 interface LessonListProps {
   lessons: Lesson[]

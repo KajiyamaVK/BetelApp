@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   Dialog,
   DialogContent,
@@ -27,11 +28,17 @@ export function EditLessonDialog({ open, lessonId, initialTitle, initialOrder, o
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  function handleOpenChange(isOpen: boolean) {
-    if (!isOpen) {
+  // Reset form state when dialog opens so stale edits don't persist across openings
+  useEffect(() => {
+    if (open) {
       setTitle(initialTitle)
       setOrder(String(initialOrder))
       setError(null)
+    }
+  }, [open, initialTitle, initialOrder])
+
+  function handleOpenChange(isOpen: boolean) {
+    if (!isOpen) {
       onClose()
     }
   }
@@ -56,8 +63,6 @@ export function EditLessonDialog({ open, lessonId, initialTitle, initialOrder, o
     if (err) {
       setError(err)
     } else {
-      setTitle(titleChanged ? newTitle : initialTitle)
-      setOrder(String(orderChanged ? parsedOrder : initialOrder))
       onClose()
     }
   }
@@ -102,12 +107,7 @@ export function EditLessonDialog({ open, lessonId, initialTitle, initialOrder, o
             disabled={saving}
             className="bg-primary hover:bg-yellow-400 text-text-main font-semibold flex items-center gap-2"
           >
-            {saving && (
-              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            )}
+            {saving && <Spinner />}
             {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </DialogFooter>
