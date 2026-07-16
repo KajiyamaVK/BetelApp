@@ -7,6 +7,7 @@ import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/data/repositories/content_repository.dart';
 import 'package:betelapp/data/repositories/favorites_repository_impl.dart';
 import 'package:betelapp/data/repositories/review_repository_impl.dart';
+import 'package:betelapp/domain/repositories/review_repository.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 import 'package:betelapp/domain/repositories/favorites_repository.dart';
@@ -37,6 +38,7 @@ final contentSyncServiceProvider = Provider<ContentSyncService>((ref) {
     remote: ref.watch(remoteContentServiceProvider),
     connectivity: ref.watch(connectivityServiceProvider),
     dbHelper: ref.watch(databaseHelperProvider),
+    reviewRepo: ref.watch(reviewRepositoryProvider),
   );
 });
 
@@ -56,7 +58,7 @@ final betelAudioHandlerProvider = Provider<BetelAudioHandler>(
 );
 
 // Review
-final reviewRepositoryProvider = Provider<ReviewRepositoryImpl>((ref) {
+final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepositoryImpl(ref.watch(databaseHelperProvider));
 });
 

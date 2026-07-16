@@ -1,26 +1,23 @@
 class ManifestFileEntry {
   final String active;
   final String checksum;
-  final List<String> history;
 
-  ManifestFileEntry({required this.active, required this.checksum, required this.history});
+  ManifestFileEntry({required this.active, required this.checksum});
 
   factory ManifestFileEntry.fromJson(Map<String, dynamic> json) => ManifestFileEntry(
         active: json['active'] as String,
         checksum: json['checksum'] as String,
-        history: List<String>.from(json['history'] ?? []),
       );
 }
 
 class ManifestAudioEntry extends ManifestFileEntry {
   final String ext;
 
-  ManifestAudioEntry({required super.active, required super.checksum, required super.history, required this.ext});
+  ManifestAudioEntry({required super.active, required super.checksum, required this.ext});
 
   factory ManifestAudioEntry.fromJson(Map<String, dynamic> json) => ManifestAudioEntry(
         active: json['active'] as String,
         checksum: json['checksum'] as String,
-        history: List<String>.from(json['history'] ?? []),
         ext: json['ext'] as String,
       );
 }

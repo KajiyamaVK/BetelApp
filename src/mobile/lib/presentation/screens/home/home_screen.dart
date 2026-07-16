@@ -18,6 +18,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  static const String _welcomeContentSlug = 'conteudo-teste';
   bool _contentDialogShown = false;
 
   @override
@@ -32,7 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _contentDialogShown = true;
 
     final repository = ref.read(contentRepositoryProvider);
-    final content = await repository.loadContentBySlug('conteudo-teste');
+    final content = await repository.loadContentBySlug(_welcomeContentSlug);
     if (content != null && mounted) {
       BetelDialog.showContent(context, content);
     }

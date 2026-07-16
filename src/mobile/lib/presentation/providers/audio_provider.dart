@@ -123,7 +123,6 @@ class AudioNotifier extends StateNotifier<AudioState> {
       title: title,
       artist: artist,
       audioUrl: url,
-      durationIds: 0,
     );
     state = state.copyWith(
       currentUrl: url,

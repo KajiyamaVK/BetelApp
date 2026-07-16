@@ -17,9 +17,9 @@ void main() {
   late BehaviorSubject<MediaItem?> mediaItemSubject;
 
   final songs = [
-    Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a', durationIds: 180),
-    Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b', durationIds: 200),
-    Song(id: '3', title: 'Song C', artist: 'Artist', audioUrl: 'url_c', durationIds: 150),
+    Song(id: '1', title: 'Song A', artist: 'Artist', audioUrl: 'url_a'),
+    Song(id: '2', title: 'Song B', artist: 'Artist', audioUrl: 'url_b'),
+    Song(id: '3', title: 'Song C', artist: 'Artist', audioUrl: 'url_c'),
   ];
 
   setUp(() {

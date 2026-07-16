@@ -20,12 +20,4 @@ class Favorite {
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'type': type,
-      'item_id': itemId,
-      'added_at': addedAt.millisecondsSinceEpoch,
-    };
-  }
 }

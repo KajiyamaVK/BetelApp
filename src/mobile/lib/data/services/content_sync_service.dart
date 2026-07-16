@@ -7,7 +7,7 @@ import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/data/models/flashcard.dart';
 import 'package:betelapp/data/models/manifest.dart';
-import 'package:betelapp/data/repositories/review_repository_impl.dart';
+import 'package:betelapp/domain/repositories/review_repository.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 
 enum SyncResult {
@@ -29,14 +29,17 @@ class ContentSyncService {
   final RemoteContentService _remote;
   final ConnectivityService _connectivity;
   final DatabaseHelper _dbHelper;
+  final ReviewRepository _reviewRepo;
 
   ContentSyncService({
     required RemoteContentService remote,
     required ConnectivityService connectivity,
     required DatabaseHelper dbHelper,
+    required ReviewRepository reviewRepo,
   })  : _remote = remote,
         _connectivity = connectivity,
-        _dbHelper = dbHelper;
+        _dbHelper = dbHelper,
+        _reviewRepo = reviewRepo;
 
   Future<SyncResult> sync({
     void Function(SyncProgress)? onProgress,
@@ -101,7 +104,7 @@ class ContentSyncService {
 
     // Sync Q&As for lessons whose files are up-to-date but questions changed
     for (final lesson in lessonsWithUpdatedQAs) {
-      final reviewRepo = ReviewRepositoryImpl(_dbHelper);
+      final reviewRepo = _reviewRepo;
       final flashcards = lesson.questions
           .map((q) => Flashcard(id: q.id, lessonId: lesson.id, question: q.question, answer: q.answer))
           .toList();
@@ -201,7 +204,7 @@ class ContentSyncService {
       );
 
       // Persist Q&As to card_progress (insert-only, preserves existing Leitner progress)
-      final reviewRepo = ReviewRepositoryImpl(_dbHelper);
+      final reviewRepo = _reviewRepo;
       final flashcards = lesson.questions
           .map((q) => Flashcard(
                 id: q.id,
