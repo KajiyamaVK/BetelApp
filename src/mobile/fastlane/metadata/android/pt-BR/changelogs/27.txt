@@ -1,0 +1,1 @@
+Correção no envio para faixa de teste fechado (Alpha).
