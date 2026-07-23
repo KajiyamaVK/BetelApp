@@ -1,4 +1,4 @@
-import 'package:betelapp/data/repositories/review_repository_impl.dart';
+import 'package:betelapp/domain/repositories/review_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ReviewState {
@@ -16,7 +16,7 @@ class ReviewState {
 }
 
 class ReviewViewModel extends StateNotifier<AsyncValue<ReviewState>> {
-  final ReviewRepositoryImpl _repo;
+  final ReviewRepository _repo;
 
   ReviewViewModel(this._repo) : super(const AsyncValue.loading()) {
     loadState();

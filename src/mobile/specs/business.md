@@ -26,15 +26,31 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
 - **Remoção de lições obsoletas** — lições presentes no DB local mas ausentes no manifest remoto são deletadas do DB e do filesystem.
   - **Por quê:** Garante que o conteúdo local reflete exatamente o que o backend disponibiliza.
 
-- **Aviso de dados móveis** — se o dispositivo está em dados móveis (sem Wi-Fi), o app mostra um `AlertDialog` bloqueante pedindo permissão antes de iniciar o sync. O usuário pode recusar e ir direto para o conteúdo já cacheado.
-  - **Por quê:** Downloads podem ser grandes; respeita o plano de dados do usuário.
+- **Aviso de dados móveis** — se `ConnectivityService.isMobileData()` retornar `true` (mobile data ativo **E** Wi-Fi não ativo), o app mostra um `AlertDialog` bloqueante (`barrierDismissible: false`) com duas opções:
+  - **"Baixar"**: prossegue com o sync normalmente.
+  - **"Agora não"**: cancela o sync e navega diretamente para `MainScaffold(syncResult: SyncResult.offlineWithData)`, exibindo o conteúdo já cacheado (se houver).
+  - O usuário não pode fechar o dialog tocando fora — é obrigatório escolher uma das duas opções.
+  - **Dual-stack:** se o dispositivo tiver Wi-Fi e dados móveis simultaneamente, `isMobileData()` retorna `false` — sem aviso, o sync ocorre normalmente.
+  - **Por quê:** `connectivity_plus` pode retornar múltiplas interfaces ao mesmo tempo. A lógica privilegia Wi-Fi: qualquer Wi-Fi ativo suprime o aviso de dados móveis. Downloads podem ser grandes; respeita o plano de dados do usuário.
 
 - **Offline resilience:**
   - **Primeira execução sem internet:** `SyncResult.offlineFirstBoot` — app inicia sem conteúdo (telas mostram estado vazio).
   - **Execução subsequente sem internet:** `SyncResult.offlineWithData` — app funciona normalmente com conteúdo previamente sincronizado.
   - **Por quê:** O app deve ser usável offline após o primeiro sync.
 
-- **Timeout de download:** 5 minutos (`receiveTimeout`) por arquivo.
+- **`SyncResult` enum — valores completos:**
+  | Valor | Quando é retornado |
+  |-------|--------------------|
+  | `offlineFirstBoot` | Sem conexão E `sync_meta` vazia (primeira execução) |
+  | `offlineWithData` | Sem conexão (ou falha de rede) E `sync_meta` tem dados |
+  | `upToDate` | Manifest remoto tem a mesma `version` que o local |
+  | `updated` | Sync concluído com sucesso (arquivos baixados ou conteúdos atualizados) |
+  | `error` | **Declarado no enum mas nunca retornado** — toda exceção é convertida em `offlineFirstBoot` ou `offlineWithData`. Reservado para uso futuro. |
+
+- **Download resilience:** `RemoteContentService.downloadFile()` usa stall detection + retry:
+  - **Stall timeout:** 3 segundos sem bytes recebidos cancela a tentativa atual.
+  - **Retries:** até 3 tentativas automáticas em caso de stall (`cancel`) ou erro desconhecido (`unknown`). Erros HTTP definitivos (4xx/5xx) não são retentados.
+  - **Timeout total por tentativa:** 5 minutos (`receiveTimeout` do Dio) — último recurso caso o stall timer não disparar.
 
 ### Áudio — regras de reprodução
 
@@ -42,18 +58,45 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
   1. `BetelAudioHandler` (camada OS) — gerencia player `just_audio`, foreground service Android, notificação de mídia, controles de headphone.
   2. `AudioNotifier` (camada Riverpod) — gerencia queue, shuffle, repeat modes, estado para UI.
 
-- **Repeat modes** (ciclo via `toggleRepeat()`): `off` → `all` → `one` → `off`.
-  - `repeatOne`: ao completar a track, seek para `Duration.zero` e replay — não avança na queue.
-  - `repeatAll`: ao chegar na última track, wrapa para index 0.
-  - `off`: ao chegar na última track, para a reprodução.
+- **Bootstrap obrigatório:** `betelAudioHandlerProvider` é declarado com `throw UnimplementedError` e **deve** ser sobrescrito no `ProviderScope` de `main()` após `AudioService.init()` completar. A função `initAudioService()` (`lib/core/audio/audio_service_initializer.dart`) retorna o `BetelAudioHandler` inicializado; `main()` injeta esse resultado via `overrides: [betelAudioHandlerProvider.overrideWithValue(handler)]`. Acessar o provider antes desse override lança exceção.
 
-- **Shuffle:** Ao ativar, cria lista de índices shuffleados com a track atual fixada na posição 0 (não repete a track que está tocando como "próxima").
+- **Sync handler → notifier (MediaItem stream):** `AudioNotifier` subscreve `handler.mediaItem` para manter `AudioState` em sincronia quando o handler avança tracks de forma autônoma (controles da notificação Android / lock screen). O `MediaItem.id` é igual ao `song.id`; o notifier faz lookup na queue por esse id para atualizar `currentUrl`, `currentTitle`, `currentArtist`, `duration`, e `currentIndex`. Sem esse listener, controles externos causariam dessincronização entre o player real e a UI.
+
+- **`AudioState`** — classe imutável que representa o estado completo do player para a UI. Campos:
+  | Campo | Tipo | Default | Descrição |
+  |-------|------|---------|-----------|
+  | `isPlaying` | `bool` | `false` | Se está tocando no momento |
+  | `currentUrl` | `String?` | `null` | URL/path da track atual |
+  | `currentTitle` | `String?` | `null` | Título exibido no player |
+  | `currentArtist` | `String?` | `null` | Artista exibido no player |
+  | `duration` | `Duration` | `Duration.zero` | Duração total da track |
+  | `position` | `Duration` | `Duration.zero` | Posição de reprodução atual |
+  | `queue` | `List<Song>` | `[]` | Fila completa |
+  | `currentIndex` | `int?` | `null` | Índice da track atual na queue |
+  | `repeatMode` | `AudioRepeatMode` | `off` | Modo de repetição atual |
+  | `shuffleMode` | `AudioShuffleMode` | `off` | Modo shuffle atual |
+
+  Enums: `AudioRepeatMode { off, all, one }` e `AudioShuffleMode { off, on }`.
+  Estado inicial (const): todos os campos no valor default acima. `stop()` retorna para este estado.
+
+- **Repeat modes** (ciclo via `toggleRepeat()`): `off` → `all` → `one` → `off`.
+  - `repeatOne`: ao completar a track, `BetelAudioHandler` faz `seek(Duration.zero)` + `play()` diretamente no player (necessita acesso direto sem passar pelo notifier). O `AudioNotifier._onTrackCompleted()` tem early return para `repeatMode.one` — apenas atualiza `position: Duration.zero, isPlaying: true` na UI e **não avança a queue**, evitando double-advance. A flag `_repeatOne: bool` no handler é sincronizada via `handler.setRepeatOne()` chamado por `toggleRepeat()`.
+    - **`stop()` não reseta `_repeatOne`** no handler — reseta apenas o estado do player e emite idle `playbackState`. O `AudioNotifier` é responsável por resetar `_repeatOne` para `false` quando necessário.
+  - `repeatAll`: ao chegar na última track, wrapa para index 0.
+  - `off`: reprodução sequencial — ao completar cada track, avança automaticamente para a próxima. Ao completar a última track da queue, para a reprodução (`isPlaying: false`). Não wrapa.
+
+- **Shuffle:** Ao ativar (`toggleShuffle()`), `_rebuildShuffleIndices()` cria `_shuffledIndices`: lista com todos os índices da queue em ordem aleatória, com a track atual fixada na posição 0 (evita tocar a track atual como "próxima imediata").
+  - **Navegação com shuffle ativo:** `playNext()` e `playPrevious()` percorrem `_shuffledIndices` com aritmética modular — a queue wrapa circularmente. O shuffle tem precedência sobre `repeatMode`: em modo shuffle, a conclusão de uma track sempre avança para a próxima posição shuffleada (nunca para a reprodução), independentemente de `repeatMode` ser `off`.
+  - **`repeatMode.one` com shuffle:** o handler trata `repeatOne` diretamente (seek+replay); o `AudioNotifier._onTrackCompleted()` retorna cedo sem avançar a fila.
 
 - **skipToNext boundary:** No handler, `skipToNext()` é no-op se já está na última track. O wrap-around para repeat-all é controlado pelo `AudioNotifier`.
 
 - **skipToPrevious boundary:** Se na primeira track, `skipToPrevious()` faz seek para `Duration.zero` (restart) em vez de ir para índice negativo.
 
-- **Load dedup:** `load(url)` é no-op se `url == state.currentUrl` — evita reload da mesma track.
+- **`skipToIndex(index)` — navegação direta:** método adicional no `BetelAudioHandler` (fora do contrato `BaseAudioHandler`) que carrega e toca qualquer track da queue por índice absoluto. Usado pelo `AudioNotifier` para shuffle e repeat-all wrap-around, onde o índice de destino não é necessariamente `current ± 1`. Faz bounds check (no-op se queue vazia ou índice fora dos limites). Também usado para seleção direta de track pelo usuário na lista.
+
+- **`load(url)` — pre-load sem autoplay:** usado exclusivamente pelo `LessonDetailScreen` para carregar uma única track (a lição com áudio) sem iniciar a reprodução. Internamente chama `_handler.setQueue([song], autoPlay: false)`. A queue passa a ter um único item. O player fica pronto para `resume()` sem precisar de `setQueue()`. Também faz dedup: se `url == state.currentUrl`, é no-op.
+  - **Contraste com `setQueue()`:** `setQueue()` sempre faz autoPlay=true (inicia reprodução imediatamente). `load()` carrega sem tocar.
 
 - **Play contract:** `play(url)` é apenas resume — `setQueue()` deve ter sido chamado antes para carregar a source. Não é cold-start.
 
@@ -123,6 +166,8 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
 - **Tipos de conteúdo:**
   - **VIDEO:** URL do YouTube, renderizado via `youtube_player_flutter` embutido no `BetelDialog`.
   - **TEXT:** HTML gerado pelo editor Tiptap no portal, renderizado nativamente via `flutter_widget_from_html_core` no `BetelDialog`.
+    - **Single-page:** campo `html` — renderizado como uma única `HtmlWidget` com scroll.
+    - **Multi-page:** campo `pages_html` — array de HTML por página, renderizado como múltiplos `pages` no `BetelDialog` (swipe horizontal entre páginas). Quando `pages_html` está presente, tem precedência sobre `html`. Coluna adicionada na migração SQLite v4→v5.
 
 - **Publish/unpublish:** Não há campo `published` no mobile. A presença do conteúdo no array `contents[]` do `manifest.json` significa publicado; a ausência significa despublicado. O sync reflete isso automaticamente — conteúdos removidos do manifest são deletados do SQLite local.
 
@@ -139,7 +184,7 @@ Governa regras de negócio do app mobile — fluxos, validações, comportamento
 
 - **Sem error handler global** — sem crash reporter, sem error boundary.
 - **Sync errors:** silenciosamente fallback para offline (exceção engolida).
-- **Audio errors:** silenciosamente reseta para estado idle (sem notificar usuário).
+- **Audio errors:** Quando `setAudioSource()` lança exceção em `BetelAudioHandler._loadAndPlay()`, o handler emite `playbackState` com `playing: false` e `processingState: idle`, restaurando os três controles (prev, **play**, next) para permitir retry pelo usuário. O `mediaItem` não é limpo — o item que falhou permanece visível na notificação. Nenhuma exceção é relançada e nenhuma notificação é mostrada ao usuário.
 - **View model errors:** convertidos em `AsyncValue.error()` e exibidos inline como `Text('Erro: $e')`.
 - **Favorites toggle errors:** silenciosamente `debugPrint` — não notifica usuário.
 - **Update check errors:** silenciosamente ignorados (non-critical).

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, DEFAULT_PASSWORD } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
@@ -15,7 +15,7 @@ export async function POST(
   const { id } = await params
   const targetId = parseInt(id, 10)
 
-  const passwordHash = await bcrypt.hash('123456', 12)
+  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12)
   const updated = await prisma.user.updateMany({
     where: { id: targetId },
     data: { passwordHash, mustChangePassword: true },

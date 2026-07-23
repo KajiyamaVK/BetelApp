@@ -20,9 +20,9 @@ void main() {
   late StreamController<ProcessingState> processingStateController;
 
   final songs = [
-    Song(id: '1', title: 'Song A', artist: 'Betel', audioUrl: '/audio/a.mp3', durationIds: 180),
-    Song(id: '2', title: 'Song B', artist: 'Betel', audioUrl: '/audio/b.mp3', durationIds: 200),
-    Song(id: '3', title: 'Song C', artist: 'Betel', audioUrl: '/audio/c.mp3', durationIds: 150),
+    Song(id: '1', title: 'Song A', artist: 'Betel', audioUrl: '/audio/a.mp3'),
+    Song(id: '2', title: 'Song B', artist: 'Betel', audioUrl: '/audio/b.mp3'),
+    Song(id: '3', title: 'Song C', artist: 'Betel', audioUrl: '/audio/c.mp3'),
   ];
 
   setUp(() {

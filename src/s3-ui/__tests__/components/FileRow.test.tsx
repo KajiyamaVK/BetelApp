@@ -8,7 +8,6 @@ const baseProps = {
   lessonId: 1,
   type: 'audio' as const,
   active: null,
-  filename: null,
   onUpload: jest.fn(),
   onDelete: jest.fn(),
   onPreview: jest.fn(),
@@ -35,7 +34,6 @@ describe('FileRow — audio present', () => {
   const props = {
     ...baseProps,
     active: 'lessons/1/audio_v1.mp3',
-    filename: 'audio_v1.mp3',
   }
 
   it('shows MiniPlayer when audio active', () => {
@@ -61,7 +59,6 @@ describe('FileRow — pdf present', () => {
     ...baseProps,
     type: 'pdf' as const,
     active: 'lessons/1/lesson_v1.pdf',
-    filename: 'lesson_v1.pdf',
   }
 
   it('shows pdf filename as clickable element', () => {

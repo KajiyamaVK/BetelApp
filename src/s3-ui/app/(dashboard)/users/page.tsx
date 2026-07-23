@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { UserTable } from '@/components/users/UserTable'
 import { CreateUserForm } from '@/components/users/CreateUserForm'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,14 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-interface User {
-  id: number
-  username: string
-  isAdmin: boolean
-  mustChangePassword: boolean
-  createdAt: string
-}
+import type { User } from '@/types/api'
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -98,12 +92,7 @@ export default function UsersPage() {
               disabled={deleting}
               onClick={handleDeleteConfirm}
             >
-              {deleting && (
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
+              {deleting && <Spinner />}
               {deleting ? 'Deletando...' : 'Deletar'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -121,12 +110,7 @@ export default function UsersPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleResetConfirm} disabled={resetting} className="flex items-center gap-2">
-              {resetting && (
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
+              {resetting && <Spinner />}
               {resetting ? 'Aguarde...' : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>

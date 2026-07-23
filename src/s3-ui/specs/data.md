@@ -15,7 +15,9 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 - **PostgreSQL** via **Prisma v7** com driver adapter `@prisma/adapter-pg`.
   - **Por quê:** Prisma v7 exige driver adapter explícito (não usa o engine binário). `@prisma/adapter-pg` com `pg` é o adapter para PostgreSQL.
 
-- **Conexão:** `DATABASE_URL` env var lida via `prisma.config.ts` (padrão v7 — não via `datasource.url` no schema).
+- **Conexão:**
+  - **CLI operations** (`prisma generate`, `prisma db push`): `DATABASE_URL` lida via `prisma.config.ts` (padrão v7 — o campo `url` está ausente do bloco `datasource` no schema).
+  - **Runtime client** (`lib/prisma.ts`): `DATABASE_URL` lida diretamente de `process.env.DATABASE_URL` e passada como `{ connectionString }` para `new PrismaPg(...)`. O `prisma.config.ts` não é referenciado no path de runtime.
 
 - **Singleton Prisma client** — cacheado em `globalThis` para evitar múltiplas instâncias durante hot reload do Next.js (`lib/prisma.ts`).
 
@@ -37,7 +39,7 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 | Campo | Tipo | Notas |
 |-------|------|-------|
 | `id` | `Int` | PK, **manual** (não autoincrement) — chave interna, usada nos paths do MinIO (`lessons/{id}/`) |
-| `order` | `Int` | default `0` — número de exibição da lição no app mobile e no painel |
+| `order` | `Int` | `@unique`, default `0` — número de exibição da lição. Dois registros não podem ter o mesmo `order`; a API retorna 409 em conflito. |
 | `title` | `String` | — |
 | `published` | `Boolean` | default `false` |
 | `pdfActive` | `String?` | Path ativo no MinIO |
@@ -70,6 +72,15 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 | `deletedBy` | `String` | Username de quem deletou |
 | `deletedAt` | `DateTime` | default `now()` |
 
+**LessonAuditLog:**
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `id` | `Int` | PK, autoincrement |
+| `lessonId` | `Int` | Plain Int sem FK — sobrevive a deletes de lição |
+| `userId` | `Int` | Plain Int sem FK — ID do usuário que executou a ação |
+| `action` | `String` | Ação auditada. Único valor registrado atualmente: `'delete'` |
+| `createdAt` | `DateTime` | default `now()` |
+
 **Content:**
 | Campo | Tipo | Notas |
 |-------|------|-------|
@@ -81,10 +92,13 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
 | `htmlPath` | `String?` | Path no MinIO: `contents/{id}/content.html` |
 | `published` | `Boolean` | default `false` |
 | `order` | `Int` | default `0` — ordenação na listagem |
+| `parentId` | `Int?` | FK para o próprio `Content` (self-relation). Nulo = conteúdo raiz; preenchido = página filha de um conteúdo multi-página. `onDelete: Cascade` — deletar o pai deleta todas as páginas. |
+| `pageIndex` | `Int?` | Posição 0-based dentro de um grupo multi-página. Nulo para conteúdos de página única. |
 | `createdAt` | `DateTime` | default `now()` |
 | `updatedAt` | `DateTime` | `@updatedAt` |
 
-- **Sem relações** entre User, Lesson e Content — modelos independentes.
+- **Multi-página (TEXT):** Um conteúdo TEXT pode ter múltiplas páginas. O registro pai (`parentId IS NULL`) é somente metadados (título, slug, publicado). Os registros filhos (`parentId = id_do_pai`) armazenam o HTML de cada página via `htmlPath`, identificados por `pageIndex` (0-based). A relação usa `onDelete: Cascade` — deletar o pai remove automaticamente todas as páginas filhas.
+- **Sem relações** entre User e Lesson — modelos independentes. Content tem self-relation para multi-página.
 - **Lesson.id manual** — o ID é fornecido pelo admin na criação, não é autoincrement.
   - **Por quê:** Os IDs correspondem aos números das lições do catecismo (1-24), são semânticos e usados no path do MinIO (`lessons/{id}/`).
 
@@ -115,8 +129,9 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   | Download como stream | `client.getObject()` | Leitura de manifest |
   | Download como texto | `getObjectText()` | Leitura de HTML de conteúdo para inlining no manifest |
   | List objects | `client.listObjectsV2()` | Listagem de imagens na galeria (`contents/images/`) |
-  | Delete object | `client.removeObject()` | Hard-delete de arquivos de lição e conteúdo |
-  | Delete folder | `deleteFolder()` | Remove recursivamente uma pasta MinIO (ex: `contents/{id}/`) |
+  | Delete object | `client.removeObject()` | Hard-delete de um arquivo individual (ex: PDF ou áudio de lição) |
+  | Delete objects (batch) | `client.removeObjects()` | Hard-delete em lote — usado internamente por `deleteFolder()` |
+  | Delete folder | `deleteFolder()` | Remove recursivamente uma pasta MinIO: lista objetos via `listObjectsV2`, então deleta em lote via `removeObjects`. Ex: `contents/{id}/` |
 
 - **Operações de delete:** Hard-delete via `deleteObject()` e `deleteFolder()`. Usado para lições e conteúdos.
 
@@ -147,7 +162,8 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   ```
 - **`contents` — tipos discriminados:**
   - `ManifestContentVideo`: `{ id, slug, title, type: 'VIDEO', youtubeUrl }`
-  - `ManifestContentText`: `{ id, slug, title, type: 'TEXT', html }` — HTML inline (não referência a arquivo)
+  - `ManifestContentText`: `{ id, slug, title, type: 'TEXT', html }` — HTML inline (não referência a arquivo). Usado para TEXT de página única (legacy).
+  - `ManifestContentMultiText`: `{ id, slug, title, type: 'TEXT', pages: string[] }` — array de strings HTML, uma por página filha em ordem `pageIndex`. Usado quando o TEXT tem filhos. O app mobile renderiza cada elemento como página separada com swipe em `BetelDialog`.
 
 - **Q&As no manifest:** Campo `questions` (array) presente em cada lição. Contém apenas Q&As ativas (não soft-deletadas). Chaves `"q"` e `"a"` são abreviadas para reduzir tamanho. Array vazio `[]` quando a lição não tem Q&As.
 - **Resync automático:** Mutações via CRUD de Q&As em lições publicadas disparam `resyncLessonInManifestIfPublished()` de forma best-effort (try/catch — falha no MinIO não bloqueia a resposta da API).
@@ -157,6 +173,7 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   |--------|-----------|----------------------|
   | `upsertLesson` | Adiciona ou substitui lição | Sim |
   | `removeLesson` | Remove lição do array | Sim |
+  | `renameLesson` | Atualiza apenas o `title` de uma lição existente (patch, não substituição completa) | Sim |
   | `upsertContent` | Adiciona ou substitui conteúdo | Sim |
   | `removeContent` | Remove conteúdo do array | Sim |
   | `applyUpload` | Versiona path, move active para history | Não (só `updated_at`) |
@@ -164,6 +181,13 @@ Governa decisões de dados do s3-ui — modelos Prisma, queries, schema, e integ
   | `nextVersion` | Calcula próxima versão via regex no histórico | — |
 
 - **DB como espelho do manifest** — campos `pdfActive`, `pdfChecksum`, etc. no DB são mantidos em sync com o manifest após cada write. Permite reconstruir o manifest entry a partir do DB sem re-ler MinIO.
+
+### Funções de sincronização (`lib/manifest-sync.ts`)
+
+| Função | O que faz | Incrementa `version`? |
+|--------|-----------|----------------------|
+| `buildManifestLesson(lesson, questions)` | Mapeia um registro `Lesson` do Prisma + array de `Question[]` para o shape `ManifestLesson`. Centraliza o mapeamento de campos DB→manifest. | — |
+| `resyncLessonInManifestIfPublished(lessonId)` | Re-sincroniza a entrada do manifest para a lição se ela estiver publicada. No-op silencioso se despublicada. Chamada best-effort pelos routes de Q&A (POST/PATCH/DELETE); falhas no MinIO não bloqueiam a resposta da API. | Não (delega a `upsertLesson` que incrementa) |
 
 ### Seed
 
@@ -202,6 +226,30 @@ contents/
 - **Zod validation** em todas as routes de input.
 - Queries Prisma usam apenas API do client (`findMany`, `findUnique`, `create`, `update`, `deleteMany`, `upsert`) — sem raw SQL.
 
+#### Shapes de resposta — Contents
+
+**`GET /api/contents`** — retorna apenas conteúdos raiz (`parentId IS NULL`). Cada objeto inclui todos os campos do model `Content` mais:
+- `pageCount: number` — número de páginas filhas (0 para standalone).
+Páginas filhas (`parentId != null`) nunca aparecem nesta listagem.
+
+**`GET /api/contents/[id]`** — retorna o content row completo incluindo:
+- `children: Content[]` — filhos ordenados por `pageIndex ASC`. Array vazio para standalone.
+Usado pelo `ContentForm` para carregar páginas existentes em modo de edição.
+
+#### Endpoints — Contents
+
+| Method | Path | Auth | Descrição |
+|--------|------|------|-----------|
+| GET | `/api/contents` | Público | Lista conteúdos raiz com `pageCount` |
+| POST | `/api/contents` | JWT | Cria conteúdo raiz ou página filha (`parentId` no body) |
+| GET | `/api/contents/[id]` | Público | Retorna conteúdo com `children[]` ordenados por `pageIndex` |
+| PUT | `/api/contents/[id]` | JWT | Atualiza campos + HTML; auto-despublica se publicado |
+| DELETE | `/api/contents/[id]` | JWT | Hard-delete do conteúdo + filhos + pastas MinIO |
+| PATCH | `/api/contents/[id]/publish` | JWT | Toggle publish; constrói entrada no manifest |
+| DELETE | `/api/contents/[id]/pages/[pageId]` | JWT | Deleta página filha; re-indexa irmãos; auto-despublica pai se publicado |
+| GET | `/api/contents/images` | JWT | Lista imagens em `contents/images/` |
+| POST | `/api/contents/images` | JWT | Faz upload de imagem para `contents/images/{uuid}.{ext}` |
+
 ### Ambientes
 
 | Arquivo | DB | Bucket | Commitado |
@@ -213,7 +261,7 @@ contents/
 ### Testes de dados
 
 - **Jest (unit/integration):** Testes de API usam DB real (`betelapp_test`), não mocks. `maxWorkers: 1` para evitar contention. Cada suite cria e limpa dados em `beforeAll`/`afterAll`.
-- **Playwright (E2E):** Usa `E2E_VICTOR_PASSWORD` env var. Testes de usuário criam users com timestamp no nome mas não limpam — acumulam no DB. ⚠️ Gap conhecido.
+- **Playwright (E2E):** Usa `E2E_VICTOR_PASSWORD` env var. Testes de usuário criam users com prefixo `e2e_user_<timestamp>` e os deletam em `afterAll` via `DELETE /api/users/[id]`. O cleanup é best-effort — falha de delete lança um erro explícito para facilitar debug.
 
 ### Docker
 

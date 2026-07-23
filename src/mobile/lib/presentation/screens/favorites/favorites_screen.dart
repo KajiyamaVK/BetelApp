@@ -110,8 +110,6 @@ class FavoritesScreen extends ConsumerWidget {
         subtitle: const Text('Música'),
         trailing: const Icon(Icons.play_circle_fill_rounded, color: AppTheme.primaryColor),
         onTap: () {
-           // Navigate to Music Screen or play?
-           // For simple MVP, maybe just show a snackbar or navigate to MusicScreen
            ScaffoldMessenger.of(context).showSnackBar(
              const SnackBar(content: Text('Vá para a aba de Músicas para tocar!')),
            );

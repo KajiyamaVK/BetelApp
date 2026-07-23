@@ -34,6 +34,13 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 
 - **`betelAudioHandlerProvider`** — padrão especial: throws `UnimplementedError` por default e é sobrescrito via `ProviderScope.overrides` no `main()` após `AudioService.init()` completar (inicialização assíncrona antes de `runApp`).
 
+- **ViewModels registrados (StateNotifierProviders):**
+  | Provider | ViewModel | Estado | Descrição |
+  |----------|-----------|--------|-----------|
+  | `favoritesViewModelProvider` | `FavoritesViewModel` | `AsyncValue<List<dynamic>>` | Lista mista de `Lesson` e `Song` favoritos. Carrega no init; `toggleFavorite()` remove ou adiciona e recarrega. Estado `dynamic` porque a lista mistura dois tipos. |
+  | `reviewViewModelProvider` | `ReviewViewModel` | `AsyncValue<ReviewState>` | Contém `activeLessonIds` e `totalDueToday`. Carrega no init; `toggleReviewActive()` delega ao `ReviewRepositoryImpl` e recarrega. `ReviewState` é imutável com named constructor `empty()`. |
+  | `musicViewModelProvider` | `MusicViewModel` | `AsyncValue<List<Song>>` | Lista de músicas (lições com áudio). Carrega no init. Sem mutação — read-only. |
+
 - **Testes usam `ProviderScope.overrides`** para injetar fakes/mocks.
 
 ### Persistência local
@@ -42,7 +49,8 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - **Por quê:** SQLite suporta queries relacionais (joins favorites + lessons) e é maduro no Flutter. O app não precisa de key-value store simples.
 
 - **DatabaseHelper singleton** — factory constructor com `_instance`/`_database` estáticos.
-- **Banco:** `betel.db`, schema version 4.
+  - **`resetForTesting({String? dbPath})`** — método estático que zera `_database` e `_instance`, permitindo que cada teste crie um banco fresh. Quando `dbPath` é fornecido (ex: `inMemoryDatabasePath` do `sqflite_common_ffi`), o próximo `openDatabase()` usa esse path.
+- **Banco:** `betel.db`, schema version 5 (v4→v5: `ALTER TABLE contents ADD COLUMN pages_html TEXT`).
 
 - **Tabelas:**
   | Tabela | Propósito | Colunas chave |
@@ -51,9 +59,19 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | `sync_meta` | Controle de versão do manifest | `id=1`, `manifest_version`, `last_sync_at` |
   | `favorites` | Favoritos do usuário | `id` (composite: `type_itemId`), `type`, `item_id`, `added_at` |
   | `lesson_progress` | Progresso de lições (esqueleto, não usado) | `lesson_id`, `is_completed`, `is_locked`, `last_accessed` |
-  | `card_progress` | Progresso Leitner por flashcard | `question_id` (PK), `lesson_id`, `bucket` (1-5), `last_reviewed_at`, `next_review_at`, `question_text`, `answer_text` |
+  | `card_progress` | Progresso Leitner por flashcard | `question_id` (PK), `lesson_id`, `bucket` (1-5), `last_reviewed_at`, `next_review_at`, `question_text`\*, `answer_text`\* |
   | `review_active` | Toggle de revisão por lição | `lesson_id` (PK), `active` (0/1) |
-  | `contents` | Conteúdos dinâmicos sincronizados do portal | `id` (PK), `slug` (UNIQUE), `title`, `type`, `youtube_url`, `html`, `synced_at` |
+  | `contents` | Conteúdos dinâmicos sincronizados do portal | `id` (PK), `slug` (UNIQUE), `title`, `type`, `youtube_url`, `html`, `pages_html`, `synced_at` |
+
+- **Serialização de DateTime em SQLite:**
+  - `favorites.added_at` → INTEGER (Unix timestamp em milissegundos). Leitura via `DateTime.fromMillisecondsSinceEpoch()`.
+  - `card_progress.last_reviewed_at` / `card_progress.next_review_at` → TEXT (ISO 8601, formato `YYYY-MM-DDTHH:MM:SS.mmm`). Leitura via `DateTime.parse()`. O SQLite pode usar funções `datetime()` nativamente nesses campos (usado em `advanceOneDayForTesting()`).
+  - **Inconsistência herdada do MVP** — não há decisão de padronização. Novos campos de data devem seguir o formato TEXT/ISO para compatibilidade com queries SQLite nativas.
+
+- **Resolução de favoritos em runtime:**
+  - Favoritos do tipo `'lesson'` são resolvidos fazendo lookup de `item_id` (int) na lista de lições.
+  - Favoritos do tipo `'song'` **não possuem tabela própria** — são resolvidos mapeando lições com `audio_local_path IS NOT NULL` em objetos `Song` (com `id = lesson.id.toString()`), e depois fazendo lookup de `item_id` nessa lista em memória. O `item_id` armazenado em `favorites` para músicas é o `lesson.id` convertido para String.
+  - Lições sem `audio_local_path` são silenciosamente excluídas da lista de favoritos de músicas (mesmo audio gate do MusicScreen).
 
 ### Modelos
 
@@ -65,30 +83,56 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 
 - **`AudioState`** (provider) usa `copyWith` manual (sem freezed).
 
+- **Localização dos modelos:**
+  - `Favorite` → `domain/entities/favorite.dart` — promovida ao domain layer porque é referenciada pela interface `FavoritesRepository`. Contém `fromMap()`/`toMap()` diretamente na entidade (sem separação de mapper).
+  - Todos os demais modelos (`Lesson`, `Content`, `Flashcard`, `CardProgress`, `Song`, `ContentManifest`) → `data/models/` — não há entidades de domínio correspondentes.
+  - **Inconsistência:** `Flashcard` e `CardProgress` são importados diretamente pela interface `ReviewRepository` em `domain/`, mesmo vivendo em `data/`. Dívida arquitetural — não seguir como padrão para novas features.
+
 ### Comunicação com backend
 
 - **Dio 5.4.3** — HTTP client para fetch de manifest e download de arquivos.
-- **Sem interceptors, sem auth headers, sem retry logic.**
-- **Base URL hardcoded:** `http://s3.kajiyama.com.br/betelapp-content` (HTTP, não HTTPS).
-  - **Por quê:** MinIO rodando no homelab sem certificado SSL configurado. Dívida técnica.
-- **Sem configuração de ambiente** — sem flavors, sem `dart-define`, sem `.env`. Para trocar ambiente, a constante precisa ser alterada no source.
+- **Sem auth headers.** O único interceptor ativo é o `_NetworkCheckInterceptor` de `NetworkStatusNotifier` (reporta sucesso/falha para o status de rede — não é retry logic).
+- **Base URL via `dart-define`:** `CONTENT_BASE_URL` — default `http://s3.kajiyama.com.br/betelapp-content` (produção). Para dev, passar `--dart-define=CONTENT_BASE_URL=http://s3.kajiyama.com.br/betelapp-content-dev`. Sem `dart-define`, URL de produção é usada.
+  - Ainda HTTP (não HTTPS) — sem certificado SSL no homelab. Dívida técnica.
+  - Não há flavors nem `.env` — o único mecanismo de troca de ambiente é `dart-define`.
+- **`RemoteContentException`** — única exception tipada do data layer. Lançada por `fetchManifest()` e `downloadFile()` encapsulando qualquer `DioException` ou erro de parsing. Capturada em `ContentSyncService.sync()` para fallback silencioso. Nunca propagada para a UI.
 
 ### Repository pattern
 
 - **Parcialmente implementado:**
-  - `FavoritesRepository` → interface abstrata em `domain/` + implementação em `data/`
-  - `ContentRepository` → implementação direta em `data/`, sem interface abstrata
-  - **Por quê:** Somente `FavoritesRepository` foi abstraída porque seus testes precisavam de mocking independente.
+  - `FavoritesRepository` → interface abstrata em `domain/` + implementação em `data/`. Provider tipado como `Provider<FavoritesRepository>` (abstrato) — permite substituição por mock em testes.
+  - `ReviewRepository` → interface abstrata existe em `domain/`, mas o provider (`reviewRepositoryProvider`) está tipado como `Provider<ReviewRepositoryImpl>` (concreto). `ReviewViewModel` também injeta o concreto diretamente. **A interface não é usada para injeção de dependência** — testes de `ReviewViewModel` injetam o concreto, não um mock da interface.
+  - `ContentRepository` → implementação direta em `data/`, sem interface abstrata.
+  - **Por quê:** `FavoritesRepository` foi totalmente abstraída para testes. `ReviewRepository` tem interface por legado arquitetural mas o provider nunca foi migrado para tipagem abstrata — dívida técnica.
+
+- **Dependência cruzada em `ReviewRepository`:** A interface `domain/repositories/review_repository.dart` importa `Flashcard` e `CardProgress` de `data/models/flashcard.dart`. Isso viola a regra de dependência do Clean Architecture (domain não deveria depender de data). `FavoritesRepository` está correto — referencia apenas `domain/entities/favorite.dart`. **Dívida arquitetural — não replicar como padrão.** Para novas interfaces em `domain/`, os tipos de parâmetro e retorno devem viver em `domain/entities/` ou ser tipos primitivos/built-in Dart.
 
 ### Content sync
 
 - **Manifest-driven:** `RemoteContentService.fetchManifest()` baixa `/manifest.json` do MinIO.
+
+- **`SyncProgress`** — emitido via callback `onProgress` durante o download de lições:
+  - `current` (int): índice da lição sendo baixada (1-based)
+  - `total` (int): total de lições a baixar neste sync
+  - `lessonTitle` (String): título da lição atual (para exibir na splash)
+
+- **`ContentSyncService.sync()` — assinatura completa:**
+  ```
+  Future<SyncResult> sync({
+    void Function(SyncProgress)? onProgress,
+    Future<String> Function()? getDocsDir,
+  })
+  ```
+  - `onProgress`: opcional; chamado uma vez por lição com arquivo novo/atualizado
+  - `getDocsDir`: injetável para testes (evita chamada real a `getApplicationDocumentsDirectory()`)
 - **Modelo `ContentManifest`:**
   - `version` (int) — comparado com `sync_meta.manifest_version`
   - `updatedAt` (DateTime)
   - `lessons[]` — cada uma com `ManifestLesson` contendo `ManifestFileEntry` (pdf), `ManifestAudioEntry?` (audio), e `List<ManifestQuestion>` (questions, default `[]`)
   - `ManifestQuestion`: `id`, `question` (de `"q"`), `answer` (de `"a"`)
-  - `contents[]` — cada um com `ManifestContent` contendo `id`, `slug`, `title`, `type` ('VIDEO'/'TEXT'), `youtubeUrl?`, `html?`. Default `[]` para backward compat com manifests antigos.
+  - `contents[]` — cada um com `ManifestContent` contendo `id`, `slug`, `title`, `type` ('VIDEO'/'TEXT'), `youtubeUrl?`, `html?`, `pages?` (`List<String>?` — multi-page HTML). Default `[]` para backward compat com manifests antigos.
+  - **`ManifestFileEntry`** — representa um arquivo versionado: `active` (String, caminho relativo à base URL para download), `checksum` (String), `history` (List<String>, paths anteriores — desserializado mas não consumido pela lógica de sync).
+  - **`ManifestAudioEntry`** — extends `ManifestFileEntry`, adiciona `ext` (String, ex: `"mp3"`) usado para construir o nome local `audio.<ext>`.
 - **Lógica de detecção de mudanças por lição:**
   | Mudança detectada | Ação |
   |-------------------|------|
@@ -113,6 +157,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | `activateReviewIfNew(lessonId)` | Insert em `review_active` com `active=1` e `ConflictAlgorithm.ignore` — usado apenas onde se quer ativar sem sobrescrever escolha existente. **Não é chamado pelo sync.** |
   | `getActiveLessonIds()` | Retorna lesson_ids com `active=1` |
   | `resetAllProgress()` | Zera buckets de todos os cards; não altera `review_active` |
+  | `advanceOneDayForTesting()` | Subtrai 1 dia de cada `next_review_at` em `card_progress`, tornando os cards de amanhã devidos hoje. **Dev/test only** — chamado via menu de debug oculto na UI (`MainScaffold`). Parte da interface abstrata `ReviewRepository`. |
 
 - **Tabela `review_active` — semântica de ausência:**
   - Linha ausente = toggle desligado (`isReviewActive` retorna `false`)
@@ -129,7 +174,17 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - **Sem download de arquivo** — conteúdo VIDEO tem só `youtubeUrl`; conteúdo TEXT tem HTML inline no manifest
   - Mecanismo de publish: presença no `contents[]` = publicado, ausência = despublicado (sem campo `published`)
 
-- **ContentRepository** — `loadContents()` (todos, ordenados por id), `loadContentBySlug(slug)` (busca por slug, retorna null se não encontrado). O dev usa `loadContentBySlug` para vincular conteúdo hardcoded no app.
+- **ContentRepository** — implementação direta em `data/`, sem interface abstrata. Métodos:
+  | Método | O que faz |
+  |--------|-----------|
+  | `loadLessons()` | Retorna todas as lições da tabela `lessons`, ordenadas por `id ASC` |
+  | `loadLessonsWithAudio()` | Retorna lições com `audio_local_path IS NOT NULL` (usada nas telas de Músicas e Favoritos) |
+  | `loadContents()` | Retorna todos os conteúdos da tabela `contents`, ordenados por `id ASC` |
+  | `loadContentBySlug(slug)` | Busca conteúdo por `slug`; retorna `null` se não encontrado |
+
+  O dev usa `loadContentBySlug` para vincular conteúdo hardcoded no app.
+
+- **`\*` Desnormalização em `card_progress`:** `question_text` e `answer_text` são cópias desnormalizadas do texto da Q&A. Escritas em `upsertCards()` e lidas diretamente por `getDueCards()` — sem join a nenhuma outra tabela. Simplifica queries de revisão ao custo de duplicar texto que também existe no manifest.
 
 - **Files no filesystem:** PDFs e áudios são salvos em `getApplicationDocumentsDirectory()/betelapp/lessons/{id}/lesson.pdf` e `.../audio.{ext}`.
 - **DB armazena só paths e checksums** — conteúdo binário nunca fica no SQLite.
@@ -150,7 +205,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 
 - **Não usar SharedPreferences** — SQLite é o storage unificado. O guidelines/4-technical-details.md menciona SharedPreferences mas a implementação real migrou inteiramente para SQLite.
 - **Não alterar o schema do SQLite sem incrementar a version** — migrações dependem do version number em `DatabaseHelper`.
-- **Não confiar que `Song.durationIds` é o nome correto** — provavelmente é typo de `durationInSeconds`. Verificar se o campo é realmente consumido.
+- **`Song.durationIds` não é consumido** — o campo existe no modelo (`json_serializable`) e é quase certamente um typo de `durationInSeconds`, mas nunca é lido em runtime. Todos os call sites constroem `Song` com `durationIds: 0`. A duração real vem do `durationStream` do `just_audio` via `BetelAudioHandler`. Dívida técnica: o campo pode ser removido sem impacto funcional.
 - **Não criar novos models com `json_serializable`** sem decisão explícita de padronização — o projeto está inconsistente entre hand-written e codegen.
 - **Não acessar MinIO via HTTPS** sem antes configurar o certificado — a base URL é HTTP intencional.
 - **Não implementar retry/interceptors no Dio** sem considerar o impacto no sync (o sync já trata falha com fallback silencioso para offline).

@@ -22,7 +22,6 @@ final _testSongs = List.generate(
     title: 'Song ${i + 1}',
     artist: 'Artist',
     audioUrl: 'url_${i + 1}',
-    durationIds: 180,
   ),
 );
 

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import { FileRow } from './FileRow'
 import { QASection } from './QASection'
 import { EditLessonDialog } from './EditLessonDialog'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-interface Lesson {
-  id: number
-  order: number
-  title: string
-  published: boolean
-  audio: { active: string | null; ext: string; checksum: string; history: string[] }
-  pdf: { active: string | null; checksum: string; history: string[] }
-}
+import type { Lesson } from '@/types/api'
 
 interface LessonRowProps {
   lesson: Lesson
@@ -151,7 +144,6 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
               lessonId={lesson.id}
               type="audio"
               active={lesson.audio.active}
-              filename={lesson.audio.active ? lesson.audio.active.split('/').pop() ?? null : null}
               uploading={uploadingKey === `${lesson.id}-audio`}
               onUpload={onUpload}
               onDelete={handleDeleteRequest}
@@ -161,7 +153,6 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
               lessonId={lesson.id}
               type="pdf"
               active={lesson.pdf.active}
-              filename={lesson.pdf.active ? lesson.pdf.active.split('/').pop() ?? null : null}
               uploading={uploadingKey === `${lesson.id}-pdf`}
               onUpload={onUpload}
               onDelete={handleDeleteRequest}
@@ -216,12 +207,7 @@ export function LessonRow({ lesson, isAdmin, uploadingKey, onUpload, onDelete, o
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm} disabled={publishing} className="flex items-center gap-2">
-              {publishing && (
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              )}
+              {publishing && <Spinner />}
               {publishing ? 'Aguarde...' : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>

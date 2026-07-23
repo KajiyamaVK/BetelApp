@@ -18,12 +18,6 @@ class Flashcard {
         answer: map['answer'] as String,
       );
 
-  Map<String, dynamic> toMap() => {
-        'question_id': id,
-        'lesson_id': lessonId,
-        'question': question,
-        'answer': answer,
-      };
 }
 
 class CardProgress {

@@ -1,6 +1,8 @@
 import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/data/models/content.dart';
 import 'package:betelapp/data/models/lesson.dart';
+import 'package:betelapp/data/models/song.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ContentRepository {
   final DatabaseHelper _dbHelper;
@@ -27,6 +29,19 @@ class ContentRepository {
     final db = await _dbHelper.database;
     final rows = await db.query('contents', orderBy: 'id ASC');
     return rows.map(Content.fromMap).toList();
+  }
+
+  Future<List<Song>> loadSongsFromLessons() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final lessons = await loadLessonsWithAudio();
+    return lessons
+        .map((l) => Song(
+              id: l.id.toString(),
+              title: l.title,
+              artist: 'Betel',
+              audioUrl: '${dir.path}/${l.localAudioPath!}',
+            ))
+        .toList();
   }
 
   Future<Content?> loadContentBySlug(String slug) async {

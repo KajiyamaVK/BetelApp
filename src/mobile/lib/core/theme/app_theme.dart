@@ -8,7 +8,7 @@ class AppTheme {
   static const Color scaffoldBackgroundColor = Color(0xFFF5F5F5); // Light Grey
   static const Color textColor = Color(0xFF333333); // Dark Grey/Black
   static const Color errorColor = Color(0xFFE57373);
-  static const Color successColor = Color(0xFF81C784);
+  static const Color updateBannerColor = Color(0xFF2a5298);
 
   // Text Styles
   static TextStyle get heading1 => GoogleFonts.poppins(

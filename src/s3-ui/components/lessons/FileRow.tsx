@@ -3,9 +3,9 @@
 import { useRef } from 'react'
 import { Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/Spinner'
 import { MiniPlayer } from './MiniPlayer'
-
-const S3_BASE = process.env.NEXT_PUBLIC_S3_BASE_URL ?? 'https://s3.kajiyama.com.br/betelapp-content'
+import { S3_BASE } from '@/lib/constants'
 
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024
 const MAX_PDF_BYTES = 50 * 1024 * 1024
@@ -14,14 +14,14 @@ interface FileRowProps {
   lessonId: number
   type: 'audio' | 'pdf'
   active: string | null
-  filename: string | null
   uploading?: boolean
   onUpload: (lessonId: number, type: 'audio' | 'pdf', file: File) => void
   onDelete: (lessonId: number, type: 'audio' | 'pdf') => void
   onPreview: (path: string) => void
 }
 
-export function FileRow({ lessonId, type, active, filename, uploading = false, onUpload, onDelete, onPreview }: FileRowProps) {
+export function FileRow({ lessonId, type, active, uploading = false, onUpload, onDelete, onPreview }: FileRowProps) {
+  const filename = active ? active.split('/').pop() ?? null : null
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -57,14 +57,7 @@ export function FileRow({ lessonId, type, active, filename, uploading = false, o
           disabled={uploading}
           aria-label="Upload"
         >
-          {uploading ? (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-            </svg>
-          ) : (
-            <><Upload size={14} className="mr-1" />Upload</>
-          )}
+          {uploading ? <Spinner /> : <><Upload size={14} className="mr-1" />Upload</>}
         </Button>
       </div>
     )

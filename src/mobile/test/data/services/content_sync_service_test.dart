@@ -7,6 +7,7 @@ import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/data/models/manifest.dart';
+import 'package:betelapp/data/repositories/review_repository_impl.dart';
 
 @GenerateMocks([RemoteContentService, ConnectivityService, DatabaseHelper])
 import 'content_sync_service_test.mocks.dart';
@@ -44,6 +45,7 @@ void main() {
       remote: mockRemote,
       connectivity: mockConnectivity,
       dbHelper: mockDb,
+      reviewRepo: ReviewRepositoryImpl(mockDb),
     );
     openedDb = null;
   });
@@ -135,7 +137,7 @@ void main() {
             ManifestLesson(
               id: 2,
               title: 'Lesson 2',
-              pdf: ManifestFileEntry(active: 'lessons/2/lesson_v1.pdf', checksum: 'ccc', history: []),
+              pdf: ManifestFileEntry(active: 'lessons/2/lesson_v1.pdf', checksum: 'ccc'),
               audio: null,
             ),
           ],
@@ -190,7 +192,7 @@ void main() {
             ManifestLesson(
               id: 1,
               title: 'Lesson 1',
-              pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'aaa', history: []),
+              pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'aaa'),
               audio: null,
             ),
           ],
@@ -238,7 +240,7 @@ void main() {
         ManifestLesson(
           id: 1,
           title: 'Lição 1',
-          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc'),
           audio: null,
           questions: [
             ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
@@ -282,7 +284,7 @@ void main() {
         ManifestLesson(
           id: 1,
           title: 'Lição com Q&A',
-          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc'),
           audio: null,
           questions: [
             ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
@@ -323,7 +325,7 @@ void main() {
         ManifestLesson(
           id: 1,
           title: 'Lição com Q&A',
-          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v2.pdf', checksum: 'new', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v2.pdf', checksum: 'new'),
           audio: null,
           questions: [
             ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
@@ -372,7 +374,7 @@ void main() {
         ManifestLesson(
           id: 1,
           title: 'Lição 1',
-          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'xyz', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'xyz'),
           audio: null,
           questions: [
             ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
@@ -419,7 +421,7 @@ void main() {
         ManifestLesson(
           id: 1,
           title: 'Título Corrigido',
-          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc'),
           audio: null,
           questions: [],
         ),
@@ -464,7 +466,7 @@ void main() {
         ManifestLesson(
           id: 24,
           title: 'Lição 24',
-          pdf: ManifestFileEntry(active: 'lessons/24/lesson_v1.pdf', checksum: 'same', history: []),
+          pdf: ManifestFileEntry(active: 'lessons/24/lesson_v1.pdf', checksum: 'same'),
           audio: null,
           questions: [
             ManifestQuestion(id: 4, question: 'Qual a pergunta 24?', answer: 'Resposta 24'),

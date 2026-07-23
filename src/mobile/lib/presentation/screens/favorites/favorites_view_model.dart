@@ -1,14 +1,12 @@
 import 'package:betelapp/core/providers.dart';
-import 'package:betelapp/data/models/song.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
-final favoritesViewModelProvider = StateNotifierProvider<FavoritesViewModel, AsyncValue<List<dynamic>>>((ref) {
+final favoritesViewModelProvider = StateNotifierProvider<FavoritesViewModel, AsyncValue<List<Object>>>((ref) {
   return FavoritesViewModel(ref);
 });
 
-class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
+class FavoritesViewModel extends StateNotifier<AsyncValue<List<Object>>> {
   final Ref _ref;
 
   FavoritesViewModel(this._ref) : super(const AsyncValue.loading()) {
@@ -22,19 +20,9 @@ class FavoritesViewModel extends StateNotifier<AsyncValue<List<dynamic>>> {
 
       final contentRepo = _ref.read(contentRepositoryProvider);
       final lessons = await contentRepo.loadLessonsWithAudio();
-      final dir = await getApplicationDocumentsDirectory();
-      final songs = lessons
-          .where((l) => l.localAudioPath != null)
-          .map((l) => Song(
-                id: l.id.toString(),
-                title: l.title,
-                artist: 'Betel',
-                audioUrl: '${dir.path}/${l.localAudioPath!}',
-                durationIds: 0,
-              ))
-          .toList();
+      final songs = await contentRepo.loadSongsFromLessons();
 
-      final List<dynamic> favoriteItems = [];
+      final List<Object> favoriteItems = [];
 
       for (var fav in favorites) {
         if (fav.type == 'lesson') {

@@ -5,6 +5,7 @@ import { Video, FileText } from 'lucide-react'
 import { ContentList } from '@/components/contents/ContentList'
 import { ContentForm } from '@/components/contents/ContentForm'
 import { Button } from '@/components/ui/button'
+import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,18 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-interface Content {
-  id: number
-  slug: string
-  title: string
-  type: 'VIDEO' | 'TEXT'
-  youtubeUrl: string | null
-  htmlPath: string | null
-  published: boolean
-  order: number
-  pageCount?: number
-}
+import type { Content } from '@/types/api'
 
 export default function ContentsPage() {
   const [contents, setContents] = useState<Content[]>([])
@@ -133,10 +123,7 @@ export default function ContentsPage() {
       </div>
 
       {errorMessage && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {errorMessage}
-          <button className="ml-2 underline text-xs" onClick={() => setErrorMessage(null)}>Fechar</button>
-        </div>
+        <ErrorBanner message={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
 
       {contents.length === 0 ? (

@@ -3,8 +3,9 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { getObjectText, uploadObject, deleteFolder } from '@/lib/minio'
-import { parseManifest, renameLesson, removeLesson } from '@/lib/manifest'
+import { deleteFolder } from '@/lib/minio'
+import { renameLesson, removeLesson } from '@/lib/manifest'
+import { updateManifest } from '@/lib/manifest-sync'
 import { updateLessonSchema } from '@/lib/schemas'
 import { requireAuth, requireAdmin } from '@/lib/auth'
 
@@ -43,17 +44,11 @@ export async function PUT(
   // This is best-effort: a MinIO failure must never prevent the DB rename from returning 200.
   if (parsed.data.title !== undefined) {
     try {
-      const manifestText = await getObjectText('manifest.json')
-      const manifest = parseManifest(manifestText)
-      const existingEntry = manifest.lessons.find((entry) => entry.id === id)
-      if (existingEntry) {
-        const updatedManifest = renameLesson(manifest, id, lesson.title)
-        await uploadObject(
-          'manifest.json',
-          Buffer.from(JSON.stringify(updatedManifest, null, 2)),
-          'application/json',
-        )
-      }
+      await updateManifest((manifest) =>
+        manifest.lessons.some((entry) => entry.id === id)
+          ? renameLesson(manifest, id, lesson.title)
+          : manifest,
+      )
     } catch (err) {
       console.error('Failed to update manifest after title rename:', err)
     }
@@ -85,10 +80,7 @@ export async function DELETE(
 
   // Remove from manifest (best-effort — manifest may not contain the lesson if unpublished)
   try {
-    const manifestText = await getObjectText('manifest.json')
-    const manifest = parseManifest(manifestText)
-    const updatedManifest = removeLesson(manifest, id)
-    await uploadObject('manifest.json', Buffer.from(JSON.stringify(updatedManifest, null, 2)), 'application/json')
+    await updateManifest((manifest) => removeLesson(manifest, id))
   } catch (err) {
     console.error('Failed to update manifest after lesson delete:', err)
   }

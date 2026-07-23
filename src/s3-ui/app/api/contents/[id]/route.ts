@@ -5,8 +5,9 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { updateContentSchema, slugify } from '@/lib/schemas'
 import { requireAuth } from '@/lib/auth'
-import { uploadObject, getObjectText, deleteFolder } from '@/lib/minio'
-import { parseManifest, removeContent } from '@/lib/manifest'
+import { deleteFolder, uploadObject } from '@/lib/minio'
+import { removeContent } from '@/lib/manifest'
+import { updateManifest } from '@/lib/manifest-sync'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -119,14 +120,7 @@ export async function PUT(
     // Remove from manifest since we just unpublished
     if (wasPublished) {
       try {
-        const manifestJson = await getObjectText('manifest.json')
-        let manifest = parseManifest(manifestJson)
-        manifest = removeContent(manifest, contentId)
-        await uploadObject(
-          'manifest.json',
-          Buffer.from(JSON.stringify(manifest, null, 2)),
-          'application/json',
-        )
+        await updateManifest((manifest) => removeContent(manifest, contentId))
       } catch {
         // Best-effort manifest sync
       }
@@ -168,14 +162,7 @@ export async function DELETE(
 
   // Remove from manifest (best-effort)
   try {
-    const manifestJson = await getObjectText('manifest.json')
-    let manifest = parseManifest(manifestJson)
-    manifest = removeContent(manifest, contentId)
-    await uploadObject(
-      'manifest.json',
-      Buffer.from(JSON.stringify(manifest, null, 2)),
-      'application/json',
-    )
+    await updateManifest((manifest) => removeContent(manifest, contentId))
   } catch {
     // Best-effort — manifest sync failure doesn't block delete
   }

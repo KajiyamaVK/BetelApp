@@ -5,6 +5,8 @@ import { LessonList } from '@/components/lessons/LessonList'
 import { PdfViewer } from '@/components/lessons/PdfViewer'
 import { CreateLessonDialog } from '@/components/lessons/CreateLessonDialog'
 import { Button } from '@/components/ui/button'
+import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,28 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-interface Lesson {
-  id: number
-  order: number
-  title: string
-  published: boolean
-  audio: { active: string | null; ext: string; checksum: string; history: string[] }
-  pdf: { active: string | null; checksum: string; history: string[] }
-}
+import type { Lesson } from '@/types/api'
 
 interface DeleteTarget { lessonId: number; type: 'audio' | 'pdf' }
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false)
-  useEffect(() => {
-    const check = () => setMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-  return mobile
-}
 
 export default function LessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
@@ -48,7 +31,7 @@ export default function LessonsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const isMobile = useIsMobile()
 
-  const suggestedId = lessons.length > 0 ? Math.max(...lessons.map((lesson) => lesson.id)) + 1 : 1
+  const suggestedId = lessons.length > 0 ? lessons.reduce((max, l) => Math.max(max, l.id), 0) + 1 : 1
 
   const loadLessons = useCallback(async () => {
     const res = await fetch('/api/lessons')
@@ -58,6 +41,7 @@ export default function LessonsPage() {
 
   useEffect(() => {
     loadLessons()
+    // isAdmin is derived from the layout's /api/auth/me fetch — re-fetch here only for the admin flag
     fetch('/api/auth/me').then((res) => res.json()).then((data) => { if (data.isAdmin) setIsAdmin(true) })
   }, [loadLessons])
 
@@ -156,10 +140,7 @@ export default function LessonsPage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-            {errorMessage}
-            <button className="ml-2 underline text-xs" onClick={() => setErrorMessage(null)}>Fechar</button>
-          </div>
+          <ErrorBanner message={errorMessage} onClose={() => setErrorMessage(null)} />
         )}
 
         <LessonList

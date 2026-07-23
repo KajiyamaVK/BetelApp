@@ -1,3 +1,4 @@
+import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:in_app_update/in_app_update.dart';
@@ -112,7 +113,7 @@ class _BetelHeaderState extends State<BetelHeader> {
             if (_updateAvailable)
               Container(
                 width: double.infinity,
-                color: const Color(0xFF2a5298),
+                color: AppTheme.updateBannerColor,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(

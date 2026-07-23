@@ -4,6 +4,7 @@ import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
+import 'package:betelapp/domain/repositories/review_repository.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 import 'package:betelapp/presentation/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -44,12 +45,17 @@ class _FakeConnectivity extends ConnectivityService {
   Future<bool> isMobileData() async => false;
 }
 
+class _FakeReviewRepository implements ReviewRepository {
+  @override dynamic noSuchMethod(Invocation i) => throw UnimplementedError(i.memberName.toString());
+}
+
 class _FakeSyncService extends ContentSyncService {
   _FakeSyncService()
       : super(
           remote: RemoteContentService(),
           connectivity: ConnectivityService(),
           dbHelper: DatabaseHelper(),
+          reviewRepo: _FakeReviewRepository(),
         );
 
   @override

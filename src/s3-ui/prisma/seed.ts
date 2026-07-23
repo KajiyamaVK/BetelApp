@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
-import { Client } from 'minio'
+import { getObjectText } from '../lib/minio'
 
 // Load .env.local first (Next.js convention), then fall back to .env
 config({ path: '.env.local' })
@@ -49,30 +49,12 @@ interface ManifestLessonEntry {
 }
 
 async function fetchManifestLessons(): Promise<ManifestLessonEntry[]> {
-  const endpoint = process.env.MINIO_ENDPOINT
-  const bucket = process.env.MINIO_BUCKET
-  if (!endpoint || !bucket) {
+  if (!process.env.MINIO_ENDPOINT || !process.env.MINIO_BUCKET) {
     console.warn('MINIO_ENDPOINT or MINIO_BUCKET not set — skipping manifest sync in seed')
     return []
   }
-
-  const minioClient = new Client({
-    endPoint: endpoint,
-    port: Number(process.env.MINIO_PORT ?? 443),
-    useSSL: process.env.MINIO_USE_SSL === 'true',
-    accessKey: process.env.MINIO_ACCESS_KEY!,
-    secretKey: process.env.MINIO_SECRET_KEY!,
-  })
-
   try {
-    const stream = await minioClient.getObject(bucket, 'manifest.json')
-    const chunks: Buffer[] = []
-    await new Promise<void>((resolve, reject) => {
-      stream.on('data', (chunk: Buffer) => chunks.push(chunk))
-      stream.on('end', resolve)
-      stream.on('error', reject)
-    })
-    const manifest = JSON.parse(Buffer.concat(chunks).toString('utf-8'))
+    const manifest = JSON.parse(await getObjectText('manifest.json'))
     return manifest.lessons ?? []
   } catch {
     console.warn('Could not fetch manifest.json from MinIO — skipping manifest sync in seed')
