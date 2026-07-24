@@ -89,8 +89,18 @@ describe('POST /api/lessons', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when id is not a positive integer', async () => {
-    const req = await makeAuthRequest({ id: 0, title: 'ID zero' })
+  it('creates lesson with id = 0 and returns 201', async () => {
+    await prisma.lesson.deleteMany({ where: { id: 0 } })
+    const req = await makeAuthRequest({ id: 0, title: 'Introdução' })
+    const res = await createLesson(req)
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.id).toBe(0)
+    await prisma.lesson.deleteMany({ where: { id: 0 } })
+  })
+
+  it('returns 400 when id is negative', async () => {
+    const req = await makeAuthRequest({ id: -1, title: 'ID negativo' })
     const res = await createLesson(req)
     expect(res.status).toBe(400)
   })

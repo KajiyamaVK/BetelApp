@@ -176,6 +176,31 @@ describe('CreateLessonDialog', () => {
     await waitFor(() => expect(handlers.onCreated).toHaveBeenCalled())
   })
 
+  it('accepts lesson id = 0', async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 0, title: 'Introdução', published: false }),
+    })
+    renderDialog(1)
+    const idInput = screen.getByLabelText(/número/i) as HTMLInputElement
+    fireEvent.change(idInput, { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText(/título/i), { target: { value: 'Introdução' } })
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }))
+    await waitFor(() => expect(handlers.onCreated).toHaveBeenCalled())
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)
+    expect(body.id).toBe(0)
+  })
+
+  it('ignores non-digit characters (letters, hyphens) typed in the id field', () => {
+    renderDialog(1)
+    const idInput = screen.getByLabelText(/número/i) as HTMLInputElement
+    fireEvent.change(idInput, { target: { value: 'abc' } })
+    expect(idInput.value).toBe('1')
+    fireEvent.change(idInput, { target: { value: '-5' } })
+    expect(idInput.value).toBe('1')
+  })
+
   it('shows error and does not call onCreated when pdf upload fails', async () => {
     ;(global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ id: 5, title: 'Lição', published: false }) })

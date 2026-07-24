@@ -31,7 +31,7 @@ export const togglePublishSchema = z.object({
 })
 
 export const createLessonSchema = z.object({
-  id: z.number().int().positive('Lesson number must be a positive integer'),
+  id: z.number().int().min(0, 'Lesson number must be a non-negative integer'),
   title: z.string().min(1, 'Title required'),
 })
 

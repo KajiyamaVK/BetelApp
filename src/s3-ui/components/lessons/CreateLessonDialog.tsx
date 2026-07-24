@@ -56,8 +56,8 @@ export function CreateLessonDialog({ open, suggestedId, onCreated, onClose }: Cr
     }
 
     const parsedId = parseInt(lessonId, 10)
-    if (isNaN(parsedId) || parsedId <= 0) {
-      setError('O número da lição deve ser um inteiro positivo')
+    if (isNaN(parsedId) || parsedId < 0) {
+      setError('O número da lição deve ser um inteiro não negativo')
       return
     }
 
@@ -116,10 +116,13 @@ export function CreateLessonDialog({ open, suggestedId, onCreated, onClose }: Cr
             <Label htmlFor="lesson-id">Número da lição</Label>
             <Input
               id="lesson-id"
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               value={lessonId}
-              onChange={(e) => setLessonId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === '' || /^\d+$/.test(v)) setLessonId(v)
+              }}
             />
           </div>
 
