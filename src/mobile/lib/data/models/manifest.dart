@@ -76,6 +76,9 @@ class ManifestContent {
   // Multi-page TEXT content: each element is one page's HTML.
   // Null for single-page TEXT (uses html) and VIDEO content.
   final List<String>? pages;
+  // Where this content should be displayed in the app.
+  // Defaults to 'HOME' for backward compat with older manifests.
+  final String displayLocation;
 
   ManifestContent({
     required this.id,
@@ -85,6 +88,7 @@ class ManifestContent {
     this.youtubeUrl,
     this.html,
     this.pages,
+    this.displayLocation = 'HOME',
   });
 
   factory ManifestContent.fromJson(Map<String, dynamic> json) => ManifestContent(
@@ -97,6 +101,7 @@ class ManifestContent {
         pages: json['pages'] != null
             ? List<String>.from(json['pages'] as List)
             : null,
+        displayLocation: json['displayLocation'] as String? ?? 'HOME',
       );
 }
 

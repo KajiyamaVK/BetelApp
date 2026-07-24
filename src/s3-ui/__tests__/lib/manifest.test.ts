@@ -124,6 +124,7 @@ describe('renameLesson', () => {
       version: 3,
       updated_at: '2024-01-01T00:00:00Z',
       lessons: [{ id: 1, title: 'Old Title', pdf: { active: null, checksum: '', history: [] }, audio: null, questions: [] }],
+      contents: [],
     }
     const result = renameLesson(manifest, 1, 'New Title')
     expect(result.version).toBe(4)
@@ -136,6 +137,7 @@ describe('renameLesson', () => {
       version: 1,
       updated_at: '2024-01-01T00:00:00Z',
       lessons: [],
+      contents: [],
     }
     const result = renameLesson(manifest, 99, 'Ghost')
     expect(result).toStrictEqual(manifest)
@@ -163,8 +165,8 @@ const baseManifestWithContents: Manifest = {
   updated_at: '2026-01-01T00:00:00Z',
   lessons: [],
   contents: [
-    { id: 1, slug: 'welcome-video', title: 'Bem-vindo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=abc' },
-    { id: 2, slug: 'about-catechism', title: 'Sobre o Catecismo', type: 'TEXT', html: '<p>Conteúdo</p>' },
+    { id: 1, slug: 'welcome-video', title: 'Bem-vindo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=abc', displayLocation: 'HOME' },
+    { id: 2, slug: 'about-catechism', title: 'Sobre o Catecismo', type: 'TEXT', html: '<p>Conteúdo</p>', displayLocation: 'HOME' },
   ],
 }
 
@@ -187,7 +189,7 @@ describe('upsertContent', () => {
   it('adds a new content entry to the manifest', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
     const newContent: ManifestContent = {
-      id: 3, slug: 'new-content', title: 'Novo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=xyz',
+      id: 3, slug: 'new-content', title: 'Novo', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=xyz', displayLocation: 'HOME',
     }
     const result = upsertContent(manifest, newContent)
     expect(result.contents).toHaveLength(3)
@@ -197,7 +199,7 @@ describe('upsertContent', () => {
   it('replaces an existing content entry by id', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
     const updated: ManifestContent = {
-      id: 1, slug: 'welcome-video', title: 'Atualizado', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=new',
+      id: 1, slug: 'welcome-video', title: 'Atualizado', type: 'VIDEO', youtubeUrl: 'https://youtube.com/watch?v=new', displayLocation: 'HOME',
     }
     const result = upsertContent(manifest, updated)
     expect(result.contents).toHaveLength(2)
@@ -207,7 +209,7 @@ describe('upsertContent', () => {
   it('increments manifest version', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
     const newContent: ManifestContent = {
-      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>',
+      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>', displayLocation: 'HOME',
     }
     const result = upsertContent(manifest, newContent)
     expect(result.version).toBe(2)
@@ -216,7 +218,7 @@ describe('upsertContent', () => {
   it('updates updated_at timestamp', () => {
     const manifest = JSON.parse(JSON.stringify(baseManifestWithContents)) as Manifest
     const newContent: ManifestContent = {
-      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>',
+      id: 3, slug: 'test', title: 'Test', type: 'TEXT', html: '<p>hi</p>', displayLocation: 'HOME',
     }
     const result = upsertContent(manifest, newContent)
     expect(result.updated_at).not.toBe('2026-01-01T00:00:00Z')

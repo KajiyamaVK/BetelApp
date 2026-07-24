@@ -100,6 +100,7 @@ async function buildManifestEntry(
   content: {
     id: number; slug: string; title: string; type: string;
     youtubeUrl: string | null; htmlPath: string | null;
+    displayLocation: string;
     children: { htmlPath: string | null; pageIndex: number | null }[];
   },
 ): Promise<ManifestContent | null> {
@@ -110,6 +111,7 @@ async function buildManifestEntry(
       title: content.title,
       type: 'VIDEO',
       youtubeUrl: content.youtubeUrl,
+      displayLocation: content.displayLocation,
     }
   }
 
@@ -127,6 +129,7 @@ async function buildManifestEntry(
         title: content.title,
         type: 'TEXT',
         pages,
+        displayLocation: content.displayLocation,
       }
     }
 
@@ -139,6 +142,7 @@ async function buildManifestEntry(
         title: content.title,
         type: 'TEXT',
         html,
+        displayLocation: content.displayLocation,
       }
     }
   }

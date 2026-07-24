@@ -12,6 +12,7 @@ class Content {
   // Multi-page TEXT: decoded from the pages_html JSON column in SQLite.
   // Null for single-page TEXT (uses html) and VIDEO content.
   final List<String>? pagesHtml;
+  final String displayLocation;
 
   Content({
     required this.id,
@@ -21,6 +22,7 @@ class Content {
     this.youtubeUrl,
     this.html,
     this.pagesHtml,
+    this.displayLocation = 'HOME',
   });
 
   factory Content.fromMap(Map<String, dynamic> map) {
@@ -34,6 +36,7 @@ class Content {
       pagesHtml: map['pages_html'] != null
           ? List<String>.from(jsonDecode(map['pages_html'] as String) as List)
           : null,
+      displayLocation: map['display_location'] as String? ?? 'HOME',
     );
   }
 }

@@ -139,6 +139,7 @@ class ContentSyncService {
         'youtube_url': content.youtubeUrl,
         'html': content.html,
         'pages_html': content.pages != null ? jsonEncode(content.pages) : null,
+        'display_location': content.displayLocation,
         'synced_at': DateTime.now().millisecondsSinceEpoch,
       }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
     }

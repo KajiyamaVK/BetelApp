@@ -5,6 +5,7 @@ import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/presentation/screens/home/home_view_model.dart';
 import 'package:betelapp/presentation/widgets/betel_dialog.dart';
 import 'package:betelapp/presentation/widgets/betel_header.dart';
+import 'package:betelapp/presentation/widgets/tab_help_button.dart';
 import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +83,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Lições', style: AppTheme.heading1),
+                        Row(
+                          children: [
+                            Text('Devocionais', style: AppTheme.heading1),
+                            const Spacer(),
+                            const TabHelpButton(displayLocation: 'HELP_DEVOCIONAIS'),
+                          ],
+                        ),
                         const SizedBox(height: 5),
                         Text(
                           'Eu & minha Casa Serviremos a Deus',

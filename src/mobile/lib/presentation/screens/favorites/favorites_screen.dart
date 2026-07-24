@@ -4,6 +4,7 @@ import 'package:betelapp/data/models/song.dart';
 import 'package:betelapp/presentation/screens/favorites/favorites_view_model.dart';
 import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
 import 'package:betelapp/presentation/widgets/betel_header.dart';
+import 'package:betelapp/presentation/widgets/tab_help_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,9 +24,12 @@ class FavoritesScreen extends ConsumerWidget {
                  const BetelHeader(),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('Favoritos', style: AppTheme.heading1),
+                    child: Row(
+                      children: [
+                        Text('Favoritos', style: AppTheme.heading1),
+                        const Spacer(),
+                        const TabHelpButton(displayLocation: 'HELP_FAVORITOS'),
+                      ],
                     ),
                   ),
                  Expanded(
@@ -50,9 +54,12 @@ class FavoritesScreen extends ConsumerWidget {
               const BetelHeader(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Favoritos', style: AppTheme.heading1),
+                child: Row(
+                  children: [
+                    Text('Favoritos', style: AppTheme.heading1),
+                    const Spacer(),
+                    const TabHelpButton(displayLocation: 'HELP_FAVORITOS'),
+                  ],
                 ),
               ),
               Expanded(

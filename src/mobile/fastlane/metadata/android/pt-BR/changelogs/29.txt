@@ -1,0 +1,1 @@
+Botão de ajuda (?) adicionado ao cabeçalho de cada aba. Toque para ver o conteúdo explicativo daquela seção.

@@ -2,6 +2,7 @@ import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:betelapp/presentation/screens/reviews/review_session_screen.dart';
 import 'package:betelapp/presentation/screens/reviews/reviews_view_model.dart';
+import 'package:betelapp/presentation/widgets/tab_help_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,7 +38,13 @@ class _ReviewsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Revisões', style: AppTheme.heading1),
+          Row(
+            children: [
+              Text('Revisões', style: AppTheme.heading1),
+              const Spacer(),
+              const TabHelpButton(displayLocation: 'HELP_REVISOES'),
+            ],
+          ),
           Text(
             'MEMORIZAÇÃO DO CATECISMO',
             style: AppTheme.caption.copyWith(letterSpacing: 1),

@@ -14,13 +14,13 @@ import 'content_sync_service_test.mocks.dart';
 
 Future<Database> _openFullSchema() => openDatabase(
       inMemoryDatabasePath,
-      version: 5,
+      version: 6,
       onCreate: (db, _) async {
         await db.execute('CREATE TABLE sync_meta (id INTEGER PRIMARY KEY, manifest_version INTEGER, last_sync_at INTEGER)');
         await db.execute('CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
         await db.execute('CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
         await db.execute('CREATE TABLE review_active (lesson_id INTEGER PRIMARY KEY, active INTEGER NOT NULL DEFAULT 1)');
-        await db.execute('CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, pages_html TEXT, synced_at INTEGER NOT NULL)');
+        await db.execute("CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, pages_html TEXT, display_location TEXT NOT NULL DEFAULT 'HOME', synced_at INTEGER NOT NULL)");
       },
     );
 

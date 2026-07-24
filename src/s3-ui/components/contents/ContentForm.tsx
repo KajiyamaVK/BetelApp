@@ -14,6 +14,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import { TiptapEditor } from './TiptapEditor'
 import { ImageGallery } from './ImageGallery'
+import {
+  ContentLocation,
+  CONTENT_LOCATION_LABELS,
+  type ContentLocation as ContentLocationType,
+} from '@/lib/contentLocation'
 
 interface ContentFormProps {
   /** When set, the form is in edit mode — PUT instead of POST */
@@ -23,6 +28,7 @@ interface ContentFormProps {
     title: string
     youtubeUrl?: string
     html?: string
+    displayLocation?: ContentLocationType
   }
   onSaved: () => void
   onCancel: () => void
@@ -74,6 +80,9 @@ async function checkTitleUnique(title: string, excludeId?: number): Promise<bool
 export function ContentForm({ contentId, type, initialData, onSaved, onCancel }: ContentFormProps) {
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [youtubeUrl, setYoutubeUrl] = useState(initialData?.youtubeUrl ?? '')
+  const [displayLocation, setDisplayLocation] = useState<ContentLocationType>(
+    initialData?.displayLocation ?? ContentLocation.HOME,
+  )
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -202,7 +211,7 @@ export function ContentForm({ contentId, type, initialData, onSaved, onCancel }:
 
   async function saveEditMode() {
     // Update parent title
-    const parentBody: Record<string, unknown> = { title }
+    const parentBody: Record<string, unknown> = { title, displayLocation }
     if (type === 'VIDEO') parentBody.youtubeUrl = youtubeUrl
 
     const parentRes = await fetch(`/api/contents/${contentId}`, {
@@ -259,7 +268,7 @@ export function ContentForm({ contentId, type, initialData, onSaved, onCancel }:
   }
 
   async function saveCreateMode() {
-    const body: Record<string, unknown> = { title, type }
+    const body: Record<string, unknown> = { title, type, displayLocation }
     if (type === 'VIDEO') body.youtubeUrl = youtubeUrl
 
     const res = await fetch('/api/contents', {
@@ -371,6 +380,22 @@ export function ContentForm({ contentId, type, initialData, onSaved, onCancel }:
               placeholder="Ex: Bem-vindo ao curso"
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          {/* Display location */}
+          <div className="max-w-lg">
+            <label className="block text-sm font-medium text-text-main mb-1">Exibir em</label>
+            <select
+              value={displayLocation}
+              onChange={(event) => setDisplayLocation(event.target.value as ContentLocationType)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              {Object.values(ContentLocation).map((loc) => (
+                <option key={loc} value={loc}>
+                  {CONTENT_LOCATION_LABELS[loc]}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* VIDEO: YouTube URL + preview */}

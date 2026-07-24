@@ -63,17 +63,21 @@ export function slugify(title: string): string {
     .replace(/^-|-$/g, '')                  // trim leading/trailing dashes
 }
 
+const CONTENT_LOCATIONS = ['HOME', 'HELP_DEVOCIONAIS', 'HELP_MUSICAS', 'HELP_REVISOES', 'HELP_FAVORITOS'] as const
+
 export const createContentSchema = z.discriminatedUnion('type', [
   z.object({
     title: z.string().min(1, 'Título obrigatório'),
     type: z.literal('VIDEO'),
     youtubeUrl: z.string().url('URL inválida').min(1, 'URL do YouTube obrigatória'),
     order: z.number().int().nonnegative().optional(),
+    displayLocation: z.enum(CONTENT_LOCATIONS).optional(),
   }),
   z.object({
     title: z.string().min(1, 'Título obrigatório'),
     type: z.literal('TEXT'),
     order: z.number().int().nonnegative().optional(),
+    displayLocation: z.enum(CONTENT_LOCATIONS).optional(),
   }),
 ])
 
@@ -81,6 +85,7 @@ export const updateContentSchema = z.object({
   title: z.string().min(1).optional(),
   youtubeUrl: z.string().url().optional(),
   order: z.number().int().nonnegative().optional(),
+  displayLocation: z.enum(CONTENT_LOCATIONS).optional(),
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field required' },

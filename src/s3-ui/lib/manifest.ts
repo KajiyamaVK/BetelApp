@@ -18,6 +18,7 @@ export interface ManifestContentVideo {
   title: string
   type: 'VIDEO'
   youtubeUrl: string
+  displayLocation: string
 }
 
 export interface ManifestContentText {
@@ -26,6 +27,7 @@ export interface ManifestContentText {
   title: string
   type: 'TEXT'
   html: string
+  displayLocation: string
 }
 
 // Multi-page TEXT content: pages array replaces the single html field.
@@ -36,6 +38,7 @@ export interface ManifestContentMultiText {
   title: string
   type: 'TEXT'
   pages: string[]
+  displayLocation: string
 }
 
 export type ManifestContent = ManifestContentVideo | ManifestContentText | ManifestContentMultiText

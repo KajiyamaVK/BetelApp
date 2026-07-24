@@ -54,4 +54,15 @@ class ContentRepository {
     );
     return rows.isEmpty ? null : Content.fromMap(rows.first);
   }
+
+  Future<Content?> loadContentByLocation(String location) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'contents',
+      where: 'display_location = ?',
+      whereArgs: [location],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : Content.fromMap(rows.first);
+  }
 }

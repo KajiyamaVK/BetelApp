@@ -1,7 +1,7 @@
 import { BookOpen, FileText, Users } from 'lucide-react'
 
 export const NAV_ITEMS = [
-  { href: '/lessons', icon: <BookOpen size={18} />, label: 'Lições', adminOnly: false },
+  { href: '/lessons', icon: <BookOpen size={18} />, label: 'Devocionais', adminOnly: false },
   { href: '/contents', icon: <FileText size={18} />, label: 'Conteúdos', adminOnly: false },
   { href: '/users', icon: <Users size={18} />, label: 'Usuários', adminOnly: true },
 ] as const

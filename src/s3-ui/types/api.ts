@@ -7,6 +7,7 @@ export interface Content {
   htmlPath: string | null
   published: boolean
   order: number
+  displayLocation: string
   pageCount?: number
 }
 

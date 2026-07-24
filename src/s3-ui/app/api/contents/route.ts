@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
         type: parsed.data.type,
         youtubeUrl: parsed.data.type === 'VIDEO' ? parsed.data.youtubeUrl : null,
         order: parsed.data.order ?? 0,
+        displayLocation: parsed.data.displayLocation ?? 'HOME',
       },
     })
     return NextResponse.json(content, { status: 201 })

@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { Content } from '@/types/api'
+import type { ContentLocation } from '@/lib/contentLocation'
 
 export default function ContentsPage() {
   const [contents, setContents] = useState<Content[]>([])
@@ -92,6 +93,7 @@ export default function ContentsPage() {
         initialData={{
           title: editingContent.title,
           youtubeUrl: editingContent.youtubeUrl ?? undefined,
+          displayLocation: editingContent.displayLocation as ContentLocation,
         }}
         onSaved={handleSaved}
         onCancel={handleCancel}

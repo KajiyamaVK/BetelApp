@@ -31,7 +31,7 @@ class DatabaseHelper {
     }
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -58,6 +58,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 5) {
       await db.execute('ALTER TABLE contents ADD COLUMN pages_html TEXT');
+    }
+    if (oldVersion < 6) {
+      await db.execute("ALTER TABLE contents ADD COLUMN display_location TEXT NOT NULL DEFAULT 'HOME'");
     }
   }
 
@@ -104,14 +107,15 @@ class DatabaseHelper {
   Future<void> _createContentTables(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS contents (
-        id          INTEGER PRIMARY KEY,
-        slug        TEXT NOT NULL UNIQUE,
-        title       TEXT NOT NULL,
-        type        TEXT NOT NULL,
-        youtube_url TEXT,
-        html        TEXT,
-        pages_html  TEXT,
-        synced_at   INTEGER NOT NULL
+        id               INTEGER PRIMARY KEY,
+        slug             TEXT NOT NULL UNIQUE,
+        title            TEXT NOT NULL,
+        type             TEXT NOT NULL,
+        youtube_url      TEXT,
+        html             TEXT,
+        pages_html       TEXT,
+        display_location TEXT NOT NULL DEFAULT 'HOME',
+        synced_at        INTEGER NOT NULL
       )
     ''');
   }

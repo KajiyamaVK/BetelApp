@@ -3,6 +3,7 @@ import 'package:betelapp/presentation/providers/audio_provider.dart';
 import 'package:betelapp/presentation/screens/music/music_view_model.dart';
 import 'package:betelapp/presentation/widgets/audio_player_widget.dart';
 import 'package:betelapp/presentation/widgets/betel_header.dart';
+import 'package:betelapp/presentation/widgets/tab_help_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,7 +33,13 @@ class MusicScreen extends ConsumerWidget {
                         const BetelHeader(),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                          child: Text('Músicas', style: AppTheme.heading1),
+                          child: Row(
+                            children: [
+                              Text('Músicas', style: AppTheme.heading1),
+                              const Spacer(),
+                              const TabHelpButton(displayLocation: 'HELP_MUSICAS'),
+                            ],
+                          ),
                         ),
                       ],
                     ),
