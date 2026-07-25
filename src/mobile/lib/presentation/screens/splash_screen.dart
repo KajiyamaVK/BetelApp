@@ -21,30 +21,36 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _runSync() async {
-    final connectivity = ref.read(connectivityServiceProvider);
-    final syncService = ref.read(contentSyncServiceProvider);
+    try {
+      final connectivity = ref.read(connectivityServiceProvider);
+      final syncService = ref.read(contentSyncServiceProvider);
 
-    final isMobile = await connectivity.isMobileData();
-    if (isMobile && mounted) {
-      final shouldProceed = await _showMobileDataDialog();
-      if (!shouldProceed) {
-        if (mounted) _navigate(SyncResult.offlineWithData);
-        return;
-      }
-    }
-
-    final result = await syncService.sync(
-      onProgress: (progress) {
-        if (mounted) {
-          setState(() {
-            _statusMessage =
-                'Baixando lição ${progress.current} de ${progress.total}…';
-          });
+      final isMobile = await connectivity.isMobileData();
+      if (isMobile && mounted) {
+        final shouldProceed = await _showMobileDataDialog();
+        if (!shouldProceed) {
+          if (mounted) _navigate(SyncResult.offlineWithData);
+          return;
         }
-      },
-    );
+      }
 
-    if (mounted) _navigate(result);
+      final result = await syncService.sync(
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _statusMessage =
+                  'Baixando lição ${progress.current} de ${progress.total}…';
+            });
+          }
+        },
+      );
+
+      if (mounted) _navigate(result);
+    } catch (e, st) {
+      // Unhandled sync error — navigate with cached data rather than freezing on splash.
+      debugPrint('SplashScreen: sync failed — $e\n$st');
+      if (mounted) _navigate(SyncResult.offlineWithData);
+    }
   }
 
   Future<bool> _showMobileDataDialog() async {

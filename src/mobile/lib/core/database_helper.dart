@@ -54,12 +54,14 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE lessons ADD COLUMN question_count INTEGER NOT NULL DEFAULT 0');
     }
     if (oldVersion < 4) {
+      // _createContentTables already includes pages_html and display_location,
+      // so ALTER TABLE steps below must be skipped for this path.
       await _createContentTables(db);
     }
-    if (oldVersion < 5) {
+    if (oldVersion >= 4 && oldVersion < 5) {
       await db.execute('ALTER TABLE contents ADD COLUMN pages_html TEXT');
     }
-    if (oldVersion < 6) {
+    if (oldVersion >= 4 && oldVersion < 6) {
       await db.execute("ALTER TABLE contents ADD COLUMN display_location TEXT NOT NULL DEFAULT 'HOME'");
     }
   }
