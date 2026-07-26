@@ -50,7 +50,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
 
 - **DatabaseHelper singleton** — factory constructor com `_instance`/`_database` estáticos.
   - **`resetForTesting({String? dbPath})`** — método estático que zera `_database` e `_instance`, permitindo que cada teste crie um banco fresh. Quando `dbPath` é fornecido (ex: `inMemoryDatabasePath` do `sqflite_common_ffi`), o próximo `openDatabase()` usa esse path.
-- **Banco:** `betel.db`, schema version 5 (v4→v5: `ALTER TABLE contents ADD COLUMN pages_html TEXT`).
+- **Banco:** `betel.db`, schema version 6 (v4→v5: `ALTER TABLE contents ADD COLUMN pages_html TEXT`; v5→v6: `ALTER TABLE contents ADD COLUMN display_location TEXT NOT NULL DEFAULT 'HOME'`).
 
 - **Tabelas:**
   | Tabela | Propósito | Colunas chave |
@@ -61,7 +61,7 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   | `lesson_progress` | Progresso de lições (esqueleto, não usado) | `lesson_id`, `is_completed`, `is_locked`, `last_accessed` |
   | `card_progress` | Progresso Leitner por flashcard | `question_id` (PK), `lesson_id`, `bucket` (1-5), `last_reviewed_at`, `next_review_at`, `question_text`\*, `answer_text`\* |
   | `review_active` | Toggle de revisão por lição | `lesson_id` (PK), `active` (0/1) |
-  | `contents` | Conteúdos dinâmicos sincronizados do portal | `id` (PK), `slug` (UNIQUE), `title`, `type`, `youtube_url`, `html`, `pages_html`, `synced_at` |
+  | `contents` | Conteúdos dinâmicos sincronizados do portal | `id` (PK), `slug` (UNIQUE), `title`, `type`, `youtube_url`, `html`, `pages_html`, `display_location` (NOT NULL DEFAULT `'HOME'`), `synced_at` |
 
 - **Serialização de DateTime em SQLite:**
   - `favorites.added_at` → INTEGER (Unix timestamp em milissegundos). Leitura via `DateTime.fromMillisecondsSinceEpoch()`.
@@ -173,6 +173,8 @@ Governa decisões de dados no app mobile — modelos locais, sincronização com
   - Upsert de cada conteúdo com `ConflictAlgorithm.replace`
   - **Sem download de arquivo** — conteúdo VIDEO tem só `youtubeUrl`; conteúdo TEXT tem HTML inline no manifest
   - Mecanismo de publish: presença no `contents[]` = publicado, ausência = despublicado (sem campo `published`)
+
+- **Migração de schema × gate de versão do sync:** o `sync()` é gated por versão — se `localVersion == manifest.version`, retorna `upToDate` e **pula** a repopulação dos contents. Uma migração que remapeia dados vindos do manifest (ex: v5→v6 adiciona `display_location` com default literal `'HOME'` nas linhas existentes) deixa o dado local fora de sincronia **sem** mudar a versão do manifest. Nesses casos, `_onUpgrade` **deve** invalidar o checkpoint (`UPDATE sync_meta SET manifest_version = -1`) para forçar um re-sync que reescreve os contents com os valores reais no próximo sync online. Regressão coberta por `content_sync_service_test.dart` → "help content is reachable after v5->v6 upgrade even when manifest version is unchanged".
 
 - **ContentRepository** — implementação direta em `data/`, sem interface abstrata. Métodos:
   | Método | O que faz |

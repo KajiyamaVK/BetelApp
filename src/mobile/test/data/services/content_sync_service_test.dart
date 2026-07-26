@@ -7,6 +7,7 @@ import 'package:betelapp/core/connectivity_service.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
 import 'package:betelapp/data/models/manifest.dart';
+import 'package:betelapp/data/repositories/content_repository.dart';
 import 'package:betelapp/data/repositories/review_repository_impl.dart';
 
 @GenerateMocks([RemoteContentService, ConnectivityService, DatabaseHelper])
@@ -610,5 +611,87 @@ void main() {
     final database = await mockDb.database;
     final rows = await database.query('contents');
     expect(rows, isEmpty);
+  });
+
+  // Regression: upgrading the local DB to v6 backfills display_location with the
+  // literal default 'HOME' for every existing content row. When the manifest version
+  // is unchanged since the last sync (the app already synced v144 before the update),
+  // the version gate in sync() skips content re-population — leaving help content
+  // stuck at 'HOME' and unreachable by its HELP_* location, so the tab "?" buttons
+  // open nothing. The migration must invalidate the sync checkpoint so the next sync
+  // re-inserts contents with their real display_location.
+  test('help content is reachable after v5->v6 upgrade even when manifest version is unchanged', () async {
+    const tmpPath = '/tmp/betel_display_location_resync_test.db';
+    await databaseFactoryFfi.deleteDatabase(tmpPath);
+
+    // Seed a v5 database: contents predate the display_location column, and the app
+    // had already synced manifest version 144 before the user updated the app.
+    final seedDb = await databaseFactoryFfi.openDatabase(
+      tmpPath,
+      options: OpenDatabaseOptions(
+        version: 5,
+        onCreate: (db, _) async {
+          await db.execute(
+              'CREATE TABLE sync_meta (id INTEGER PRIMARY KEY DEFAULT 1, manifest_version INTEGER NOT NULL, last_sync_at INTEGER NOT NULL)');
+          await db.execute(
+              'CREATE TABLE lessons (id INTEGER PRIMARY KEY, title TEXT NOT NULL, audio_local_path TEXT, audio_ext TEXT, audio_checksum TEXT, pdf_local_path TEXT NOT NULL, pdf_checksum TEXT NOT NULL, synced_at INTEGER NOT NULL, question_count INTEGER NOT NULL DEFAULT 0)');
+          await db.execute(
+              'CREATE TABLE card_progress (question_id INTEGER PRIMARY KEY, lesson_id INTEGER NOT NULL, bucket INTEGER NOT NULL DEFAULT 1, last_reviewed_at TEXT, next_review_at TEXT NOT NULL, question_text TEXT, answer_text TEXT)');
+          await db.execute(
+              'CREATE TABLE review_active (lesson_id INTEGER PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)');
+          await db.execute(
+              'CREATE TABLE contents (id INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, type TEXT NOT NULL, youtube_url TEXT, html TEXT, pages_html TEXT, synced_at INTEGER NOT NULL)');
+          await db.insert('sync_meta', {'id': 1, 'manifest_version': 144, 'last_sync_at': 0});
+          await db.insert('contents', {
+            'id': 9, 'slug': 'devocionais', 'title': 'Ajuda Devocionais',
+            'type': 'TEXT', 'html': '<p>ajuda</p>', 'synced_at': 0,
+          });
+        },
+      ),
+    );
+    await seedDb.close();
+
+    // Reopen through the real DatabaseHelper so _onUpgrade (v5->v6) runs.
+    DatabaseHelper.resetForTesting(dbPath: tmpPath);
+    final dbHelper = DatabaseHelper();
+
+    when(mockConnectivity.isConnected()).thenAnswer((_) async => true);
+    when(mockConnectivity.isMobileData()).thenAnswer((_) async => false);
+    // Manifest version is UNCHANGED (144) but now carries the real display_location.
+    when(mockRemote.fetchManifest()).thenAnswer((_) async => ContentManifest(
+          version: 144,
+          updatedAt: '2026-07-24T15:39:58Z',
+          lessons: [],
+          contents: [
+            ManifestContent(
+              id: 9,
+              slug: 'devocionais',
+              title: 'Ajuda Devocionais',
+              type: 'TEXT',
+              html: '<p>ajuda</p>',
+              displayLocation: 'HELP_DEVOCIONAIS',
+            ),
+          ],
+        ));
+
+    final realService = ContentSyncService(
+      remote: mockRemote,
+      connectivity: mockConnectivity,
+      dbHelper: dbHelper,
+      reviewRepo: ReviewRepositoryImpl(dbHelper),
+    );
+
+    await realService.sync(getDocsDir: () async => '/tmp');
+
+    final repository = ContentRepository(dbHelper: dbHelper);
+    final content = await repository.loadContentByLocation('HELP_DEVOCIONAIS');
+    expect(content, isNotNull,
+        reason: 'após o upgrade, o conteúdo de ajuda deve ser alcançável por sua localização mesmo com a versão do manifest inalterada');
+    expect(content!.displayLocation, 'HELP_DEVOCIONAIS');
+
+    final db = await dbHelper.database;
+    await db.close();
+    DatabaseHelper.resetForTesting(dbPath: inMemoryDatabasePath);
+    await databaseFactoryFfi.deleteDatabase(tmpPath);
   });
 }

@@ -1,0 +1,1 @@
+Correção nos botões de ajuda das abas, que não abriam após atualizar o app.

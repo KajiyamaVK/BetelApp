@@ -64,6 +64,17 @@ class DatabaseHelper {
     if (oldVersion >= 4 && oldVersion < 6) {
       await db.execute("ALTER TABLE contents ADD COLUMN display_location TEXT NOT NULL DEFAULT 'HOME'");
     }
+    if (oldVersion < 6) {
+      // Any upgrade to v6 leaves local content rows out of sync with the manifest:
+      // the contents table is freshly (empty) created when coming from < v4, and
+      // display_location is backfilled with the literal 'HOME' default when coming
+      // from v4/v5. ContentSyncService.sync() would otherwise skip re-population
+      // whenever the manifest version is unchanged (its version gate), so help
+      // content would stay at 'HOME' and be unreachable by its HELP_* location.
+      // Invalidate the sync checkpoint so the next online sync re-inserts every
+      // content with its real display_location.
+      await db.update('sync_meta', {'manifest_version': -1});
+    }
   }
 
   Future<void> _createOriginalTables(Database db) async {
