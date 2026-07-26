@@ -1,7 +1,6 @@
 import 'package:betelapp/data/repositories/favorites_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:sqflite/sqflite.dart';
 
 import '../../helpers/test_helper.mocks.dart';
 

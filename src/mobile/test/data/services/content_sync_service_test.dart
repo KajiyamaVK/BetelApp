@@ -244,8 +244,8 @@ void main() {
           pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc'),
           audio: null,
           questions: [
-            ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
-            ManifestQuestion(id: 11, question: 'Pergunta 2?', answer: 'Resposta 2.'),
+            const ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
+            const ManifestQuestion(id: 11, question: 'Pergunta 2?', answer: 'Resposta 2.'),
           ],
         ),
       ],
@@ -288,7 +288,7 @@ void main() {
           pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'abc'),
           audio: null,
           questions: [
-            ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
+            const ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
           ],
         ),
       ],
@@ -329,7 +329,7 @@ void main() {
           pdf: ManifestFileEntry(active: 'lessons/1/lesson_v2.pdf', checksum: 'new'),
           audio: null,
           questions: [
-            ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
+            const ManifestQuestion(id: 20, question: 'Q?', answer: 'A.'),
           ],
         ),
       ],
@@ -378,7 +378,7 @@ void main() {
           pdf: ManifestFileEntry(active: 'lessons/1/lesson_v1.pdf', checksum: 'xyz'),
           audio: null,
           questions: [
-            ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
+            const ManifestQuestion(id: 10, question: 'Pergunta 1?', answer: 'Resposta 1.'),
             // question 11 was removed from the manifest
           ],
         ),
@@ -470,7 +470,7 @@ void main() {
           pdf: ManifestFileEntry(active: 'lessons/24/lesson_v1.pdf', checksum: 'same'),
           audio: null,
           questions: [
-            ManifestQuestion(id: 4, question: 'Qual a pergunta 24?', answer: 'Resposta 24'),
+            const ManifestQuestion(id: 4, question: 'Qual a pergunta 24?', answer: 'Resposta 24'),
           ],
         ),
       ],

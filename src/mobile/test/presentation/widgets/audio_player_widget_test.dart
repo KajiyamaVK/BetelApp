@@ -322,7 +322,6 @@ void main() {
   // rebuilds and the slider jumps to zero on touch. Verify that onChangeEnd
   // (seek) is actually called when drag completes.
   testWidgets('seek is called when drag ends', (WidgetTester tester) async {
-    bool seekCalled = false;
     final container = ProviderContainer(
       overrides: [
         audioProvider.overrideWith((ref) {

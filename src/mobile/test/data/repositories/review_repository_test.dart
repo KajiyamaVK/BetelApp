@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/data/models/flashcard.dart';
@@ -47,7 +46,7 @@ void main() {
     });
 
     test('upsertCards does NOT reset bucket for existing cards', () async {
-      final flashcard = const Flashcard(id: 10, lessonId: 1, question: 'Q?', answer: 'A.');
+      const flashcard = Flashcard(id: 10, lessonId: 1, question: 'Q?', answer: 'A.');
       await repo.upsertCards([flashcard]);
 
       final db = await DatabaseHelper().database;
@@ -60,7 +59,7 @@ void main() {
     });
 
     test('recordAnswer — correct answer advances bucket and sets nextReviewAt', () async {
-      final flashcard = const Flashcard(id: 20, lessonId: 1, question: 'Q?', answer: 'A.');
+      const flashcard = Flashcard(id: 20, lessonId: 1, question: 'Q?', answer: 'A.');
       await repo.upsertCards([flashcard]);
 
       final now = DateTime(2026, 6, 2);
@@ -74,7 +73,7 @@ void main() {
     });
 
     test('recordAnswer — wrong answer resets bucket to 1 and nextReviewAt is tomorrow', () async {
-      final flashcard = const Flashcard(id: 21, lessonId: 1, question: 'Q?', answer: 'A.');
+      const flashcard = Flashcard(id: 21, lessonId: 1, question: 'Q?', answer: 'A.');
       await repo.upsertCards([flashcard]);
 
       final db = await DatabaseHelper().database;
@@ -90,7 +89,7 @@ void main() {
     });
 
     test('recordAnswer — bucket 5 correct answer stays at bucket 5 with 16-day interval', () async {
-      final flashcard = const Flashcard(id: 50, lessonId: 1, question: 'Q?', answer: 'A.');
+      const flashcard = Flashcard(id: 50, lessonId: 1, question: 'Q?', answer: 'A.');
       await repo.upsertCards([flashcard]);
 
       final db = await DatabaseHelper().database;

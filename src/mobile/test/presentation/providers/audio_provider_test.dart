@@ -307,7 +307,7 @@ void main() {
       expect(notifier.state.currentIndex, 0);
 
       // Simulate handler advancing to track index 1 autonomously (autoplay/notification)
-      mediaItemSubject.add(MediaItem(id: '2', title: 'Song B', artist: 'Artist'));
+      mediaItemSubject.add(const MediaItem(id: '2', title: 'Song B', artist: 'Artist'));
       await Future.microtask(() {}); // let stream listeners run
 
       expect(notifier.state.currentUrl, 'url_b',
@@ -319,7 +319,7 @@ void main() {
     test('currentUrl does not change when mediaItem emits a song not in the queue', () async {
       await notifier.setQueue(songs, startIndex: 0);
 
-      mediaItemSubject.add(MediaItem(id: 'unknown', title: 'Unknown', artist: 'X'));
+      mediaItemSubject.add(const MediaItem(id: 'unknown', title: 'Unknown', artist: 'X'));
       await Future.microtask(() {});
 
       // Should not crash and should leave currentUrl unchanged

@@ -13,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:sqflite/sqflite.dart' show inMemoryDatabasePath;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../providers/audio_provider_test.mocks.dart';

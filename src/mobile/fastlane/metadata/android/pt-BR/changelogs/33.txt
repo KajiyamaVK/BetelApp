@@ -1,0 +1,1 @@
+Padronização do nome do aplicativo e pequenos ajustes internos.

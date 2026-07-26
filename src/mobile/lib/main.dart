@@ -25,7 +25,7 @@ class BetelApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Betel Catecismo',
+      title: 'Breve Catecismo de Westminster',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),

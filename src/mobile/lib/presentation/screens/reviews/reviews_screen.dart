@@ -51,10 +51,10 @@ class _ReviewsContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           if (state.activeLessonIds.isEmpty)
-            _EmptyState(message:
+            const _EmptyState(message:
               'Nenhuma lição com revisão ativa.\nAbra uma lição e ative a revisão.')
           else if (state.totalDueToday == 0)
-            _EmptyState(message:
+            const _EmptyState(message:
               'Nada para revisar hoje.\nVolte amanhã!')
           else
             _DailyReviewBanner(dueCount: state.totalDueToday),

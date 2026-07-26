@@ -3,7 +3,6 @@ import 'package:betelapp/core/network_status_notifier.dart';
 import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:betelapp/data/services/content_sync_service.dart';
-import 'package:betelapp/presentation/screens/reviews/reviews_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:betelapp/presentation/screens/home/home_screen.dart';

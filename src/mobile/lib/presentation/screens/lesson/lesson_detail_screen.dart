@@ -218,8 +218,8 @@ class _ReviewToggleButtonState extends ConsumerState<_ReviewToggleButton> {
   @override
   Widget build(BuildContext context) {
     if (!widget.enabled) {
-      return IconButton(
-        icon: const Icon(Icons.style_rounded, color: Colors.white24),
+      return const IconButton(
+        icon: Icon(Icons.style_rounded, color: Colors.white24),
         tooltip: 'Sem perguntas disponíveis',
         onPressed: null,
       );

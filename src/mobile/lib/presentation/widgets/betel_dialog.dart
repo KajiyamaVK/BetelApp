@@ -179,8 +179,8 @@ class _BetelDialogState extends State<BetelDialog> {
             currentPage: _currentPage,
           )
         else
-          SizedBox(
-            key: const Key('betel-dialog-bottom-padding'),
+          const SizedBox(
+            key: Key('betel-dialog-bottom-padding'),
             height: 36,
           ),
       ],
@@ -424,13 +424,13 @@ class _VideoContentPageState extends State<_VideoContentPage> {
             Uri.parse(widget.youtubeUrl),
             mode: LaunchMode.externalApplication,
           ),
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.open_in_new, size: 14, color: Colors.white),
-              const SizedBox(width: 6),
-              const Text(
+              Icon(Icons.open_in_new, size: 14, color: Colors.white),
+              SizedBox(width: 6),
+              Text(
                 'Abrir no YouTube',
                 style: TextStyle(
                   fontSize: 13,

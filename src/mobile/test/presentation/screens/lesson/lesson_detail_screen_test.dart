@@ -4,7 +4,6 @@ import 'package:betelapp/core/database_helper.dart';
 import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/data/models/flashcard.dart';
 import 'package:betelapp/data/models/lesson.dart';
-import 'package:betelapp/data/repositories/content_repository.dart';
 import 'package:betelapp/data/repositories/review_repository_impl.dart';
 import 'package:betelapp/presentation/providers/audio_provider.dart';
 import 'package:betelapp/presentation/screens/lesson/lesson_detail_screen.dart';
@@ -17,16 +16,6 @@ import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../presentation/providers/audio_provider_test.mocks.dart';
-
-class _StubContentRepo extends ContentRepository {
-  _StubContentRepo() : super(dbHelper: DatabaseHelper());
-
-  @override
-  Future<List<Lesson>> loadLessons() async => [];
-
-  @override
-  Future<List<Lesson>> loadLessonsWithAudio() async => [];
-}
 
 // ---------------------------------------------------------------------------
 // In-memory stub — no SQLite, safe to use in widget (FakeAsync) tests

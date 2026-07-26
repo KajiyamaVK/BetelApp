@@ -3,7 +3,6 @@ import 'package:betelapp/core/providers.dart';
 import 'package:betelapp/data/models/flashcard.dart';
 import 'package:betelapp/presentation/screens/reviews/reviews_screen.dart';
 import 'package:betelapp/presentation/screens/reviews/reviews_view_model.dart';
-import 'package:betelapp/presentation/screens/reviews/review_session_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

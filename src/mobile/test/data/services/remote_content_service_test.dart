@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:betelapp/data/services/remote_content_service.dart';
-import 'package:betelapp/data/models/manifest.dart';
 
 @GenerateMocks([Dio])
 import 'remote_content_service_test.mocks.dart';
@@ -18,13 +17,13 @@ void main() {
     service = RemoteContentService(dio: mockDio);
   });
 
-  Response<dynamic> _okResponse() => Response(
+  Response<dynamic> okResponse() => Response(
         data: '',
         statusCode: 200,
         requestOptions: RequestOptions(path: ''),
       );
 
-  DioException _cancelException() => DioException(
+  DioException cancelException() => DioException(
         requestOptions: RequestOptions(path: ''),
         type: DioExceptionType.cancel,
       );
@@ -121,7 +120,7 @@ void main() {
           await Future.delayed(const Duration(milliseconds: 20));
           cb?.call(i * 100, 300);
         }
-        return _okResponse();
+        return okResponse();
       });
 
       await service.downloadFile(
@@ -148,9 +147,9 @@ void main() {
         if (callCount == 1) {
           // First attempt: stall — wait for cancellation
           await token!.whenCancel;
-          throw _cancelException();
+          throw cancelException();
         }
-        return _okResponse();
+        return okResponse();
       });
 
       await service.downloadFile(
@@ -175,7 +174,7 @@ void main() {
         callCount++;
         final token = inv.namedArguments[#cancelToken] as CancelToken?;
         await token!.whenCancel;
-        throw _cancelException();
+        throw cancelException();
       });
 
       await expectLater(
@@ -209,8 +208,8 @@ void main() {
         cb?.call(200, 300);
         await Future.delayed(const Duration(milliseconds: 40));
         cb?.call(300, 300);
-        if (token?.isCancelled == true) throw _cancelException();
-        return _okResponse();
+        if (token?.isCancelled == true) throw cancelException();
+        return okResponse();
       });
 
       await service.downloadFile(
@@ -240,7 +239,7 @@ void main() {
             error: const HttpException('Connection closed while receiving data'),
           );
         }
-        return _okResponse();
+        return okResponse();
       });
 
       await service.downloadFile(
