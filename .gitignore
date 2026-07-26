@@ -52,3 +52,10 @@ app.*.map.json
 # Superpowers
 .superpowers/
 src/mobile/.ci-secrets/
+
+# Claude Code session artifacts (generated per-session, not project code)
+.claude/code-review/
+.claude/spec-review/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+verify-before-save.png
