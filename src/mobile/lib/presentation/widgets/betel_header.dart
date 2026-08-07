@@ -1,6 +1,6 @@
 import 'package:betelapp/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -54,9 +54,13 @@ class _BetelHeaderState extends State<BetelHeader> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: const Color(0xFF25211E),
+      ),
+      child: Container(
+        width: double.infinity,
+        color: const Color(0xFF25211E),
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -66,8 +70,8 @@ class _BetelHeaderState extends State<BetelHeader> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  SvgPicture.asset(
-                    'assets/images/betel-topbar-logo.svg',
+                  Image.asset(
+                    'assets/images/appIcon.png',
                     height: 50,
                     fit: BoxFit.contain,
                   ),
@@ -100,7 +104,7 @@ class _BetelHeaderState extends State<BetelHeader> {
                             _version,
                             style: const TextStyle(
                               fontSize: 9,
-                              color: Color(0xFFAAAAAA),
+                              color: Color(0xFF888888),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -145,6 +149,7 @@ class _BetelHeaderState extends State<BetelHeader> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

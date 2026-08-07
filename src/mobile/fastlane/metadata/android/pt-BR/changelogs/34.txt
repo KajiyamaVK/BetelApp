@@ -1,0 +1,1 @@
+Novo visual do cabeçalho com fundo escuro e ícone do app. Barra de status ajustada para melhor contraste.
